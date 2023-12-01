@@ -1,0 +1,30 @@
+@charset "utf-8";
+
+.folderLister_lister { position: relative; margin:0; padding:0; width:100%; height:100%; overflow-x: hidden; overflow-y: scroll; }
+.folderLister_lister:focus { outline: 0; }
+
+.folderLister_upperDiv { position: sticky; top: 0; padding-left: 1em; padding-right: 1em; padding-top: 0.7em; padding-bottom: 0.7em; width: 100%; display:table; table-layout: fixed;  background-color: rgb(115, 115, 115); color: rgb(241, 241, 241); }
+.folderLister_upperDiv > * { display:table-cell; vertical-align:middle; white-space:nowrap; }
+.folderLister_pathDiv { text-overflow:ellipsis; white-space:nowrap; overflow:hidden; }
+
+.folderLister_table .folderLister_iconclass { grid-area: iconclass; width:1.5em; text-align:center; }
+.folderLister_table .folderLister_filename { grid-area: filename; cursor:pointer; word-break:break-word; }
+.folderLister_table .folderLister_filemtime { grid-area: filemtime; white-space: nowrap; }
+.folderLister_table .folderLister_filemtime span { white-space: nowrap; }
+.folderLister_table .folderLister_filesize { grid-area: filesize; white-space: nowrap; width:4.5em; text-align:right; }
+.folderLister_selectedItem { background-color:rgb(235, 235, 235); }
+
+.folderLister_lister:not(.folderLister_lister_alt) .folderLister_table { width: 100%; display: table; table-layout: fixed; }
+.folderLister_lister:not(.folderLister_lister_alt) .folderLister_table .folderLister_item { width: 100%; display: table-row; }
+.folderLister_lister:not(.folderLister_lister_alt) .folderLister_table .folderLister_item > * { display: table-cell; vertical-align:middle; padding-top: 0.7em; padding-bottom: 0.7em; }
+.folderLister_lister:not(.folderLister_lister_alt) .folderLister_filemtime { width: 20ch; text-align: center; }
+
+.folderLister_lister.folderLister_lister_alt .folderLister_table .folderLister_item {
+    width: 100%; padding-top: 0.5em; padding-bottom: 0.5em; display: grid; align-items: center;
+    grid-template:
+    "iconclass filename filename" max-content
+    "iconclass filemtime filesize" max-content
+    /max-content 1fr max-content;
+}
+.folderLister_lister.folderLister_lister_alt .folderLister_table .folderLister_filemtime { font-size: 0.7em; }
+.folderLister_lister.folderLister_lister_alt .folderLister_table .folderLister_filesize { font-size: 0.7em; }
