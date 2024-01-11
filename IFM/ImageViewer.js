@@ -135,7 +135,7 @@ class ImageViewer {
         }, false);
     }
     
-    init(imageList, page=0, overlayJSON) {
+    init(imageList, page=0) {
         /*if (this.viewerDiv.offsetHeight > this.viewerDiv.offsetWidth) this.viewOptions.mode = 'RL';
         else */this.viewOptions.mode = 'B';
         this.viewOptions.fit = 'HV';
@@ -144,7 +144,6 @@ class ImageViewer {
         this.preloadOptions.current = [0, -1];
 
         this.imageList = imageList;
-        this.overlayJSON = overlayJSON ? overlayJSON : [];
 
         this._setItems();
     }
@@ -377,9 +376,9 @@ class ImageViewer {
         this.viewOptions.page = ((this.viewOptions.page%this.imageList.length)+this.imageList.length)%this.imageList.length;
 
         this.currentPageDiv.innerHTML = (this.viewOptions.page + 1);
-        this.filenameDiv.innerHTML = this.imageList[this.viewOptions.page].title;
 
         let imageDesc = this.imageList[this.viewOptions.page];
+        this.filenameDiv.innerHTML = imageDesc.title;
         if (!imageDesc.image || imageDesc.image.complete == false) {
             this.loadingDiv.style.visibility = "visible";
             this.viewOptions.side = '';
@@ -421,10 +420,8 @@ class ImageViewer {
                 this.overlayDiv.style.width = image.naturalWidth + 'px';
                 this.overlayDiv.style.height = image.naturalHeight + 'px';
 
-                let overlayJSON = this.overlayJSON.find(e => e.name == imageDesc.title || e.filename == imageDesc.title);
-                if (overlayJSON) {
-                    let textbox_list = overlayJSON.textbox_list;
-                    for (let textbox of textbox_list) {
+                if (imageDesc["textboxes"]) {
+                    for (let textbox of imageDesc["textboxes"]) {
                         let textboxDiv = document.createElement("div")
                         textboxDiv.classList.add("imageViewer_overlayTextBoxDiv");
                         textboxDiv.style.fontSize = textbox["font_size"] + 'px';
