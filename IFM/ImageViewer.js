@@ -488,7 +488,7 @@ class ImageViewer {
                         textDiv.appendChild(backSpan);
 
                         let textSpan = document.createElement("span");
-                        backSpan.innerText = textbox["result"];
+                        textSpan.innerText = textbox["result"];
                         textDiv.appendChild(textSpan);
 
                         textboxDiv.appendChild(textDiv);
