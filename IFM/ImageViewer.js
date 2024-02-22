@@ -482,11 +482,14 @@ class ImageViewer {
                         textDiv.style.fontSize = textbox["font_size"] + 'px';
                         textDiv.style.color = `rgb(${textbox["font_color"][0]}, ${textbox["font_color"][1]}, ${textbox["font_color"][2]})`;
                         textDiv.style.width = tempSpanRect.width + 'px';
-                        textDiv.innerText = textbox["result"];
                         
                         let backSpan = document.createElement("span");
                         backSpan.innerText = textbox["result"];
                         textDiv.appendChild(backSpan);
+
+                        let textSpan = document.createElement("span");
+                        backSpan.innerText = textbox["result"];
+                        textDiv.appendChild(textSpan);
 
                         textboxDiv.appendChild(textDiv);
                     }
