@@ -484,9 +484,9 @@ class ImageViewer {
                         textDiv.style.width = tempSpanRect.width + 'px';
                         textDiv.innerText = textbox["result"];
                         
-                        let backSpan = document.createElement("span");
-                        backSpan.innerText = textbox["result"];
-                        textDiv.appendChild(backSpan);
+                        let backDiv = document.createElement("div");
+                        backDiv.innerText = textbox["result"];
+                        textDiv.appendChild(backDiv);
 
                         textboxDiv.appendChild(textDiv);
                     }
