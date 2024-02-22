@@ -432,7 +432,7 @@ class ImageViewer {
                         textboxDiv.style.width = textbox["xywh"][2] + 'px';
                         textboxDiv.style.height = textbox["xywh"][3] + 'px';
 
-                        if (textbox["lines"]) {
+                        /*if (textbox["lines"]) {
                             let backDiv = document.createElement("div");
                             backDiv.classList.add("imageViewer_overlayBackDiv");
                             textboxDiv.appendChild(backDiv);
@@ -451,7 +451,7 @@ class ImageViewer {
                                 div.style.height = y_max - y_min + 1 + 'px';
                                 backDiv.appendChild(div);
                             }
-                        }
+                        }*/
 
                         let tempDiv = document.createElement("div");
                         tempDiv.style.fontSize = textbox["font_size"] + 'px';
