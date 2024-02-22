@@ -458,7 +458,7 @@ class ImageViewer {
                         textboxDiv.appendChild(tempDiv);
 
                         let tempSpan = document.createElement("span");
-                        tempSpan.style.whiteSpace = "nowrap";
+                        tempSpan.style.whiteSpace = "pre";
                         tempSpan.innerText = textbox["result"];
                         tempDiv.appendChild(tempSpan);
 
@@ -473,6 +473,7 @@ class ImageViewer {
                         tempDiv.style.width = tempWidth + 'px';
 
                         tempSpan.style.whiteSpace = null;
+                        tempSpan.style.overflowWrap = "anywhere";
                         tempSpanRect = tempSpan.getBoundingClientRect();
                         textboxDiv.removeChild(tempDiv);
 
