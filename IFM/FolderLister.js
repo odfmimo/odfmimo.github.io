@@ -344,7 +344,10 @@ class FolderLister {
             else if (value.type == 'directory') iconclass = 'fa-folder';
             else if (value.type == 'image') iconclass = 'fa-file-image-o';
             else if (value.type == 'video') iconclass = 'fa-file-video-o';
+            else if (value.type == 'audio') iconclass = 'fa-file-audio-o';
             else if (value.type == 'archive') iconclass = 'fa-file-archive-o';
+            else if (value.type == 'text') iconclass = 'fa-file-text-o';
+            else if (value.type == 'pdf') iconclass = 'fa-file-pdf-o';
 
             let iconclass_td = document.createElement("div");
             iconclass_td.classList.add("folderLister_iconclass");
