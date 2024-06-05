@@ -466,7 +466,7 @@ class ImageViewer {
                         let scale = Math.sqrt(tempSpanRect.width * tempSpanRect.height / textbox["xywh"][2] / textbox["xywh"][3]);
 
                         let tempWidth = textbox["xywh"][2] * scale;
-                        if (textbox["lines"].length > 1 || tempWidth >= textbox["font_size"] * 2) {
+                        if ((textbox["lines"] && textbox["lines"].length > 1) || tempWidth >= textbox["font_size"] * 2) {
                             if (tempWidth < textbox["font_size"] * 4) tempWidth = textbox["font_size"] * 4;
                             else tempWidth = tempWidth + textbox["font_size"];
                         }
