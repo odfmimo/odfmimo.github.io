@@ -424,7 +424,7 @@ class ImageViewer {
                     for (let textbox of imageDesc["textboxes"]) {
                         let textboxDiv = document.createElement("div")
                         textboxDiv.classList.add("imageViewer_overlayTextBoxDiv");
-                        textboxDiv.style.fontSize = textbox["font_size"] + 'px';
+                        if (textbox["font_size"]) textboxDiv.style.fontSize = textbox["font_size"] + 'px';
                         this.overlayDiv.appendChild(textboxDiv);
 
                         textboxDiv.style.left = textbox["xywh"][0] + 'px';
@@ -454,7 +454,7 @@ class ImageViewer {
                         }*/
 
                         let tempDiv = document.createElement("div");
-                        tempDiv.style.fontSize = textbox["font_size"] + 'px';
+                        if (textbox["font_size"]) tempDiv.style.fontSize = textbox["font_size"] + 'px';
                         textboxDiv.appendChild(tempDiv);
 
                         let tempSpan = document.createElement("span");
@@ -466,7 +466,7 @@ class ImageViewer {
                         let scale = Math.sqrt(tempSpanRect.width * tempSpanRect.height / textbox["xywh"][2] / textbox["xywh"][3]);
 
                         let tempWidth = textbox["xywh"][2] * scale;
-                        if ((textbox["lines"] && textbox["lines"].length > 1) || tempWidth >= textbox["font_size"] * 2) {
+                        if (textbox["lines"] && textbox["font_size"] && (textbox["lines"].length > 1 || tempWidth >= textbox["font_size"] * 2)) {
                             if (tempWidth < textbox["font_size"] * 4) tempWidth = textbox["font_size"] * 4;
                             else tempWidth = tempWidth + textbox["font_size"];
                         }
@@ -479,8 +479,8 @@ class ImageViewer {
 
                         let textDiv = document.createElement("div");
                         textDiv.classList.add("imageViewer_overlayTextDiv");
-                        textDiv.style.fontSize = textbox["font_size"] + 'px';
-                        textDiv.style.color = `rgb(${textbox["font_color"][0]}, ${textbox["font_color"][1]}, ${textbox["font_color"][2]})`;
+                        if (textbox["font_size"]) textDiv.style.fontSize = textbox["font_size"] + 'px';
+                        if (textbox["font_color"]) textDiv.style.color = `rgb(${textbox["font_color"][0]}, ${textbox["font_color"][1]}, ${textbox["font_color"][2]})`;
                         textDiv.style.width = tempSpanRect.width + 'px';
                         textDiv.innerText = textbox["result"];
                         
