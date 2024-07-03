@@ -482,7 +482,6 @@ class ImageViewer {
                         if (textbox["font_size"]) textDiv.style.fontSize = textbox["font_size"] + 'px';
                         if (textbox["font_color"])
                             textDiv.style.color = `rgb(${textbox["font_color"][0]}, ${textbox["font_color"][1]}, ${textbox["font_color"][2]})`;
-                        else textDiv.style.color = 'rgb(0, 0, 0)';
                         textDiv.style.width = tempSpanRect.width + 'px';
                         textDiv.innerText = textbox["result"];
                         
