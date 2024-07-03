@@ -474,7 +474,7 @@ class ImageViewer {
 
                         if (textbox["font_size"] && tempWidth < textbox["font_size"] * 2) {
                             tempSpan.style.whiteSpace = "nowrap";
-                            tempSpan.writingMode = "vertical-rl";
+                            tempSpan.style.writingMode = "vertical-rl";
                         }
                         else {
                             tempSpan.style.whiteSpace = null;
@@ -491,7 +491,7 @@ class ImageViewer {
                         textDiv.style.width = tempSpanRect.width + 'px';
                         if (textbox["font_size"] && tempWidth < textbox["font_size"] * 2) {
                             textDiv.style.whiteSpace = "nowrap";
-                            textDiv.writingMode = "vertical-rl";
+                            textDiv.style.writingMode = "vertical-rl";
                         }
                         textDiv.innerText = textbox["result"];
                         
