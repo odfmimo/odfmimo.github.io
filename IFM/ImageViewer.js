@@ -472,8 +472,14 @@ class ImageViewer {
                         }
                         tempDiv.style.width = tempWidth + 'px';
 
-                        tempSpan.style.whiteSpace = null;
-                        tempSpan.style.overflowWrap = "anywhere";
+                        if (textbox["font_size"] && tempWidth < textbox["font_size"] * 2) {
+                            tempSpan.style.whiteSpace = "nowrap";
+                            tempSpan.writingMode = "vertical-rl";
+                        }
+                        else {
+                            tempSpan.style.whiteSpace = null;
+                            tempSpan.style.overflowWrap = "anywhere";
+                        }
                         tempSpanRect = tempSpan.getBoundingClientRect();
                         textboxDiv.removeChild(tempDiv);
 
@@ -483,6 +489,10 @@ class ImageViewer {
                         if (textbox["font_color"])
                             textDiv.style.color = `rgb(${textbox["font_color"][0]}, ${textbox["font_color"][1]}, ${textbox["font_color"][2]})`;
                         textDiv.style.width = tempSpanRect.width + 'px';
+                        if (textbox["font_size"] && tempWidth < textbox["font_size"] * 2) {
+                            textDiv.style.whiteSpace = "nowrap";
+                            textDiv.writingMode = "vertical-rl";
+                        }
                         textDiv.innerText = textbox["result"];
                         
                         let backDiv = document.createElement("div");
