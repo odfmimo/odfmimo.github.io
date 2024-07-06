@@ -464,33 +464,36 @@ class ImageViewer {
 
                         let tempSpanRect = tempSpan.getBoundingClientRect();
                         let scale = Math.sqrt(tempSpanRect.width * tempSpanRect.height / textbox["xywh"][2] / textbox["xywh"][3]);
+                        let vertical = false;
 
                         let tempWidth = textbox["xywh"][2] * scale;
-                        if (textbox["lines"] && textbox["font_size"] && (textbox["lines"].length > 1 || tempWidth >= textbox["font_size"] * 2)) {
-                            if (tempWidth < textbox["font_size"] * 4) tempWidth = textbox["font_size"] * 4;
-                            else tempWidth = tempWidth + textbox["font_size"];
-                        }
-                        tempDiv.style.width = tempWidth + 'px';
-
-                        if (textbox["font_size"] && tempWidth < textbox["font_size"] * 2) {
-                            tempSpan.style.whiteSpace = "nowrap";
-                            tempSpan.style.writingMode = "vertical-rl";
+                        if (tempWidth < textbox["font_size"] * 4) {
+                            if (tempWidth < textbox["font_size"] * 2 || textbox["xywh"][3] > textbox["xywh"][2] * 2.5) {
+                                vertical = true;
+                                tempSpan.style.writingMode = "vertical-rl";
+                            }
+                            else {
+                                tempWidth = textbox["font_size"] * 4;
+                            }
                         }
                         else {
-                            tempSpan.style.whiteSpace = null;
-                            tempSpan.style.overflowWrap = "anywhere";
+                            tempWidth = tempWidth + textbox["font_size"];
                         }
+                        tempDiv.style.width = tempWidth + 'px';
+                        tempSpan.style.whiteSpace = null;
+                        tempSpan.style.overflowWrap = "anywhere";
+
                         tempSpanRect = tempSpan.getBoundingClientRect();
                         textboxDiv.removeChild(tempDiv);
 
                         let textDiv = document.createElement("div");
                         textDiv.classList.add("imageViewer_overlayTextDiv");
                         if (textbox["font_size"]) textDiv.style.fontSize = textbox["font_size"] + 'px';
-                        if (textbox["font_color"])
+                        if (textbox["font_color"]) {
                             textDiv.style.color = `rgb(${textbox["font_color"][0]}, ${textbox["font_color"][1]}, ${textbox["font_color"][2]})`;
+                        }
                         textDiv.style.width = tempSpanRect.width + 'px';
-                        if (textbox["font_size"] && tempWidth < textbox["font_size"] * 2) {
-                            textDiv.style.whiteSpace = "nowrap";
+                        if (vertical) {
                             textDiv.style.writingMode = "vertical-rl";
                         }
                         textDiv.innerText = textbox["result"];
