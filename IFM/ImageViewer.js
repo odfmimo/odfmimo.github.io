@@ -494,7 +494,7 @@ class ImageViewer {
                         }
                         textDiv.style.width = tempSpanRect.width + 'px';
                         if (vertical) {
-                            textDiv.style.height = tempSpanRect.height + 'px';
+                            textDiv.style.height = Math.max(tempSpanRect.height, textbox["xywh"][3]) + 'px';
                             textDiv.style.writingMode = "vertical-rl";
                         }
                         textDiv.innerText = textbox["result"];
