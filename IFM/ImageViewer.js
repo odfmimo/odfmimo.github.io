@@ -454,7 +454,7 @@ class ImageViewer {
                         }*/
 
                         let tempDiv = document.createElement("div");
-                        if (textbox["font_size"]) tempDiv.style.fontSize = textbox["font_size"] + 'px';
+                        tempDiv.style.fontSize = textbox["font_size"] + 'px';
                         textboxDiv.appendChild(tempDiv);
 
                         let tempSpan = document.createElement("span");
@@ -470,7 +470,7 @@ class ImageViewer {
                         if (tempWidth < textbox["font_size"] * 4) {
                             if (tempWidth < textbox["font_size"] * 2 || textbox["xywh"][3] > textbox["xywh"][2] * 2.5) {
                                 vertical = true;
-                                tempSpan.style.writingMode = "vertical-rl";
+                                tempWidth = textbox["xywh"][2];
                             }
                             else {
                                 tempWidth = textbox["font_size"] * 4;
@@ -488,12 +488,13 @@ class ImageViewer {
 
                         let textDiv = document.createElement("div");
                         textDiv.classList.add("imageViewer_overlayTextDiv");
-                        if (textbox["font_size"]) textDiv.style.fontSize = textbox["font_size"] + 'px';
+                        textDiv.style.fontSize = textbox["font_size"] + 'px';
                         if (textbox["font_color"]) {
                             textDiv.style.color = `rgb(${textbox["font_color"][0]}, ${textbox["font_color"][1]}, ${textbox["font_color"][2]})`;
                         }
                         textDiv.style.width = tempSpanRect.width + 'px';
                         if (vertical) {
+                            textDiv.style.height = tempSpanRect.height + 'px';
                             textDiv.style.writingMode = "vertical-rl";
                         }
                         textDiv.innerText = textbox["result"];
