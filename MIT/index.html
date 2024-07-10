@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <link rel="stylesheet" href="https://odfmimo.github.io/IFM/ImageViewer.css">
+        <script src="https://odfmimo.github.io/IFM/ImageViewer.js"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap" rel="stylesheet">
+        <style>
+            .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv.imageViewer_overlayTextBoxDiv_undefined
+            { /*outline : calc(2px/var(--scale)) solid blue;*/ background-color: rgba(0, 0, 255, .5); }
+            .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv.imageViewer_overlayTextBoxDiv_undefined > *
+            { display: none; }
+            .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv.imageViewer_overlayTextBoxDiv_hidden
+            { outline : calc(2px/var(--scale)) solid rgba(255, 0, 0, .5); background-color: transparent; }
+            .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv.imageViewer_overlayTextBoxDiv_hidden > *
+            { display: none; }
+            .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv.imageViewer_overlayTextBoxDiv_selected
+            { /*outline : calc(2px/var(--scale)) solid green;*/ background-color: rgba(0, 255, 0, .5); }
+            .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv.imageViewer_overlayTextBoxDiv_error
+            { /*outline : calc(2px/var(--scale)) solid green;*/ background-color: rgba(255, 0, 0, .5); }
+
+            #main_div {
+                position: absolute; top: 0; bottom : 0; left: 0; right : 0;
+                display: flex; flex-direction: column;
+            }
+            #fileSelect_div > span { white-space:nowrap; }
+            .fileSelect_span input[type=file] { display: none; }
+            .fileSelect_span span { display: inline-block; width: 10em; white-space: nowrap; overflow: clip; text-overflow: ellipsis; }
+            #contentViewer_div { flex-grow: 1; display: flex; overflow: hidden; }
+            #imageViewer_div { flex: 3; }
+            #edit_div { flex: 1; display: none; }
+            
+            #editInner_div { display: flex; flex-direction: column; height: 100%; }
+            #editText_div { display: flex; flex-direction: column; }
+            #editText_div > textarea { font-size: xx-large; height: 5em; }
+            #editImageViewer_div { display: flex; align-items: flex-start; justify-content: center; overflow: hidden; }
+            #editImageViewer_div > img { max-width: 100%; max-height: 100%; }
+
+            #translate_div { display: none; position: absolute; top: 0; bottom : 0; left: 0; right : 0; background-color: white; }
+            #translate_div #translateInner_div { display: flex; flex-direction: column; width: 100%; height: 100%; }
+            #translate_div #translateTextArea_div { display: flex; flex-grow: 1; }
+            #translate_div #translateTextArea_div > textarea { flex-grow: 1; }
+        </style>
+    </head>
+    <body>
+        <div id="main_div">
+            <div id="fileSelect_div">
+                <span class="fileSelect_span">
+                    <input id="imagefile_input" type="file" multiple>
+                    <input type="button" value="이미지">
+                    <span></span>
+                </span>
+                <span>
+                    <label><input id="toggle_button" type="radio" name="mode_radio" checked>삭제</label>
+                    <label><input id="add_button" type="radio" name="mode_radio">추가</label>
+                    <label><input id="merge_button" type="radio" name="mode_radio">병합</label>
+                    <label><input id="edit_button" type="radio" name="mode_radio">편집</label>
+                    <input id="detect_button" type="button" value="탐지">
+                    <input id="recognize_button" type="button" value="인식">
+                    <input id="translate_button" type="button" value="번역">
+                    <input id="open_button" type="button" value="열기">
+                    <input id="save_button" type="button" value="저장">
+                </span>
+                <span id="status_span"></span>
+            </div>
+            <div id="contentViewer_div">
+                <div id="imageViewer_div"></div>
+                <div id="edit_div">
+                    <div id="editInner_div">
+                        <div id="editUpper_div">
+                            <input id="editPrev_button" type="button" value="이전">
+                            <input id="editNext_button" type="button" value="다음">
+                        </div>
+                        <div id="editText_div">
+                            <span><label>글자 크기<input type="number" id="editTextFontSize_input" min=0></label></span>
+                            <textarea id="editTextText_textarea"></textarea>
+                            <textarea id="editTextResult_textarea"></textarea>
+                        </div>
+                        <div id="editImageViewer_div"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+var OCRS = [{% for each in OCRS %}"{{ each }}", {% endfor %}];
+var DETECTORS = [{% for each in DETECTORS %}"{{ each }}", {% endfor %}];
+var TRANSLATORS = [{% for each in TRANSLATORS %}"{{ each }}", {% endfor %}];
+
+var imageViewer_div = document.getElementById("imageViewer_div");
+var imageViewer = new ImageViewer(imageViewer_div);
+
+[...document.querySelectorAll(".fileSelect_span")].forEach(span => {
+    let file_input = span.querySelector(`input[type="file"]`);
+    span.addEventListener("click", _ => {
+        file_input.click();
+    })
+    function onChange(e) {
+        let files = file_input.files;
+        let text;
+        if (files.length == 0) text = "선택된 파일 없음"
+        else if (files.length == 1) text = files[0].name;
+        else text = files.length + "개 파일 선택됨";
+        span.querySelector("span").innerText = text;
+    }
+    file_input.addEventListener("change", onChange);
+    onChange();
+});
+
+var imageList = [];
+document.getElementById("imagefile_input").addEventListener("change", async _ => {
+    imageViewer.loadingDiv.style.visibility = 'visible';
+    let imagefile_input = document.getElementById("imagefile_input");
+    let fileList = [];
+    for (let imagefile of imagefile_input.files) {
+        let ext = /(?:\.([^.]+))?$/.exec(imagefile.name)[1]?.toLowerCase();
+        if (ext == "zip") {
+            let zip = await JSZip.loadAsync(imagefile);
+            let zipEntryList = [];
+            zip.forEach((relativePath, zipEntry) => {
+                let ext = /(?:\.([^.]+))?$/.exec(zipEntry.name)[1]?.toLowerCase();
+                if (!zipEntry.name.startsWith("__MACOSX/")) {
+                    if (["jpg", "jpeg", "png", "webp"].includes(ext)) {
+                        zipEntryList.push(zipEntry);
+                    }
+                }
+            })
+            for (zipEntry of zipEntryList) {
+                let blob = await zipEntry.async("blob");
+                fileList.push(new File([blob], zipEntry.name))
+            }
+        }
+        else if (["jpg", "jpeg", "png", "webp"].includes(ext)) {
+            fileList.push(imagefile);
+        }
+    }
+    fileList.sort((a, b) => {
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+    })
+    imageList = await Promise.all(fileList.map(file => {
+        return new Promise(resolve => {
+            let reader = new FileReader();
+            reader.addEventListener("load", _ => {
+                resolve({
+                    file: file,
+                    title: file.name,
+                    src: reader.result
+                })
+            })
+            reader.readAsDataURL(file);
+        })
+    }));
+
+    imageViewer.init(imageList, 0);
+});
+
+document.getElementById("detect_button").addEventListener("click", async _ => {
+    document.getElementById("detect_button").disabled = true;
+    let status_span = document.getElementById("status_span");
+    status_span.innerText = `0/${imageList.length}`;
+    for(let i = 0; i < imageList.length; i++) {
+        let file = imageList[i].file;
+        let data = new FormData();
+        data.append('file', file);
+        let response = await fetch('/detect', {
+            method: 'POST',
+            body: data
+        });
+        let textboxes = await response.json();
+        textboxes.forEach(textbox => {
+            if (textbox.lines.length > 1) {
+                textbox.merged_textboxes = [];
+                for (let line of textbox.lines) {
+                    let x_min = Math.min.apply(null, line.map(pt => pt[0]));
+                    let y_min = Math.min.apply(null, line.map(pt => pt[1]));
+                    let x_max = Math.max.apply(null, line.map(pt => pt[0]));
+                    let y_max = Math.max.apply(null, line.map(pt => pt[1]));
+                    let textline = {xyxy: [x_min, y_min, x_max, y_max], xywh: [x_min, y_min, x_max - x_min + 1, y_max - y_min + 1], lines: [line], hidden: true};
+                    textbox.merged_textboxes.push(textline);
+                }
+            }
+        });
+        imageList[i].textboxes = Array.prototype.concat.call(textboxes, textboxes.filter(textbox => textbox.merged_textboxes).flatMap(textbox => textbox.merged_textboxes));
+
+        if (i == imageViewer.viewOptions.page) imageViewer._setItems();
+        status_span.innerText = `${i+1}/${imageList.length}`;
+    }
+    document.getElementById("detect_button").disabled = null;
+});
+
+document.getElementById("recognize_button").addEventListener("click", async _ => {
+    document.getElementById("recognize_button").disabled = true;
+    let status_span = document.getElementById("status_span");
+    status_span.innerText = `0/${imageList.length}`;
+    for(let i = 0; i < imageList.length; i++) {
+        if (imageList[i].textboxes) {
+            let textboxes = imageList[i].textboxes.filter(textbox => textbox.hidden !== true).flatMap(textbox => textbox.merged_textboxes && textbox.merged_textboxes.length > 1 ? textbox.merged_textboxes : textbox);
+            const image = document.createElement('img');
+            image.src = imageList[i].src;
+            await new Promise(resolve => {
+                image.addEventListener("load", async _ => {
+                    for (let j = 0; j < textboxes.length; j++) {
+                        let textbox = textboxes[j];
+                        let x = textbox["xywh"][0];
+                        let y = textbox["xywh"][1];
+                        let w = textbox["xywh"][2];
+                        let h = textbox["xywh"][3];
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(image, x, y, w, h, 0, 0, w, h);
+                        await new Promise(resolve => {
+                            canvas.toBlob(async blob => {
+                                let file = new File([blob], "temp.png")
+                                let data = new FormData();
+                                data.append('file', file);
+                                let response = await fetch('/recognize', {
+                                    method: 'POST',
+                                    body: data
+                                });
+                                let json = await response.json();
+                                if (json.text) {
+                                    textbox.text = json.text.replace(/[\n\r]/gm, "");
+                                    textbox.result = textbox.text;
+                                    textbox.font_color = json.font_color;
+                                    textbox.font_size = json.font_size;
+                                }
+                                resolve();
+                            })
+                        })
+                    }
+                    resolve();
+                });
+            });
+            for (let j = 0; j < imageList[i].textboxes.length; j++) {
+                let textbox = imageList[i].textboxes[j];
+                if (textbox.merged_textboxes && textbox.merged_textboxes.length > 1) {
+                    let new_textbox = get_new_textbox.apply(null, textbox.merged_textboxes);
+                    imageList[i].textboxes[j] = new_textbox;
+                }
+            }
+            
+            if (i == imageViewer.viewOptions.page) imageViewer._setItems();
+        }
+        status_span.innerText = `${i+1}/${imageList.length}`;
+    }
+    document.getElementById("recognize_button").disabled = null;
+});
+
+document.getElementById("translate_button").addEventListener("click", async _ => {
+    document.getElementById("translate_button").disabled = true;
+    let status_span = document.getElementById("status_span");
+    status_span.innerText = `0/${imageList.length}`;
+    for(let i = 0; i < imageList.length; i++) {
+        let textboxes = imageList[i].textboxes.filter(textbox => textbox.hidden !== true).filter(textbox => textbox.text);
+        let texts = textboxes.map(textbox => textbox.text);
+        let data = new FormData();
+        data.append('texts', JSON.stringify(texts));
+        let response = await fetch('/translate', {
+            method: 'POST',
+            body: data
+        });
+        let results = await response.json();
+        for (let j = 0; j < textboxes.length; j++) {
+            textboxes[j].result = results[j].result;
+        }
+
+        if (i == imageViewer.viewOptions.page) imageViewer._setItems();
+        status_span.innerText = `${i+1}/${imageList.length}`;
+    }
+    document.getElementById("translate_button").disabled = null;
+});
+
+document.getElementById("open_button").addEventListener("click", _ => {
+    let file_input = document.createElement('input');
+    file_input.type = 'file';
+    file_input.addEventListener("change", _ => {
+        let file = file_input.files[0];
+        let reader = new FileReader();
+        reader.readAsText(file);
+        reader.addEventListener("load", _ => {
+            let json = JSON.parse(reader.result);
+            json.forEach(item => {
+                let imageDesc = imageList.find(imageDesc => imageDesc.title == item.name);
+                if (imageDesc) imageDesc.textboxes = item.textboxes;
+            })
+            imageViewer._setItems();
+        });
+    })
+    file_input.click();
+});
+
+document.getElementById("save_button").addEventListener("click", _ => {
+    let overlayList = imageList.map(imageDesc => {
+        let textboxes = imageDesc.textboxes.filter(textbox => textbox.hidden != true).map(textbox => {
+            return { xyxy: textbox["xyxy"], xywh: textbox["xywh"], lines: textbox["lines"], back_color: textbox["back_color"], font_color: textbox["font_color"], font_size: textbox["font_size"], text: textbox["text"], result: textbox["result"] }
+        });
+        return { name: imageDesc.title, textboxes: textboxes }
+    })
+
+    let file = new Blob([JSON.stringify(overlayList)], { type: 'text/plain' });
+    let url = URL.createObjectURL(file);
+    let link = document.createElement("a");
+    link.href = url;
+
+    link.download = document.getElementById("imagefile_input").files[0].name.replace(/(?:\.([^.]+))?$/, ".txt");
+    link.click();
+    URL.revokeObjectURL(url);
+});
+
+let edit_index = null;
+function show_edit_div(direc = null) {
+    let editTextText_textarea = document.getElementById('editTextText_textarea');
+    let editTextResult_textarea = document.getElementById('editTextResult_textarea');
+    let editTextFontSize_input = document.getElementById("editTextFontSize_input");
+    let editImageViewer_div = document.getElementById('editImageViewer_div')
+    editTextText_textarea.value = "";
+    editTextResult_textarea.value = "";
+    editTextFontSize_input.value = 0;
+    editImageViewer_div.innerHTML = "";
+    
+    let temp_index = null;
+    let textbox_list = imageList[imageViewer.viewOptions.page]?.textboxes;
+    if (textbox_list) {
+        let filtered_textbox_list = textbox_list.filter(textbox => textbox.hidden != true);
+        if (filtered_textbox_list.length > 0) {
+            if (direc == null) {
+                temp_index = textbox_list.indexOf(filtered_textbox_list[0]);
+            }
+            else if (textbox_list[edit_index]) {
+                let filtered_index = filtered_textbox_list.indexOf(textbox_list[edit_index]);
+                let next_filtered_index = filtered_index + direc;
+                if (next_filtered_index >= 0 && next_filtered_index < filtered_textbox_list.length) {
+                    temp_index = textbox_list.indexOf(filtered_textbox_list[next_filtered_index])
+                }
+            }
+        }
+    }
+    edit_index = temp_index;
+    if (edit_index != null) {
+        [...imageViewer.viewerDiv.getElementsByClassName("imageViewer_overlayTextBoxDiv_selected")].forEach(div => div.classList.remove("imageViewer_overlayTextBoxDiv_selected"));
+        let textbox = textbox_list[edit_index];
+        let target = imageViewer.viewerDiv.getElementsByClassName("imageViewer_overlayTextBoxDiv")[edit_index];
+        target.classList.add("imageViewer_overlayTextBoxDiv_selected");
+
+        let image = imageList[imageViewer.viewOptions.page].image;
+        let x = textbox["xywh"][0];
+        let y = textbox["xywh"][1];
+        let w = textbox["xywh"][2];
+        let h = textbox["xywh"][3];
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, x, y, w, h, 0, 0, w, h);
+        let cropped_image = new Image();
+        cropped_image.src = canvas.toDataURL();
+        editImageViewer_div.appendChild(cropped_image);
+
+        editTextText_textarea.value = textbox.text || "";
+        editTextResult_textarea.value = textbox.result || "";
+        editTextFontSize_input.value = textbox.font_size;
+    }
+    else if (direc > 0) {
+        imageViewer._transitPage(1);
+        show_edit_div();
+    }
+    else if (direc < 0) {
+        imageViewer._transitPage(-1);
+        show_edit_div();
+    }
+}
+document.getElementById('editTextText_textarea').addEventListener("input", e => {
+    let textbox_list = imageList[imageViewer.viewOptions.page]?.textboxes;
+    if (textbox_list && textbox_list[edit_index]) {
+        let textbox = textbox_list[edit_index];
+        let text = document.getElementById('editTextText_textarea').value.replaceAll("\n", "");
+        document.getElementById('editTextText_textarea').value = text;
+        if (text == "") delete textbox.text;
+        else textbox.text = text;
+        imageViewer._setItems();
+    }
+});
+document.getElementById('editTextResult_textarea').addEventListener("input", e => {
+    let textbox_list = imageList[imageViewer.viewOptions.page]?.textboxes;
+    if (textbox_list && textbox_list[edit_index]) {
+        let textbox = textbox_list[edit_index];
+        let result = document.getElementById('editTextResult_textarea').value.replaceAll("\n", "");
+        document.getElementById('editTextResult_textarea').value = result;
+        if (result == "") delete textbox.result;
+        else textbox.result = result;
+        imageViewer._setItems();
+    }
+});
+document.getElementById("editTextFontSize_input").addEventListener("input", e => {
+    let textbox_list = imageList[imageViewer.viewOptions.page]?.textboxes;
+    if (textbox_list && textbox_list[edit_index]) {
+        let textbox = textbox_list[edit_index];
+        textbox.font_size = document.getElementById("editTextFontSize_input").value;
+        imageViewer._setItems();
+    }
+});
+document.getElementById("editPrev_button").addEventListener("click", e => {
+    show_edit_div(-1);
+});
+document.getElementById("editNext_button").addEventListener("click", e => {
+    show_edit_div(1);
+});
+[...document.querySelectorAll("input[name='mode_radio']")].forEach(radio => {
+    radio.addEventListener("change", e => {
+        if (document.getElementById("edit_button").checked) {
+            show_edit_div();
+            document.getElementById("edit_div").style.display = "initial";
+            imageViewer._setItems();
+        }
+        else {
+            [...imageViewer.viewerDiv.getElementsByClassName("imageViewer_overlayTextBoxDiv_selected")].forEach(div => div.classList.remove("imageViewer_overlayTextBoxDiv_selected"));
+            document.getElementById("edit_div").style.display = null;
+            imageViewer._setItems();
+        }
+    });
+});
+
+function get_relative_point(e) {
+    let image = imageList[imageViewer.viewOptions.page].image;
+    if (image) {
+        let boundingRect = imageViewer.overlayDiv.getBoundingClientRect();
+        let scale = imageViewer.overlayDiv.style.getPropertyValue("--scale");
+        let x = (e.clientX - boundingRect.left) / scale;
+        let y = (e.clientY - boundingRect.top) / scale;
+        x = Math.min(Math.max(x, 0), image.naturalWidth);
+        y = Math.min(Math.max(y, 0), image.naturalHeight);
+        return {x: x, y: y};
+    }
+    else return null
+}
+
+let adding_target = null;
+document.addEventListener("mousedown", e => {
+    if (document.getElementById("add_button").checked == true) {
+        let adding_point = get_relative_point(e);
+        adding_target = document.createElement('div');
+        adding_target.classList.add("imageViewer_overlayTextBoxDiv");
+        adding_target.classList.add("imageViewer_overlayTextBoxDiv_selected");
+        imageViewer.overlayDiv.appendChild(adding_target);
+
+        adding_target.dataset.x = adding_point.x;
+        adding_target.dataset.y = adding_point.y;
+
+        adding_target.style.left = adding_point.x + 'px';
+        adding_target.style.top = adding_point.y + 'px';
+        adding_target.style.width = 0;
+        adding_target.style.height = 0;
+        if (document.elementsFromPoint(e.clientX, e.clientY).find(e => e == imageViewer.viewerDiv)) {
+            e.stopPropagation();
+        }
+    }
+}, true);
+document.addEventListener("mousemove", e => {
+    if (document.getElementById("add_button").checked == true) {
+        if (adding_target) {
+            let point = get_relative_point(e);
+            let x1 = Math.min(point.x, Number(adding_target.dataset.x));
+            let y1 = Math.min(point.y, Number(adding_target.dataset.y));
+            let x2 = Math.max(point.x, Number(adding_target.dataset.x));
+            let y2 = Math.max(point.y, Number(adding_target.dataset.y));
+
+            let w = x2 - x1 + 1;
+            let h = y2 - y1 + 1;
+
+            adding_target.style.left = x1 + 'px';
+            adding_target.style.top = y1 + 'px';
+            adding_target.style.width = w + 'px';
+            adding_target.style.height = h + 'px';
+        }
+        if (document.elementsFromPoint(e.clientX, e.clientY).find(e => e == imageViewer.viewerDiv)) {
+            e.stopPropagation();
+        }
+    }
+}, true);
+document.addEventListener("mouseup", e => {
+    if (document.getElementById("add_button").checked == true) {
+        if (adding_target) {
+            let point = get_relative_point(e);
+            let x1 = Math.min(point.x, Number(adding_target.dataset.x));
+            let y1 = Math.min(point.y, Number(adding_target.dataset.y));
+            let x2 = Math.max(point.x, Number(adding_target.dataset.x));
+            let y2 = Math.max(point.y, Number(adding_target.dataset.y));
+
+            let w = x2 - x1 + 1;
+            let h = y2 - y1 + 1;
+            if (w > 1 && h > 1) {
+                let xyxy = [x1, y1, x2, y2];
+                let xywh = [x1, y1, w, h];
+                let lines = [[x1, y1], [x2, y1], [x2, y2], [x1, y2]];
+                let font_size = null;
+                let merged_textboxes = [];
+                let new_textbox = {xyxy, xywh, lines, font_size, merged_textboxes};
+
+                let textbox_list = imageList[imageViewer.viewOptions.page].textboxes;
+                if (textbox_list) textbox_list.push(new_textbox);
+                else imageList[imageViewer.viewOptions.page].textboxes = [new_textbox];
+            }
+        }
+        imageViewer._setItems();
+        adding_target = null;
+    }
+}, true);
+
+function get_new_textbox(...textboxes) {
+    let x1 = Math.min.apply(null, textboxes.flatMap(textbox => [textbox["xyxy"][0], textbox["xyxy"][2]]));
+    let y1 = Math.min.apply(null, textboxes.flatMap(textbox => [textbox["xyxy"][1], textbox["xyxy"][3]]));
+    let x2 = Math.max.apply(null, textboxes.flatMap(textbox => [textbox["xyxy"][0], textbox["xyxy"][2]]));
+    let y2 = Math.max.apply(null, textboxes.flatMap(textbox => [textbox["xyxy"][1], textbox["xyxy"][3]]));
+    let w = x2 - x1 + 1;
+    let h = y2 - y1 + 1;
+    let xyxy = [x1, y1, x2, y2];
+    let xywh = [x1, y1, w, h];
+    let lines = Array.prototype.concat.apply([], textboxes.map(textbox => textbox["lines"]));
+    let merged_textboxes = Array.prototype.concat.apply([], textboxes.map(textbox => textbox.merged_textboxes && textbox.merged_textboxes.length > 1 ? textbox.merged_textboxes : textbox));
+    merged_textboxes.sort((a, b) => a["xywh"][1] - b["xywh"][1]).sort((a, b) => b["xywh"][0] - a["xywh"][0]);
+    let text = merged_textboxes.filter(textbox => textbox.text).map(textbox => textbox.text).join() || undefined;
+    let result = merged_textboxes.filter(textbox => textbox.result).map(textbox => textbox.result).join() || undefined;
+    let font_size = Math.min.apply(null, merged_textboxes.filter(textbox => textbox.font_size).map(textbox => textbox.font_size));
+    let font_color = merged_textboxes.filter(textbox => textbox.font_size).map(textbox => textbox.font_color).reduce((a, b) => [a[0]+b[0], a[1]+b[1], a[2]+b[2]], [0, 0, 0]).map(rgb => rgb / merged_textboxes.filter(textbox => textbox.font_size).length);
+    let new_textbox = {xyxy, xywh, lines, merged_textboxes, text, result, font_size, font_color};
+    return new_textbox;
+}
+let merging_index = null;
+document.addEventListener("click", e => {
+    if (e.composedPath().includes(imageViewer_div)) {
+        let textbox_list = imageList[imageViewer.viewOptions.page]?.textboxes;
+        let sorted_target_list = document.elementsFromPoint(e.clientX, e.clientY).filter(e => e.classList?.contains("imageViewer_overlayTextBoxDiv")).sort((a, b) => (a.offsetWidth * a.offsetHeight) - (b.offsetWidth * b.offsetHeight));
+
+        if (document.getElementById("toggle_button").checked == false) {
+            if (document.elementsFromPoint(e.clientX, e.clientY).find(e => e == imageViewer.viewerDiv)) {
+                e.stopPropagation();
+            }
+        }
+
+        if (document.getElementById("merge_button").checked == true) {
+            let target = sorted_target_list.find(target => target.classList.contains("imageViewer_overlayTextBoxDiv_hidden") == false && target.classList.contains("imageViewer_overlayTextBoxDiv_selected") == false);
+            if (target) {
+                let index = [...imageViewer.viewerDiv.getElementsByClassName("imageViewer_overlayTextBoxDiv")].indexOf(target);
+                let textbox = textbox_list[index];
+                if (merging_index != null) {
+                    let merging_textbox = textbox_list[merging_index];
+                    let new_textbox = get_new_textbox(merging_textbox, textbox);
+                    textbox_list.push(new_textbox);
+
+                    if (merging_textbox.merged_textboxes && merging_textbox.merged_textboxes.length > 1) textbox_list.splice(textbox_list.indexOf(merging_textbox), 1);
+                    else merging_textbox.hidden = true;
+                    if (textbox.merged_textboxes && textbox.merged_textboxes.length > 1) textbox_list.splice(textbox_list.indexOf(textbox), 1);
+                    else textbox.hidden = true;
+
+                    merging_index = null;
+                    imageViewer._setItems();
+                }
+                else {
+                    merging_index = index;
+                    target.classList.add("imageViewer_overlayTextBoxDiv_selected");
+                }
+            }
+            else {
+                if (merging_index != null) {
+                    let merging_target = [...imageViewer.viewerDiv.getElementsByClassName("imageViewer_overlayTextBoxDiv")][merging_index];
+                    merging_target.classList.remove("imageViewer_overlayTextBoxDiv_selected");
+                    merging_index = null;
+                }
+            }
+        }
+        else if (document.getElementById("toggle_button").checked == true) {
+            if (sorted_target_list.length > 0) {
+                let merged_textboxes = textbox_list.flatMap(textbox => textbox.merged_textboxes).filter(textbox => textbox);
+                for (let target of sorted_target_list) {
+                    let index = [...imageViewer.viewerDiv.getElementsByClassName("imageViewer_overlayTextBoxDiv")].indexOf(target);
+                    let textbox = textbox_list[index];
+                    if (merged_textboxes.includes(textbox) == false) {
+                        if (textbox.merged_textboxes) {
+                            textbox.merged_textboxes.forEach(textbox => delete textbox.hidden);
+                            textbox_list.splice(textbox_list.indexOf(textbox), 1);
+                        }
+                        else {
+                            if (textbox.hidden === true) delete textbox.hidden;
+                            else textbox.hidden = true;
+                        }
+                        imageViewer._setItems();
+                        break
+                    }
+                }
+                e.stopPropagation();
+            }
+        }
+    }
+}, true);
+
+(new MutationObserver(mutationList => {
+    let textbox_list = imageList[imageViewer.viewOptions.page].textboxes;
+    if (textbox_list) {
+        textbox_list.forEach((textbox, index) => {
+            let target = imageViewer.viewerDiv.getElementsByClassName("imageViewer_overlayTextBoxDiv")[index];
+            if (textbox.text === undefined) target.classList.add("imageViewer_overlayTextBoxDiv_undefined");
+            else target.classList.remove("imageViewer_overlayTextBoxDiv_undefined");
+            if (textbox.hidden === true) target.classList.add("imageViewer_overlayTextBoxDiv_hidden");
+            else target.classList.remove("imageViewer_overlayTextBoxDiv_hidden");
+            if (textbox.text !== undefined && !textbox.font_size) target.classList.add("imageViewer_overlayTextBoxDiv_error");
+            else target.classList.remove("imageViewer_overlayTextBoxDiv_error");
+        });
+    }
+})).observe(imageViewer.overlayDiv, { childList: true, subtree: true });
+
+        </script>
+    </body>
+</html>
