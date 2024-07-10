@@ -2,12 +2,10 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'manga-image-translator-main'))
 
 from flask import Flask, request, Response, jsonify, render_template, session, send_file, render_template_string
-#from pyngrok import ngrok, conf
 import json
 import numpy as np
 import shutil
 from PIL import Image
-import urllib
 
 from manga_translator.args import parser
 from manga_translator.manga_translator import MangaTranslator
