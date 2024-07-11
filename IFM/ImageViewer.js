@@ -482,7 +482,7 @@ class ImageViewer {
                         if (vertical) {
                             tempDiv.style.width = textbox["xywh"][2] + 'px';
 
-                            textDiv.style.height = Math.max(tempSpanRect.height, textbox["xywh"][3]) + 'px';
+                            textDiv.style.height = Math.max(tempSpan.getBoundingClientRect().height, textbox["xywh"][3]) + 'px';
                             textDiv.style.writingMode = "vertical-rl";
                         }
                         else {
