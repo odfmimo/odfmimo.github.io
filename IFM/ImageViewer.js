@@ -468,10 +468,10 @@ class ImageViewer {
 
                         let tempDiv = document.createElement("div");
                         tempDiv.style.fontSize = textbox["font_size"] + 'px';
-                        tempSpan.style.overflowWrap = "anywhere";
                         textboxDiv.appendChild(tempDiv);
 
                         let tempSpan = document.createElement("span");
+                        tempSpan.style.overflowWrap = "anywhere";
                         tempSpan.innerText = textbox["result"];
                         tempDiv.appendChild(tempSpan);
                         
