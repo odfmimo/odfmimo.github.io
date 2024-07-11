@@ -453,57 +453,54 @@ class ImageViewer {
                             }
                         }*/
 
-                        let tempDiv = document.createElement("div");
-                        tempDiv.style.fontSize = textbox["font_size"] + 'px';
-                        textboxDiv.appendChild(tempDiv);
-
-                        let tempSpan = document.createElement("span");
-                        tempSpan.style.whiteSpace = "pre";
-                        tempSpan.innerText = textbox["result"];
-                        tempDiv.appendChild(tempSpan);
-
-                        let tempSpanRect = tempSpan.getBoundingClientRect();
-                        let scale = Math.sqrt(tempSpanRect.width * tempSpanRect.height / textbox["xywh"][2] / textbox["xywh"][3]);
-                        let vertical = false;
-
-                        let tempWidth = textbox["xywh"][2] * scale;
-                        if (tempWidth < textbox["font_size"] * 4) {
-                            if (tempWidth < textbox["font_size"] * 2 || textbox["xywh"][3] > textbox["xywh"][2] * 2.5) {
-                                vertical = true;
-                                tempWidth = textbox["xywh"][2];
-                            }
-                            else {
-                                tempWidth = textbox["font_size"] * 4;
-                            }
-                        }
-                        else {
-                            tempWidth = tempWidth + textbox["font_size"];
-                        }
-                        tempDiv.style.width = tempWidth + 'px';
-                        tempSpan.style.whiteSpace = null;
-                        tempSpan.style.overflowWrap = "anywhere";
-
-                        tempSpanRect = tempSpan.getBoundingClientRect();
-                        textboxDiv.removeChild(tempDiv);
-
                         let textDiv = document.createElement("div");
                         textDiv.classList.add("imageViewer_overlayTextDiv");
                         textDiv.style.fontSize = textbox["font_size"] + 'px';
                         if (textbox["font_color"]) {
                             textDiv.style.color = `rgb(${textbox["font_color"][0]}, ${textbox["font_color"][1]}, ${textbox["font_color"][2]})`;
                         }
-                        textDiv.style.width = tempSpanRect.width + 'px';
-                        if (vertical) {
-                            textDiv.style.height = Math.max(tempSpanRect.height, textbox["xywh"][3]) + 'px';
-                            textDiv.style.writingMode = "vertical-rl";
-                        }
                         textDiv.innerText = textbox["result"];
-                        
+                        textboxDiv.appendChild(textDiv);
+
                         let backDiv = document.createElement("div");
                         backDiv.innerText = textbox["result"];
                         textDiv.appendChild(backDiv);
 
-                        textboxDiv.appendChild(textDiv);
+                        let tempDiv = document.createElement("div");
+                        tempDiv.style.fontSize = textbox["font_size"] + 'px';
+                        tempSpan.style.overflowWrap = "anywhere";
+                        textboxDiv.appendChild(tempDiv);
+
+                        let tempSpan = document.createElement("span");
+                        tempSpan.innerText = textbox["result"];
+                        tempDiv.appendChild(tempSpan);
+                        
+                        if (textbox["xywh"][2] < textbox["font_size"] * 2) vertical = true;
+                        if (textbox["xywh"][3] > textbox["font_size"] * 20) vertical = true;
+                        if (vertical) {
+                            tempDiv.style.width = textbox["xywh"][2] + 'px';
+
+                            textDiv.style.height = Math.max(tempSpanRect.height, textbox["xywh"][3]) + 'px';
+                            textDiv.style.writingMode = "vertical-rl";
+                        }
+                        else {
+                            tempSpan.style.whiteSpace = "pre";
+                            let tempSpanRect = tempSpan.getBoundingClientRect();
+                            let scale = Math.sqrt(tempSpanRect.width * tempSpanRect.height / textbox["xywh"][2] / textbox["xywh"][3]);
+                            
+                            let tempWidth = textbox["xywh"][2];
+                            if (scale > 1) {
+                                tempWidth = textbox["xywh"][2] * scale;
+                            }
+                            if (tempWidth < textbox["font_size"] * 4) {
+                                tempWidth = textbox["font_size"] * 4;
+                            }
+                            tempSpan.style.whiteSpace = null;
+                            tempDiv.style.width = tempWidth + 'px';
+                            
+                            textDiv.style.width = tempSpan.getBoundingClientRect().width + 'px';
+                        }
+                        textboxDiv.removeChild(tempDiv);
                     }
                 }
                 this._resizeCanvas();
