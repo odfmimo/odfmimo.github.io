@@ -29,8 +29,8 @@
 
 .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv { position: absolute; display: flex; justify-content: center; align-items: center; }
 .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv > * { flex: 0 0 auto; }
-.imageViewer_contentDiv .imageViewer_overlayTextDiv { position: absolute; z-index: 1; overflow-wrap: anywhere; color: black; display: flex; justify-content: center; }
-.imageViewer_contentDiv .imageViewer_overlayTextDiv > div { position: absolute; top: 0; left: 0; bottom: 0; right: 0; -webkit-text-stroke: 0.8em white; z-index: -1; filter: blur(0.2em); display: flex; justify-content: center; }
+.imageViewer_contentDiv .imageViewer_overlayTextDiv { position: absolute; z-index: 1; overflow-wrap: anywhere; color: black; display: flex; justify-content: center; align-items: center; }
+.imageViewer_contentDiv .imageViewer_overlayTextDiv > div { position: absolute; top: 0; left: 0; bottom: 0; right: 0; -webkit-text-stroke: 0.8em white; z-index: -1; filter: blur(0.2em); display: flex; justify-content: center; align-items: center; }
 .imageViewer_contentDiv .imageViewer_overlayBackDiv > div { position: absolute; background-color: white; filter: blur(0.5em); }
 .imageViewer_contentDiv .imageViewer_overlayBackDiv > div::after { display: block; content: ""; position: absolute; top: -0.5em; left: -0.5em; width: calc(100% + 1em); height: calc(100% + 1em); background-color: white; }
 
