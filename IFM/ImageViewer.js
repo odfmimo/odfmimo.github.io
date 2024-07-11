@@ -474,9 +474,11 @@ class ImageViewer {
                         tempSpan.style.overflowWrap = "anywhere";
                         tempSpan.innerText = textbox["result"];
                         tempDiv.appendChild(tempSpan);
-                        
+
+                        let vertical = false;
                         if (textbox["xywh"][2] < textbox["font_size"] * 2) vertical = true;
                         if (textbox["xywh"][3] > textbox["font_size"] * 20) vertical = true;
+                        
                         if (vertical) {
                             tempDiv.style.width = textbox["xywh"][2] + 'px';
 
