@@ -487,16 +487,8 @@ class ImageViewer {
                             tempSpan.style.whiteSpace = "pre";
                             let tempSpanRect = tempSpan.getBoundingClientRect();
                             let scale = Math.sqrt(tempSpanRect.width * tempSpanRect.height / textbox["xywh"][2] / textbox["xywh"][3]);
-                            
-                            let tempWidth = textbox["xywh"][2];
-                            if (scale > 1) {
-                                tempWidth = textbox["xywh"][2] * scale;
-                            }
-                            if (tempWidth < textbox["font_size"] * 4) {
-                                tempWidth = textbox["font_size"] * 4;
-                            }
+                            tempDiv.style.width = Math.max(textbox["xywh"][2] * Math.max(1, scale), textbox["font_size"] * 4) + 'px';
                             tempSpan.style.whiteSpace = null;
-                            tempDiv.style.width = tempWidth + 'px';
                             
                             textDiv.style.width = tempSpan.getBoundingClientRect().width + 'px';
                         }
