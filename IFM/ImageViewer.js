@@ -479,20 +479,40 @@ class ImageViewer {
                         if (textbox["xywh"][2] < textbox["font_size"] * 2) vertical = true;
                         if (textbox["xywh"][3] > textbox["font_size"] * 20) vertical = true;
                         
+                        if (!vertical) {
+                            tempSpan.style.whiteSpace = "pre";
+                            let tempSpanRect = tempSpan.getBoundingClientRect();
+                            tempSpan.style.whiteSpace = null;
+                            
+                            let scale = Math.sqrt(tempSpanRect.width * tempSpanRect.height / textbox["xywh"][2] / textbox["xywh"][3]);
+                            let tempWidth = textbox["xywh"][2] * Math.max(1, scale);
+
+                            if (tempWidth < textbox["font_size"] * 4) {
+                                if (imageDesc["textboxes"].find(textbox_ => {
+                                    if (textbox_ != textbox) {
+                                        if (textbox_["xywh"][0] < (textbox["xywh"][0] + textbox["xywh"][2]) && (textbox_["xywh"][0] + textbox_["xywh"][2]) > textbox["xywh"][0] && textbox_["xywh"][1] > (textbox["xywh"][1] + textbox["xywh"][3]) && (textbox_["xywh"][1] + textbox_["xywh"][3]) < textbox["xywh"][1]) {
+                                            return true;
+                                        }
+                                    }
+                                    return false;
+                                })) {
+                                    vertical = true;
+                                }
+                                else {
+                                    tempWidth = textbox["font_size"] * 4
+                                }
+                            }
+                            if (!vertical) {
+                                tempDiv.style.width = tempWidth + 'px';
+                                
+                                textDiv.style.width = tempSpan.getBoundingClientRect().width + 'px';
+                            }
+                        }
                         if (vertical) {
                             tempDiv.style.width = textbox["xywh"][2] + 'px';
 
                             textDiv.style.height = Math.max(tempSpan.getBoundingClientRect().height, textbox["xywh"][3]) + 'px';
                             textDiv.style.writingMode = "vertical-rl";
-                        }
-                        else {
-                            tempSpan.style.whiteSpace = "pre";
-                            let tempSpanRect = tempSpan.getBoundingClientRect();
-                            let scale = Math.sqrt(tempSpanRect.width * tempSpanRect.height / textbox["xywh"][2] / textbox["xywh"][3]);
-                            tempDiv.style.width = Math.max(textbox["xywh"][2] * Math.max(1, scale), textbox["font_size"] * 4) + 'px';
-                            tempSpan.style.whiteSpace = null;
-                            
-                            textDiv.style.width = tempSpan.getBoundingClientRect().width + 'px';
                         }
                         textboxDiv.removeChild(tempDiv);
                     }
