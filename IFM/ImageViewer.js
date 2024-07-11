@@ -489,13 +489,10 @@ class ImageViewer {
 
                             if (tempWidth < textbox["font_size"] * 4) {
                                 if (imageDesc["textboxes"].find(textbox_ => {
-                                    if (textbox_ == textbox) {
+                                    if (textbox_ != textbox) {
                                         let RectA = {Left: textbox_["xywh"][0], Right: textbox_["xywh"][0] + textbox_["xywh"][2], Top: textbox_["xywh"][1], Bottom: textbox_["xywh"][1] + textbox_["xywh"][3]};
                                         let RectB = {Left: textbox["xywh"][0] - textbox["font_size"], Right: textbox["xywh"][0] + textbox["xywh"][2] + textbox["font_size"], Top: textbox["xywh"][1], Bottom: textbox["xywh"][1] + textbox["xywh"][3]};
-                                        console.log(RectA);
-                                        console.log(RectB);
-                                        if (RectA.Left < RectB.Right && RectA.Right > RectB.Left && RectA.Top > RectB.Bottom && RectA.Bottom < RectB.Top) {
-                                            console.log("Intersect");
+                                        if (RectA.Left < RectB.Right && RectA.Right > RectB.Left && RectA.Top < RectB.Bottom && RectA.Bottom > RectB.Top) {
                                             return true;
                                         }
                                     }
