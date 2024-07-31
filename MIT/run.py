@@ -132,8 +132,6 @@ async def _recognize(img, args=None):
     ctx.textlines = [Quadrilateral([[0, 0], [width-1, 0], [width-1, height-1], [0, height-1]], '', 1)]
     ctx.textlines = await translator._run_ocr(ctx)
 
-    shutil.rmtree('result')
-
     if len(ctx.textlines) == 1:
         return {'text': ctx.textlines[0].text, 'font_size': float(ctx.textlines[0].font_size), 'font_color': [int(ctx.textlines[0].fg_r), int(ctx.textlines[0].fg_g), int(ctx.textlines[0].fg_b)]}
     else: return {}
