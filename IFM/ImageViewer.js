@@ -457,7 +457,7 @@ class ImageViewer {
                         textDiv.classList.add("imageViewer_overlayTextDiv");
                         textDiv.style.fontSize = textbox["font_size"] + 'px';
                         if (textbox["font_color"]) {
-                            textDiv.style.color = `rgb(${textbox["font_color"][0]}, ${textbox["font_color"][1]}, ${textbox["font_color"][2]})`;
+                            //textDiv.style.color = `rgb(${textbox["font_color"][0]}, ${textbox["font_color"][1]}, ${textbox["font_color"][2]})`;
                         }
                         textDiv.innerText = textbox["result"];
                         textboxDiv.appendChild(textDiv);
