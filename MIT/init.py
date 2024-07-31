@@ -16,5 +16,5 @@ if not os.path.exists('manga-image-translator-main'):
 
     subprocess.run(["pip", "install", *(r'-r manga-image-translator-main/requirements.txt'.split(' '))])
     subprocess.run(["pip", "install", *(r'flask[async]'.split(' '))])
-    urlretrieve('https://odfmimo.github.io/MIT/index.html', 'index.html')
-    urlretrieve('https://odfmimo.github.io/MIT/run.py', 'run.py')
+urlretrieve('https://odfmimo.github.io/MIT/index.html', 'index.html')
+urlretrieve('https://odfmimo.github.io/MIT/run.py', 'run.py')
