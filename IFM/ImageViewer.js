@@ -476,7 +476,7 @@ class ImageViewer {
                         tempDiv.appendChild(tempSpan);
 
                         let vertical = false;
-                        if (textbox["xywh"][2] < textbox["font_size"] * 2.5) vertical = true;
+                        if (textbox["xywh"][2] < textbox["font_size"] * 1.5) vertical = true;
                         if (textbox["xywh"][3] > textbox["font_size"] * 20) vertical = true;
                         
                         if (!vertical) {
