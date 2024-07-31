@@ -488,14 +488,10 @@ class ImageViewer {
                             let tempWidth = textbox["xywh"][2] * Math.max(1, scale);
 
                             if (tempWidth < textbox["font_size"] * 4) {
-                                if (imageDesc["textboxes"].find(textbox_ => {
-                                    if (textbox_ != textbox) {
-                                        let RectA = {Left: textbox_["xywh"][0], Right: textbox_["xywh"][0] + textbox_["xywh"][2], Top: textbox_["xywh"][1], Bottom: textbox_["xywh"][1] + textbox_["xywh"][3]};
-                                        let RectB = {Left: textbox["xywh"][0] - textbox["font_size"], Right: textbox["xywh"][0] + textbox["xywh"][2] + textbox["font_size"], Top: textbox["xywh"][1], Bottom: textbox["xywh"][1] + textbox["xywh"][3]};
-                                        if (RectA.Left < RectB.Right && RectA.Right > RectB.Left && RectA.Top < RectB.Bottom && RectA.Bottom > RectB.Top) {
-                                            return true;
-                                        }
-                                    }
+                                if (imageDesc["textboxes"].filter(textbox_ => textbox_.hidden !== true && textbox_ != textbox).find(textbox_ => {
+                                    let RectA = {Left: textbox_["xywh"][0], Right: textbox_["xywh"][0] + textbox_["xywh"][2], Top: textbox_["xywh"][1], Bottom: textbox_["xywh"][1] + textbox_["xywh"][3]};
+                                    let RectB = {Left: textbox["xywh"][0] - textbox["font_size"], Right: textbox["xywh"][0] + textbox["xywh"][2] + textbox["font_size"], Top: textbox["xywh"][1], Bottom: textbox["xywh"][1] + textbox["xywh"][3]};
+                                    if (RectA.Left < RectB.Right && RectA.Right > RectB.Left && RectA.Top < RectB.Bottom && RectA.Bottom > RectB.Top) return true;
                                     return false;
                                 })) {
                                     vertical = true;
