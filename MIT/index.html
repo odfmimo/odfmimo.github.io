@@ -54,11 +54,13 @@
                     <input type="button" value="이미지">
                     <span></span>
                 </span>
-                <span>
-                    <label><input id="toggle_button" type="radio" name="mode_radio" checked>삭제</label>
+                <span class="modeRadio_span">
+                    <label><input id="delete_button" type="radio" name="mode_radio" checked>삭제</label>
                     <label><input id="add_button" type="radio" name="mode_radio">추가</label>
                     <label><input id="merge_button" type="radio" name="mode_radio">병합</label>
                     <label><input id="edit_button" type="radio" name="mode_radio">편집</label>
+                </span>
+                <span class="executionButton_span">
                     <input id="detect_button" type="button" value="탐지">
                     <input id="recognize_button" type="button" value="인식">
                     <input id="translate_button" type="button" value="번역">
@@ -158,7 +160,7 @@ document.getElementById("imagefile_input").addEventListener("change", async _ =>
 });
 
 document.getElementById("detect_button").addEventListener("click", async _ => {
-    document.getElementById("detect_button").disabled = true;
+    document.querySelectorAll("executionButton_span *").forEach(element => element.disabled = true);
     let status_span = document.getElementById("status_span");
     status_span.innerText = `0/${imageList.length}`;
     for(let i = 0; i < imageList.length; i++) {
@@ -188,11 +190,11 @@ document.getElementById("detect_button").addEventListener("click", async _ => {
         if (i == imageViewer.viewOptions.page) imageViewer._setItems();
         status_span.innerText = `${i+1}/${imageList.length}`;
     }
-    document.getElementById("detect_button").disabled = null;
+    document.querySelectorAll("executionButton_span *").forEach(element => element.disabled = null);
 });
 
 document.getElementById("recognize_button").addEventListener("click", async _ => {
-    document.getElementById("recognize_button").disabled = true;
+    document.querySelectorAll("executionButton_span *").forEach(element => element.disabled = true);
     let status_span = document.getElementById("status_span");
     status_span.innerText = `0/${imageList.length}`;
     for(let i = 0; i < imageList.length; i++) {
@@ -248,11 +250,11 @@ document.getElementById("recognize_button").addEventListener("click", async _ =>
         }
         status_span.innerText = `${i+1}/${imageList.length}`;
     }
-    document.getElementById("recognize_button").disabled = null;
+    document.querySelectorAll("executionButton_span *").forEach(element => element.disabled = null);
 });
 
 document.getElementById("translate_button").addEventListener("click", async _ => {
-    document.getElementById("translate_button").disabled = true;
+    document.querySelectorAll("executionButton_span *").forEach(element => element.disabled = true);
     let status_span = document.getElementById("status_span");
     status_span.innerText = `0/${imageList.length}`;
     for(let i = 0; i < imageList.length; i++) {
@@ -272,7 +274,7 @@ document.getElementById("translate_button").addEventListener("click", async _ =>
         if (i == imageViewer.viewOptions.page) imageViewer._setItems();
         status_span.innerText = `${i+1}/${imageList.length}`;
     }
-    document.getElementById("translate_button").disabled = null;
+    document.querySelectorAll("executionButton_span *").forEach(element => element.disabled = null);
 });
 
 document.getElementById("open_button").addEventListener("click", _ => {
@@ -536,7 +538,7 @@ document.addEventListener("click", e => {
         let textbox_list = imageList[imageViewer.viewOptions.page]?.textboxes;
         let sorted_target_list = document.elementsFromPoint(e.clientX, e.clientY).filter(e => e.classList?.contains("imageViewer_overlayTextBoxDiv")).sort((a, b) => (a.offsetWidth * a.offsetHeight) - (b.offsetWidth * b.offsetHeight));
 
-        if (document.getElementById("toggle_button").checked == false) {
+        if (document.getElementById("delete_button").checked == false) {
             if (document.elementsFromPoint(e.clientX, e.clientY).find(e => e == imageViewer.viewerDiv)) {
                 e.stopPropagation();
             }
@@ -573,7 +575,7 @@ document.addEventListener("click", e => {
                 }
             }
         }
-        else if (document.getElementById("toggle_button").checked == true) {
+        else if (document.getElementById("delete_button").checked == true) {
             if (sorted_target_list.length > 0) {
                 let merged_textboxes = textbox_list.flatMap(textbox => textbox.merged_textboxes).filter(textbox => textbox);
                 for (let target of sorted_target_list) {
