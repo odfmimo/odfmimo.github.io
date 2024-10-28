@@ -86,6 +86,7 @@ class ComplexEncoder(json.JSONEncoder):
 
 async def _detect(img, args=None):
     args = parser.parse_args(['--target-lang=KOR', '--inpainter=none', '--use-gpu', '--translator=papago'] + (args or []))
+    print(args)
     args_dict = vars(args)
     translator = MangaTranslator(args_dict)
     
@@ -167,18 +168,21 @@ def home():
 
 @app.route('/detect', methods=['POST'])
 async def detect():
+    args = [f"{key}={value}" if value else f"{key}" for key, value in request.args.items()]
     img = Image.open(request.files['file'])
-    return await _detect(img)
+    return await _detect(img, args)
 
 @app.route('/recognize', methods=['POST'])
 async def recognize():
+    args = [f"{key}={value}" if value else f"{key}" for key, value in request.args.items()]
     img = Image.open(request.files['file'])
-    return await _recognize(img)
+    return await _recognize(img, args)
 
 @app.route('/translate', methods=['POST'])
 async def translate():
+    args = [f"{key}={value}" if value else f"{key}" for key, value in request.args.items()]
     texts = json.loads(request.values['texts'])
-    return await _translate(texts)
+    return await _translate(texts, args)
 
 if __name__ == '__main__':
     app.run('0.0.0.0', port=5000)
