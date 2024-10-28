@@ -301,7 +301,8 @@ document.getElementById("translate_button").addEventListener("click", async _ =>
         });
         let results = await response.json();
         for (let j = 0; j < textboxes.length; j++) {
-            textboxes[j].result = results[j].result;
+            let result = results.find(result => result.text == textboxes[j].text);
+            if (result) textboxes[j].result = result.result;
         }
 
         if (i == imageViewer.viewOptions.page) imageViewer._setItems();
