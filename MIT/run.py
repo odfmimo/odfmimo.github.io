@@ -151,7 +151,7 @@ async def _translate(texts, args=None):
     results = []
     for text_region in ctx.text_regions:
         print(vars(text_region))
-        results.append({"result": text_region.translation})
+        results.append({"text": text_region.text, "result": text_region.translation})
 
     return results
 
