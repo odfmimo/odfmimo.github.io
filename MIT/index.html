@@ -60,6 +60,11 @@
                     <label><input id="merge_button" type="radio" name="mode_radio">병합</label>
                     <label><input id="edit_button" type="radio" name="mode_radio">편집</label>
                 </span>
+                <span class="moduleSelect_span">
+                    <select id="detector_select"><option value="">탐지기</option></select>
+                    <select id="recognizer_select"><option value="">인식기</option></select>
+                    <select id="translator_select"><option value="">번역기</option></select>
+                </span>
                 <span class="executionButton_span">
                     <input id="detect_button" type="button" value="탐지">
                     <input id="recognize_button" type="button" value="인식">
@@ -91,6 +96,34 @@
 var OCRS = [{% for each in OCRS %}"{{ each }}", {% endfor %}];
 var DETECTORS = [{% for each in DETECTORS %}"{{ each }}", {% endfor %}];
 var TRANSLATORS = [{% for each in TRANSLATORS %}"{{ each }}", {% endfor %}];
+
+for (let OCR of OCRS) {
+    let option = document.createElement('option');
+    option.innerText = OCR;
+    document.getElementById('recognizer_select').append(option);
+}
+for (let DETECTOR of DETECTORS) {
+    let option = document.createElement('option');
+    option.innerText = DETECTOR;
+    document.getElementById('detector_select').append(option);
+}
+for (let TRANSLATOR of TRANSLATORS) {
+    let option = document.createElement('option');
+    option.innerText = TRANSLATOR;
+    document.getElementById('translator_select').append(option);
+}
+
+function get_args() {
+    let recognizer = document.getElementById('recognizer_select').value;
+    let detector = document.getElementById('detector_select').value;
+    let translator = document.getElementById('translator_select').value;
+
+    let args = [];
+    if (recognizer != "") args.push("--ocr=" + encodeURIComponent(recognizer));
+    if (detector != "") args.push("--detector=" + encodeURIComponent(detector));
+    if (translator != "") args.push("--translator=" + encodeURIComponent(translator));
+    return args.join("&");
+}
 
 var imageViewer_div = document.getElementById("imageViewer_div");
 var imageViewer = new ImageViewer(imageViewer_div);
@@ -167,7 +200,7 @@ document.getElementById("detect_button").addEventListener("click", async _ => {
         let file = imageList[i].file;
         let data = new FormData();
         data.append('file', file);
-        let response = await fetch('/detect', {
+        let response = await fetch('/detect?' + get_args(), {
             method: 'POST',
             body: data
         });
@@ -220,7 +253,7 @@ document.getElementById("recognize_button").addEventListener("click", async _ =>
                                 let file = new File([blob], "temp.png")
                                 let data = new FormData();
                                 data.append('file', file);
-                                let response = await fetch('/recognize', {
+                                let response = await fetch('/recognize?' + get_args(), {
                                     method: 'POST',
                                     body: data
                                 });
@@ -262,7 +295,7 @@ document.getElementById("translate_button").addEventListener("click", async _ =>
         let texts = textboxes.map(textbox => textbox.text);
         let data = new FormData();
         data.append('texts', JSON.stringify(texts));
-        let response = await fetch('/translate', {
+        let response = await fetch('/translate?' + get_args(), {
             method: 'POST',
             body: data
         });
