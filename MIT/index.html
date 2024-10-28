@@ -119,9 +119,9 @@ function get_args() {
     let translator = document.getElementById('translator_select').value;
 
     let args = [];
-    if (recognizer != "") args.push("--ocr=" + encodeURIComponent(recognizer));
-    if (detector != "") args.push("--detector=" + encodeURIComponent(detector));
-    if (translator != "") args.push("--translator=" + encodeURIComponent(translator));
+    if (recognizer != "") args.push(encodeURIComponent("--ocr") + "=" + encodeURIComponent(recognizer));
+    if (detector != "") args.push(encodeURIComponent("--detector") + "=" + encodeURIComponent(detector));
+    if (translator != "") args.push(encodeURIComponent("--translator") + "=" + encodeURIComponent(translator));
     return args.join("&");
 }
 
