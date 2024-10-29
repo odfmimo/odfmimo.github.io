@@ -50,34 +50,6 @@ from manga_translator.save import save_result
 
 from manga_translator.utils import TextBlock, Quadrilateral, det_rearrange_forward
 
-async def main():
-    args = parser.parse_args(['--target-lang=KOR', '--inpainter=none', '--use-gpu'])
-    args_dict = vars(args)
-    translator = MangaTranslator(args_dict)
-
-    path = r''
-    dest = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'temp.png')
-    
-    params = args_dict
-    ctx = Context(**params)
-    translator._preprocess_params(ctx)
-
-    img = Image.open(path)
-    ctx.input = img
-    ctx.result = None
-
-    ctx.img_colorized = ctx.input
-    ctx.upscaled = ctx.img_colorized
-
-    ctx.img_rgb, ctx.img_alpha = load_image(ctx.upscaled)
-    ctx.textlines, ctx.mask_raw, ctx.mask = await translator._run_detection(ctx)
-    ctx.textlines = await translator._run_ocr(ctx)
-    ctx.text_regions = await translator._run_textline_merge(ctx)
-    ctx.text_regions = await translator._run_text_translation(ctx)
-    await translator._revert_upscale(ctx)
-
-    #os.remove(dest)
-
 class ComplexEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.generic): return obj.item()
