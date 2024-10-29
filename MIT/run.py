@@ -57,7 +57,7 @@ class ComplexEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 async def _detect(img, args=None):
-    args = parser.parse_args(['--target-lang=KOR', '--inpainter=none', '--use-gpu', '--translator=papago'] + (args or []))
+    args = parser.parse_args(['--inpainter=none', '--use-gpu'] + (args or []))
     args_dict = vars(args)
     translator = MangaTranslator(args_dict)
     
@@ -85,7 +85,7 @@ async def _detect(img, args=None):
     return text_regions
 
 async def _recognize(img, args=None):
-    args = parser.parse_args(['--target-lang=KOR', '--inpainter=none', '--use-gpu', '--translator=papago'] + (args or []))
+    args = parser.parse_args(['--inpainter=none', '--use-gpu'] + (args or []))
     args_dict = vars(args)
     translator = MangaTranslator(args_dict)
     
@@ -109,7 +109,7 @@ async def _recognize(img, args=None):
     else: return {}
 
 async def _translate(texts, args=None):
-    args = parser.parse_args(['--target-lang=KOR', '--inpainter=none', '--use-gpu', '--translator=papago'] + (args or []))
+    args = parser.parse_args(['--inpainter=none', '--target-lang=KOR', '--translator=papago'] + (args or []))
     args_dict = vars(args)
     translator = MangaTranslator(args_dict)
     
