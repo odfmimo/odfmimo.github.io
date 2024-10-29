@@ -11,7 +11,7 @@
         <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap" rel="stylesheet">
         <style>
             .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv.imageViewer_overlayTextBoxDiv_undefined
-            { /*outline : calc(2px/var(--scale)) solid blue;*/ background-color: rgba(0, 0, 255, .5); }
+            { background-color: rgba(0, 0, 255, .5); }
             .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv.imageViewer_overlayTextBoxDiv_undefined > *
             { display: none; }
             .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv.imageViewer_overlayTextBoxDiv_hidden
@@ -19,9 +19,11 @@
             .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv.imageViewer_overlayTextBoxDiv_hidden > *
             { display: none; }
             .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv.imageViewer_overlayTextBoxDiv_selected
-            { /*outline : calc(2px/var(--scale)) solid green;*/ background-color: rgba(0, 255, 0, .5); }
+            { background-color: rgba(0, 255, 0, .5); }
+            .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv.imageViewer_overlayTextBoxDiv_selected > imageViewer_overlayTextDiv
+            { opacity: .5; }
             .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv.imageViewer_overlayTextBoxDiv_error
-            { /*outline : calc(2px/var(--scale)) solid green;*/ background-color: rgba(255, 0, 0, .5); }
+            { background-color: rgba(255, 0, 0, .5); }
 
             #main_div {
                 position: absolute; top: 0; bottom : 0; left: 0; right : 0;
