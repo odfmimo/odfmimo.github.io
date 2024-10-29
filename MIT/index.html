@@ -451,9 +451,9 @@ document.getElementById("editNext_button").addEventListener("click", e => {
 [...document.querySelectorAll("input[name='mode_radio']")].forEach(radio => {
     radio.addEventListener("change", e => {
         if (document.getElementById("edit_button").checked) {
-            show_edit_div();
             document.getElementById("edit_div").style.display = "initial";
             imageViewer._setItems();
+            show_edit_div();
         }
         else {
             [...imageViewer.viewerDiv.getElementsByClassName("imageViewer_overlayTextBoxDiv_selected")].forEach(div => div.classList.remove("imageViewer_overlayTextBoxDiv_selected"));
