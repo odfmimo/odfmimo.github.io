@@ -129,6 +129,24 @@ function get_args() {
 
 var imageViewer_div = document.getElementById("imageViewer_div");
 var imageViewer = new ImageViewer(imageViewer_div);
+(_ => {
+    let temp = ImageViewer.prototype._setItems;
+    ImageViewer.prototype._setItems = function(...arguments) {
+        temp.apply(this, arguments);
+        let textbox_list = imageList[imageViewer.viewOptions.page].textboxes;
+        if (textbox_list) {
+            textbox_list.forEach((textbox, index) => {
+                let target = imageViewer.viewerDiv.getElementsByClassName("imageViewer_overlayTextBoxDiv")[index];
+                if (textbox.text === undefined) target.classList.add("imageViewer_overlayTextBoxDiv_undefined");
+                else target.classList.remove("imageViewer_overlayTextBoxDiv_undefined");
+                if (textbox.hidden === true) target.classList.add("imageViewer_overlayTextBoxDiv_hidden");
+                else target.classList.remove("imageViewer_overlayTextBoxDiv_hidden");
+                if (textbox.text !== undefined && !textbox.font_size) target.classList.add("imageViewer_overlayTextBoxDiv_error");
+                else target.classList.remove("imageViewer_overlayTextBoxDiv_error");
+            });
+        }
+    };
+})();
 
 [...document.querySelectorAll(".fileSelect_span")].forEach(span => {
     let file_input = span.querySelector(`input[type="file"]`);
@@ -636,7 +654,7 @@ document.addEventListener("click", e => {
     }
 }, true);
 
-(new MutationObserver(mutationList => {
+/*(new MutationObserver(mutationList => {
     let textbox_list = imageList[imageViewer.viewOptions.page].textboxes;
     if (textbox_list) {
         textbox_list.forEach((textbox, index) => {
@@ -649,7 +667,7 @@ document.addEventListener("click", e => {
             else target.classList.remove("imageViewer_overlayTextBoxDiv_error");
         });
     }
-})).observe(imageViewer.overlayDiv, { childList: true, subtree: true });
+})).observe(imageViewer.overlayDiv, { childList: true, subtree: true });*/
 
         </script>
     </body>
