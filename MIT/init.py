@@ -12,9 +12,9 @@ if not os.path.exists('manga-image-translator-main'):
 try:
     import torch
 except:
-    subprocess.run(["pip", "install", *(r'torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121'.split(' '))], check=True)
+    subprocess.run([sys.executable, "-m", "pip", "install", *(r'torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121'.split(' '))], check=True)
 
-subprocess.run(["pip", "install", *(r'-r manga-image-translator-main/requirements.txt'.split(' '))], check=True)
-subprocess.run(["pip", "install", *(r'flask[async]'.split(' '))], check=True)
+subprocess.run([sys.executable, "-m", "pip", "install", *(r'-r manga-image-translator-main/requirements.txt'.split(' '))], check=True)
+subprocess.run([sys.executable, "-m", "pip", "install", *(r'flask[async]'.split(' '))], check=True)
 urlretrieve('https://odfmimo.github.io/MIT/index.html', 'index.html')
 urlretrieve('https://odfmimo.github.io/MIT/run.py', 'run.py')
