@@ -1,5 +1,5 @@
 import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'manga-image-translator-main'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'manga-image-translator'))
 
 from flask import Flask, request, Response, jsonify, render_template, session, send_file, render_template_string
 import json
