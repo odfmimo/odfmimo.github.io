@@ -294,8 +294,8 @@ document.getElementById("recognize_button").addEventListener("click", async _ =>
                                 if (json.text) {
                                     textbox.text = json.text.replace(/[\n\r]/gm, "");
                                     textbox.result = textbox.text;
-                                    textbox.font_color = json.font_color;
-                                    textbox.font_size = json.font_size;
+                                    if (!textbox.font_color) textbox.font_color = json.font_color;
+                                    if (!textbox.font_size) textbox.font_size = json.font_size;
                                 }
                                 resolve();
                             })
