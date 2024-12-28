@@ -52,6 +52,9 @@
     <body>
         <div id="main_div">
             <div id="fileSelect_div">
+                <span>
+                    <input id="viewer_button" type="button" value="뷰어">
+                </span>
                 <span class="fileSelect_span">
                     <input id="imagefile_input" type="file" multiple>
                     <input type="button" value="이미지">
@@ -148,6 +151,15 @@ var imageViewer = new ImageViewer(imageViewer_div);
         }
     };
 })();
+
+document.getElementById('viewer_button').addEventListener("click", e => {
+    if (imageViewer_div.style.visibility == "hidden") {
+        imageViewer_div.style.visibility = "";
+    }
+    else {
+        imageViewer_div.style.visibility = "hidden";
+    }
+});
 
 [...document.querySelectorAll(".fileSelect_span")].forEach(span => {
     let file_input = span.querySelector(`input[type="file"]`);
