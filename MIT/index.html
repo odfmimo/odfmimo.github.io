@@ -9,6 +9,7 @@
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/nosleep/0.12.0/NoSleep.min.js"></script>
         <style>
             .imageViewer_contentDiv .imageViewer_overlayTextBoxDiv.imageViewer_overlayTextBoxDiv_undefined
             { background-color: rgba(0, 0, 255, .5); }
@@ -653,6 +654,12 @@ document.addEventListener("click", e => {
         }
     }
 }, true);
+
+var noSleep = new NoSleep();
+document.addEventListener('click', function enableNoSleep() {
+    document.removeEventListener('click', enableNoSleep, false);
+    noSleep.enable();
+}, false);
 
 /*(new MutationObserver(mutationList => {
     let textbox_list = imageList[imageViewer.viewOptions.page].textboxes;
