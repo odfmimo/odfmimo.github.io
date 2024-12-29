@@ -1,4 +1,5 @@
 @echo off
+cd %~dp0
 
 python -m venv .venv
 mkdir manga-image-translator
