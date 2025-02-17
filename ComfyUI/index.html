@@ -499,10 +499,14 @@
                         let content = await zip.generateAsync({type:"blob"});
                         const url = window.URL.createObjectURL(content);
                         const iframe = document.createElement('iframe');
-                        iframe.src = url;
+                        iframe.addEventListener('load', _ => {
+                            let a = iframe.contentDocument.createElement('a');
+                            a.href = url;
+                            a.click();
+                            iframe.remove();
+                            window.URL.revokeObjectURL(url);
+                        }, { once: true });
                         document.body.appendChild(iframe);
-                        iframe.remove();
-                        window.URL.revokeObjectURL(url);
                     },
                     view(index) {
                         history.pushState({image_number: index}, "");
