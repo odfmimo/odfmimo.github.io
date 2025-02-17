@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/css/bootstrap.min.css">
+        <link rel="shortcut icon" href="#">
+    </head>
+    <body>
+        <div id="app">
+            <div class="position-absolute w-100 h-100 bg-black" v-if="image_number != null">
+                <div class="w-100 h-100 carousel slide">
+                    <div class="w-100 h-100 carousel-inner">
+                        <div class="w-100 h-100 carousel-item active">
+                            <img class="w-100 h-100 object-fit-scale" :src="images[image_number]['src']">
+                        </div>
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-slide="prev" @click="image_number = Math.max(0, image_number - 1)">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-slide="next" @click="image_number = Math.min(images.length - 1, image_number + 1)">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    </button>                    
+                </div>
+            </div>
+            <div v-else>
+                <div v-if="object_info">
+                    <div class="border-bottom">
+                        <div v-if="editing">
+                            <div class="d-flex flex-wrap p-3 gap-3">
+                                <div class="d-flex gap-3" style="max-width: 100%;">
+                                    <input class="form-control flex-shrink-1" style="width: 20em;" :class="{'is-invalid': editing.name.trim() == ''}" v-model="editing.name">
+                                    <button type="button" class="btn btn-success" @click="save">Save</button>
+                                    <button type="button" class="btn btn-secondary" @click="editing=null">Cancel</button>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <button type="button" class="btn btn-secondary" @click="add">Add</button>
+                                    <button type="button" class="btn btn-secondary" @click="clone">Clone</button>
+                                    <button type="button" class="btn btn-secondary" @click="remove">Remove</button>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-column p-3 gap-3">
+                                <div class="d-flex flex-wrap gap-3">
+                                    <div>
+                                        Checkpoint
+                                        <select class="form-select" style="max-width: 30em;" v-model="editing.workflow.checkpoint">
+                                            <option v-for="checkpoint in object_info['CheckpointLoaderSimple']['input']['required']['ckpt_name'][0]" :value="checkpoint">{{ checkpoint }}</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        CLIP Set Last Layer
+                                        <div class="input-group">
+                                            <div class="input-group-text">
+                                                <input class="form-check-input mt-0" type="checkbox" v-model="editing.workflow.clip_set_last_layer_bool">
+                                            </div>
+                                            <input type="number" class="form-control" :step="object_info['CLIPSetLastLayer']['input']['required']['stop_at_clip_layer'][1]['step']" :min="object_info['CLIPSetLastLayer']['input']['required']['stop_at_clip_layer'][1]['min']" :max="object_info['CLIPSetLastLayer']['input']['required']['stop_at_clip_layer'][1]['max']" :disabled="!editing.workflow.clip_set_last_layer_bool" v-model="editing.workflow.stop_at_clip_layer" >   
+                                        </div>                             
+                                    </div>
+                                    <div>
+                                        Size Preset
+                                        <select class="form-select" v-model="editing.workflow.size_preset">
+                                            <option v-for="size_preset in object_info['EmptyLatentImageFromPresetsSDXL']['input']['required']['preset'][0]" :value="size_preset">{{ size_preset }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <div>
+                                        Steps
+                                        <input type="number" class="form-control" :step="object_info['KSampler']['input']['required']['steps'][1]['step']" :min="object_info['KSampler']['input']['required']['steps'][1]['min']" :max="object_info['KSampler']['input']['required']['steps'][1]['max']" v-model="editing.workflow.steps">
+                                    </div>
+                                    <div>
+                                        CFG
+                                        <input type="number" class="form-control" :step="object_info['KSampler']['input']['required']['cfg'][1]['step']" :min="object_info['KSampler']['input']['required']['cfg'][1]['min']" :max="object_info['KSampler']['input']['required']['cfg'][1]['max']" v-model="editing.workflow.cfg">
+                                    </div>
+                                    <div>
+                                        Sampler
+                                        <select class="form-select" v-model="editing.workflow.sampler_name">
+                                            <option v-for="sampler_name in object_info['KSampler']['input']['required']['sampler_name'][0]" :value="sampler_name">{{ sampler_name }}</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        Scheduler
+                                        <select class="form-select" v-model="editing.workflow.scheduler">
+                                            <option v-for="scheduler in object_info['KSampler']['input']['required']['scheduler'][0]" :value="scheduler">{{ scheduler }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div>
+                                        <input class="form-check-input" type="checkbox" v-model="editing.workflow.face_detailer_bool">
+                                        Face Detailer
+                                    </div>
+                                </div>
+                                <div>
+                                    Positive Base
+                                    <textarea class="form-control" v-model="editing.workflow.positive_text"></textarea>
+                                </div>
+                                <div>
+                                    Negative Base
+                                    <textarea class="form-control" v-model="editing.workflow.negative_text"></textarea>
+                                </div>
+                                <div>
+                                    Regional Conditioning
+                                    <div class="d-flex flex-column gap-1" v-if="editing.workflow.condition">
+                                        <div class="card" v-for="condition in editing.workflow.condition">
+                                            <div class="card-body">
+                                                <div class="d-flex flex-column gap-3">
+                                                    <div>
+                                                        <button type="button" class="btn btn-secondary" @click="remove_condition(condition)">Remove</button>
+                                                    </div>
+                                                    <div class="d-flex gap-3">
+                                                        <div>
+                                                            Width
+                                                            <input type="number" class="form-control" :step="object_info['ConditioningSetAreaPercentage']['input']['required']['width'][1]['step']" :min="object_info['ConditioningSetAreaPercentage']['input']['required']['width'][1]['min']" :max="object_info['ConditioningSetAreaPercentage']['input']['required']['width'][1]['max']" v-model="condition.width">
+                                                        </div>
+                                                        <div>
+                                                            Height
+                                                            <input type="number" class="form-control" :step="object_info['ConditioningSetAreaPercentage']['input']['required']['height'][1]['step']" :min="object_info['ConditioningSetAreaPercentage']['input']['required']['height'][1]['min']" :max="object_info['ConditioningSetAreaPercentage']['input']['required']['height'][1]['max']" v-model="condition.height">
+                                                        </div>
+                                                        <div>
+                                                            X
+                                                            <input type="number" class="form-control" :step="object_info['ConditioningSetAreaPercentage']['input']['required']['x'][1]['step']" :min="object_info['ConditioningSetAreaPercentage']['input']['required']['x'][1]['min']" :max="object_info['ConditioningSetAreaPercentage']['input']['required']['x'][1]['max']" v-model="condition.x">
+                                                        </div>
+                                                        <div>
+                                                            Y
+                                                            <input type="number" class="form-control" :step="object_info['ConditioningSetAreaPercentage']['input']['required']['y'][1]['step']" :min="object_info['ConditioningSetAreaPercentage']['input']['required']['y'][1]['min']" :max="object_info['ConditioningSetAreaPercentage']['input']['required']['y'][1]['max']" v-model="condition.y">
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        Text
+                                                        <textarea class="form-control" v-model="condition.text"></textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="pt-1">
+                                        <button type="button" class="btn btn-secondary" @click="add_condition">Add</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else>
+                            <div class="d-flex flex-wrap p-3 gap-3">
+                                <div class="d-flex gap-3" style="max-width: 100%;">
+                                    <select class="form-select flex-shrink-1" style="width: 20em;" v-model="workflow_name">
+                                        <option v-for="workflow in workflows" :value="workflow.name">{{ workflow.name }}</option>
+                                    </select>
+                                    <button type="button" class="btn btn-secondary" @click="edit">Edit</button>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <div class="input-group" style="flex-wrap: nowrap;">
+                                        <button type="button" class="btn btn-primary" @click="queue">Queue</button>
+                                        <input type="number" class="form-control" min="1" max="100" step="1" v-model="batch_count">
+                                    </div>
+                                    <button type="button" class="btn btn-danger text-nowrap" @click="stop">
+                                        Stop <span class="badge text-bg-secondary">{{ queue_remaining }}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column p-3 gap-3">
+                        <div class="d-flex gap-3">
+                            <button type="button" class="btn btn-secondary" @click="connect">Refresh</button>
+                            <button type="button" class="btn btn-dark" @click="clear">Clear</button>
+                            <button type="button" class="btn btn-light" @click="download">Download</button>
+                        </div>
+                        <div class="container">
+                            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+                                <img v-for="(image, index) in images" :src="image['src']" @click="view(index)">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap p-3 pb-0 gap-3" v-else>
+                    <input class="form-control flex-shrink-1" style="width: 30em;" v-model="server_address">
+                    <button type="button" class="btn btn-primary" @click="connect">Connect</button>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
+        <script type="module">
+            if (history.state != null) history.back();
+
+            const uuid41 = () => ('xxxxxxxx-xxxx-4xxx-Nxxx-xxxxxxxxxxxx'
+                .replace(/x/g, () =>  ((Math.random()*16)|0).toString(16))
+                .replace(/N/g, () => ((Math.random()*4)|0 + 8).toString(16)));
+
+            var client_id = uuid41();
+            
+            import { createApp, toRaw } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+
+            createApp({
+                data() {
+                    return {
+                        server_address: "",
+                        object_info: null,
+                        workflow_name: null,
+                        workflows: [],
+                        editing: null,
+                        queue_remaining: 0,
+                        batch_count: 1,
+                        images: [],
+                        image_number: null,
+                    }
+                },
+                methods: {
+                    load_setting() {
+                        let setting = JSON.parse(localStorage.getItem('comfyui')) ?? {};
+                        this.server_address = setting.server_address ?? 'http://127.0.0.1:8188';
+                        this.workflows = setting.workflows ?? [];
+                    },
+                    save_setting() {
+                        localStorage.setItem('comfyui', JSON.stringify({
+                            server_address: this.server_address,
+                            workflows: this.workflows,
+                        }));
+                    },
+                    get_default(class_type) {
+                        let inputs = {};
+                        let object_info = this.object_info[class_type];
+                        for (let [key, value] of Object.entries(object_info['input']['required'])) {
+                            if (!(key in inputs)) {
+                                if (value[1] instanceof Object && 'default' in value[1]) {
+                                    inputs[key] = value[1]?.['default'];
+                                }
+                                else if (Array.isArray(value[0])) {
+                                    inputs[key] = value[0][0];
+                                }
+                                else inputs[key] = null;
+                            }
+                        }
+                        return inputs;
+                    },
+                    async queue(event) {
+                        for (let _ of Array(this.batch_count)) {
+                            let workflow = null;
+                            if (this.editing) {
+                                workflow = this.editing.workflow;
+                            }
+                            else if (this.workflow_name) {
+                                workflow = this.workflows.find(workflow => workflow.name == this.workflow_name).workflow
+                            }
+                            else return
+                            
+                            workflow = structuredClone(toRaw(workflow));
+                            let prompt = {};
+                            const add_node = (class_type, inputs_ = {}) => {
+                                let inputs = structuredClone(inputs_);
+                                let object_info = this.object_info[class_type];
+                                for (let [key, value] of Object.entries(object_info['input']['required'])) {
+                                    if (!(key in inputs)) {
+                                        if (value[1] instanceof Object && 'default' in value[1]) {
+                                            inputs[key] = value[1]?.['default'];
+                                        }
+                                        else if (Array.isArray(value[0])) {
+                                            inputs[key] = value[0][0];
+                                        }
+                                        else {
+                                            if (value[0] == "STRING") {
+                                                inputs[key] = "";
+                                            }
+                                        }
+                                    }
+                                }
+                                let node = {class_type, inputs};
+
+                                let key = String(Math.max(0, ...Object.keys(prompt).map(key => Number(key))) + 1);
+                                prompt[key] = node;
+                                
+                                let outputs = {};
+                                for (let [index, output_name] of object_info['output_name'].entries()) {
+                                    outputs[output_name] = [key, index];
+                                }
+                                return outputs;
+                            };
+
+                            let CheckpointLoaderSimple_node = add_node('CheckpointLoaderSimple', {ckpt_name: workflow.checkpoint});
+                            let model_output = CheckpointLoaderSimple_node['MODEL'];
+                            let clip_output = CheckpointLoaderSimple_node['CLIP'];
+                            let vae_output = CheckpointLoaderSimple_node['VAE'];
+
+                            if (workflow.clip_set_last_layer_bool) {
+                                let CLIPSetLastLayer_node = add_node('CLIPSetLastLayer', {stop_at_clip_layer: workflow.stop_at_clip_layer, clip: clip_output});
+                                clip_output = CLIPSetLastLayer_node['CLIP'];
+                            }
+
+                            let CLIPTextEncode_positive_node = add_node('CLIPTextEncode', {text: workflow.positive_text, clip: clip_output});
+                            let positive_output = CLIPTextEncode_positive_node['CONDITIONING'];
+                            let CLIPTextEncode_negative_node = add_node('CLIPTextEncode', {text: workflow.negative_text, clip: clip_output});
+                            let negative_output = CLIPTextEncode_negative_node['CONDITIONING'];
+
+                            if (workflow.condition) {
+                                for (let condition of workflow.condition) {
+                                    let CLIPTextEncode_node = add_node('CLIPTextEncode', {text: condition.text, clip: clip_output});
+                                    let ConditioningSetAreaPercentage_node = add_node('ConditioningSetAreaPercentage', {
+                                        conditioning: CLIPTextEncode_node['CONDITIONING'],
+                                        width: condition.width, height: condition.height, x: condition.x, y: condition.y
+                                    });
+                                    let ConditioningConcat_node = add_node('ConditioningConcat', {conditioning_to: positive_output, conditioning_from: ConditioningSetAreaPercentage_node['CONDITIONING']});
+                                    positive_output = ConditioningConcat_node['CONDITIONING'];
+                                }
+                            }
+
+                            let EmptyLatentImageFromPresetsSDXL_node = add_node('EmptyLatentImageFromPresetsSDXL', {preset: workflow.size_preset});
+
+                            let KSampler_seed_info = this.object_info['KSampler']['input']['required']['seed'][1];
+                            let KSampler_seed = Math.floor(Math.random() * (KSampler_seed_info['max'] - KSampler_seed_info['min']) + KSampler_seed_info['min']);
+                            let KSampler_node = add_node('KSampler', {
+                                model: model_output,positive: positive_output, negative: negative_output, latent_image: EmptyLatentImageFromPresetsSDXL_node['latent'],
+                                seed: KSampler_seed, steps: workflow.steps, cfg: workflow.cfg, sampler_name: workflow.sampler_name, scheduler: workflow.scheduler,
+                            });
+                            
+                            let VAEDecode_node = add_node('VAEDecode', {samples: KSampler_node['LATENT'], vae: vae_output});
+                            let image_output = VAEDecode_node['IMAGE'];
+
+                            if (workflow.face_detailer_bool) {
+                                let UltralyticsDetectorProvider_node = add_node('UltralyticsDetectorProvider');
+                                let FaceDetailer_seed_info = this.object_info['FaceDetailer']['input']['required']['seed'][1];
+                                let FaceDetailer_seed = Math.floor(Math.random() * (FaceDetailer_seed_info['max'] - FaceDetailer_seed_info['min']) + FaceDetailer_seed_info['min']);
+                                let FaceDetailer_node = add_node('FaceDetailer', {
+                                    image: image_output, model: model_output, clip: clip_output, vae: vae_output, positive: positive_output, negative: negative_output,
+                                    seed: FaceDetailer_seed, steps: workflow.steps, cfg: workflow.cfg, sampler_name: workflow.sampler_name, scheduler: workflow.scheduler,
+                                    bbox_detector: UltralyticsDetectorProvider_node['BBOX_DETECTOR'],
+                                });
+                                image_output = FaceDetailer_node['image'];
+                            }
+
+                            add_node('PreviewImage', {images: image_output});
+
+                            let prompt_id = await (await fetch(`${this.server_address}/prompt`, {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({"prompt": prompt, "client_id": client_id}),
+                            })).json()['prompt_id'];
+                        }
+                    },
+                    async stop() {
+                        await fetch(`${this.server_address}/queue`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({"clear": true}),
+                        });
+                        await fetch(`${this.server_address}/interrupt`, {
+                            method: "POST",
+                        });
+                    },
+                    edit() {
+                        if (this.workflow_name) {
+                            this.editing = structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name)));
+                            this.editing.name_ = this.workflow_name;
+                        }
+                        else this.add();
+                    },
+                    add() {
+                        let default_CheckpointLoaderSimple = this.get_default('CheckpointLoaderSimple');
+                        let default_EmptyLatentImageFromPresetsSDXL = this.get_default('EmptyLatentImageFromPresetsSDXL');
+                        let default_KSampler = this.get_default('KSampler');
+                        let default_CLIPSetLastLayer = this.get_default('CLIPSetLastLayer');
+                        this.editing = {
+                            name: "",
+                            workflow: {
+                                checkpoint: default_CheckpointLoaderSimple['ckpt_name'],
+                                size_preset: default_EmptyLatentImageFromPresetsSDXL['preset'],
+                                steps: default_KSampler['steps'],
+                                cfg: default_KSampler['cfg'],
+                                sampler_name: default_KSampler['sampler_name'],
+                                scheduler: default_KSampler['scheduler'],
+                                stop_at_clip_layer: default_CLIPSetLastLayer['stop_at_clip_layer'],
+                            }
+                        };
+                    },
+                    clone() {
+                        if (this.workflow_name) {
+                            this.editing = {
+                                name: "",
+                                workflow: structuredClone(toRaw(this.editing.workflow))
+                            };
+                        }
+                    },
+                    remove() {
+                        if (this.workflow_name) {
+                            this.workflows = this.workflows.filter(workflow => workflow.name != this.workflow_name);
+                            this.save_setting();
+                        }
+                        this.editing = null;
+                    },
+                    save() {
+                        if (this.editing.name.trim() != "") {
+                            if (this.editing.name_ && this.editing.name_ != this.editing.name) {
+                                this.workflows = this.workflows.filter(workflow => workflow.name != this.editing.name_);
+                            }
+                            let target = this.workflows.find(workflow => workflow.name == this.editing.name);
+                            if (target) {
+                                target.workflow = structuredClone(toRaw(this.editing.workflow));
+                            }
+                            else {
+                                this.workflows.push(structuredClone(toRaw(this.editing)));
+                            }
+                            this.save_setting();
+
+                            this.workflow_name = this.editing.name;
+                            this.editing = null;
+                        }
+                    },
+                    add_condition() {
+                        if (!this.editing.workflow.condition) {
+                            this.editing.workflow.condition = [];
+                        }
+                        let default_ConditioningSetAreaPercentage = this.get_default('ConditioningSetAreaPercentage');
+                        this.editing.workflow.condition.push({
+                            width: default_ConditioningSetAreaPercentage['width'],
+                            height: default_ConditioningSetAreaPercentage['height'],
+                            x: default_ConditioningSetAreaPercentage['x'],
+                            y: default_ConditioningSetAreaPercentage['y'],
+                        })
+                    },
+                    remove_condition(condition) {
+                        let idx = this.editing.workflow.condition.indexOf(condition);
+                        this.editing.workflow.condition.splice(idx, 1);
+                    },
+                    async connect() {
+                        await new Promise(resolve => {
+                            try {
+                                this.ws.close();
+                            } catch (e) {}
+                            console.log("Connecting...");
+                            this.ws = new WebSocket(`${this.server_address}/ws?clientId=${client_id}`);
+                            this.ws.addEventListener("open", (event) => {
+                                console.log("WebSocket is open");
+                                resolve();
+                            });
+                            this.ws.addEventListener("close", (event) => {
+                                console.log("WebSocket is closed");
+                            });
+                            this.ws.addEventListener("error", (event => {
+                                console.log("WebSocket error:", event.data);
+                            }));
+
+                            this.ws.addEventListener("message", async event => {
+                                console.log("Message from server:", event.data);
+
+                                let message = JSON.parse(event.data);
+                                if (message['type'] == 'status') {
+                                    let data = message['data'];
+                                    let queue_remaining = data['status']?.['exec_info']?.['queue_remaining'];
+                                    if (queue_remaining != null) {
+                                        this.queue_remaining = queue_remaining;
+                                    }
+
+                                    let images = [];
+                                    Object.values((await (await fetch(`${this.server_address}/history`)).json()))
+                                        .sort((a, b) => (a['prompt']?.[0] > b['prompt']?.[0]))
+                                        .forEach(history => {
+                                            for (let node_id of Object.keys(history['outputs'])) {
+                                                let node_output = history['outputs'][node_id];
+                                                if ('images' in node_output) {
+                                                    for (let image of node_output['images']) {
+                                                        let data = {"filename": image['filename'], "subfolder": image['subfolder'], "type": image['type']};
+                                                        let params = new URLSearchParams(data);
+                                                        let url_values = params.toString();
+                                                        data['src'] = `${this.server_address}/view?${url_values}`;
+                                                        images.push(data);
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    this.images = images;
+                                }
+                            });
+                        });
+                        this.object_info = await (await fetch(`${this.server_address}/object_info`)).json();
+                        this.save_setting();
+                    },
+                    async clear() {
+                        await fetch(`${this.server_address}/history`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({"clear": true}),
+                        });
+                        this.images = [];
+                    },
+                    async download() {
+                        var zip = new JSZip();
+                        for (let image of this.images) {
+                            let response = await fetch(image.src);
+                            let blob = await response.blob();
+                            zip.file(image.filename, blob);
+                        }
+                        let content = await zip.generateAsync({type:"blob"});
+                        const url = window.URL.createObjectURL(content);
+                        const iframe = document.createElement('iframe');
+                        iframe.src = url;
+                        document.body.appendChild(iframe);
+                        iframe.remove();
+                        window.URL.revokeObjectURL(url);
+                    },
+                    view(index) {
+                        history.pushState({image_number: index}, "");
+                        this.image_number = index;
+                    },
+                },
+                async created() {
+                    this.load_setting();
+                    addEventListener('popstate', e => {
+                        if (history.state == null) {
+                            this.image_number = null;
+                        }
+                    });
+                },
+                watch: {
+                    workflows() {
+                        if (!this.workflows.find(workflow => workflow.name == this.workflow_name)) {
+                            if (this.workflows.length > 0) {
+                                this.workflow_name = this.workflows[0].name;
+                            }
+                            else this.workflow_name = null;
+                        }
+                    }
+                }
+            }).mount('#app')
+        </script>
+    </body>
+</html>
