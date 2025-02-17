@@ -29,14 +29,18 @@
                         <div v-if="editing">
                             <div class="d-flex flex-wrap p-3 gap-3">
                                 <div class="d-flex gap-2" style="max-width: 100%;">
-                                    <input class="form-control flex-shrink-1" style="width: 20em; min-width: 0;" :class="{'is-invalid': editing.name.trim() == ''}" v-model="editing.name">
-                                    <button type="button" class="btn btn-success" @click="save">Save</button>
+                                    <input class="form-control flex-shrink-1" style="width: 20em; min-width: 0;" :class="{'is-invalid': !is_valid_name}" v-model="editing.name">
+                                    <button type="button" class="btn btn-success" @click="save_workflow">Save</button>
                                     <button type="button" class="btn btn-secondary" @click="editing=null">Cancel</button>
                                 </div>
                                 <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-secondary" @click="add">Add</button>
-                                    <button type="button" class="btn btn-secondary" @click="clone">Clone</button>
-                                    <button type="button" class="btn btn-secondary" @click="remove">Remove</button>
+                                    <button type="button" class="btn btn-secondary" @click="add_workflow">Add</button>
+                                    <button type="button" class="btn btn-secondary" @click="clone_workflow">Clone</button>
+                                    <button type="button" class="btn btn-secondary" @click="remove_workflow">Remove</button>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-secondary" @click="upload_workflow">Upload</button>
+                                    <button type="button" class="btn btn-secondary" @click="download_workflow">Download</button>
                                 </div>
                             </div>
                             <div class="d-flex flex-column p-3 gap-3">
@@ -146,7 +150,7 @@
                                     <select class="form-select flex-shrink-1" style="width: 20em; min-width: 0;" v-model="workflow_name">
                                         <option v-for="workflow in workflows" :value="workflow.name">{{ workflow.name }}</option>
                                     </select>
-                                    <button type="button" class="btn btn-secondary" @click="edit">Edit</button>
+                                    <button type="button" class="btn btn-secondary" @click="edit_workflow">Edit</button>
                                 </div>
                                 <div class="d-flex gap-2">
                                     <div class="input-group" style="flex-wrap: nowrap;">
@@ -163,12 +167,12 @@
                     <div class="d-flex flex-column p-3 gap-3">
                         <div class="d-flex gap-2">
                             <button type="button" class="btn btn-secondary" @click="connect">Refresh</button>
-                            <button type="button" class="btn btn-dark" @click="clear">Clear</button>
-                            <button type="button" class="btn btn-light" @click="download">Download</button>
+                            <button type="button" class="btn btn-dark" @click="clear_history">Clear</button>
+                            <button type="button" class="btn btn-light" @click="download_images">Download</button>
                         </div>
                         <div class="container">
                             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
-                                <img v-for="(image, index) in images" :src="image['src']" @click="view(index)">
+                                <img v-for="(image, index) in images" :src="image['src']" @click="view_image(index)">
                             </div>
                         </div>
                     </div>
@@ -208,12 +212,12 @@
                     }
                 },
                 methods: {
-                    load_setting() {
-                        let setting = JSON.parse(localStorage.getItem('comfyui')) ?? {};
-                        this.server_address = setting.server_address ?? 'http://127.0.0.1:8188';
-                        this.workflows = setting.workflows ?? [];
+                    load_settings() {
+                        let settings = JSON.parse(localStorage.getItem('comfyui')) ?? {};
+                        this.server_address = settings.server_address ?? 'http://127.0.0.1:8188';
+                        this.workflows = settings.workflows ?? [];
                     },
-                    save_setting() {
+                    save_settings() {
                         localStorage.setItem('comfyui', JSON.stringify({
                             server_address: this.server_address,
                             workflows: this.workflows,
@@ -352,14 +356,14 @@
                             method: "POST",
                         });
                     },
-                    edit() {
+                    edit_workflow() {
                         if (this.workflow_name) {
                             this.editing = structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name)));
                             this.editing.name_ = this.workflow_name;
                         }
-                        else this.add();
+                        else this.add_workflow();
                     },
-                    add() {
+                    add_workflow() {
                         let default_CheckpointLoaderSimple = this.get_default('CheckpointLoaderSimple');
                         let default_EmptyLatentImageFromPresetsSDXL = this.get_default('EmptyLatentImageFromPresetsSDXL');
                         let default_KSampler = this.get_default('KSampler');
@@ -377,7 +381,7 @@
                             }
                         };
                     },
-                    clone() {
+                    clone_workflow() {
                         if (this.workflow_name) {
                             this.editing = {
                                 name: "",
@@ -385,15 +389,15 @@
                             };
                         }
                     },
-                    remove() {
+                    remove_workflow() {
                         if (this.workflow_name) {
                             this.workflows = this.workflows.filter(workflow => workflow.name != this.workflow_name);
-                            this.save_setting();
+                            this.save_settings();
                         }
                         this.editing = null;
                     },
-                    save() {
-                        if (this.editing.name.trim() != "") {
+                    save_workflow() {
+                        if (this.is_valid_name) {
                             if (this.editing.name_ && this.editing.name_ != this.editing.name) {
                                 this.workflows = this.workflows.filter(workflow => workflow.name != this.editing.name_);
                             }
@@ -404,11 +408,48 @@
                             else {
                                 this.workflows.push(structuredClone(toRaw(this.editing)));
                             }
-                            this.save_setting();
+                            this.save_settings();
 
                             this.workflow_name = this.editing.name;
                             this.editing = null;
                         }
+                    },
+                    upload_workflow() {
+                        let input = document.createElement('input');
+                        input.type = 'file';
+                        input.style.display = 'none';
+                        input.addEventListener('change', _ => {
+                            for (let file of input.files) {
+                                const reader = new FileReader();
+                                reader.addEventListener('load', _ => {
+                                    let workflow = JSON.parse(reader.result);
+                                    workflow.name_ = "";
+                                    this.editing = workflow;
+                                });
+                                reader.readAsText(file);
+                            }
+                        });
+                        input.click();
+                    },
+                    download_workflow() {
+                        let workflow = {
+                            name: this.editing.name,
+                            workflow: structuredClone(toRaw(this.editing.workflow))
+                        };
+                        let url = window.URL.createObjectURL(new Blob([JSON.stringify(workflow)], {type: 'application/octet-stream'}));
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.addEventListener('load', _ => {
+                            let a = iframe.contentDocument.createElement('a');
+                            a.download = 'settings.json'
+                            a.href = url;
+                            a.click();
+                            setTimeout(_ => {
+                                iframe.remove();
+                                window.URL.revokeObjectURL(url);
+                            }, 100);
+                        }, { once: true });
+                        document.body.appendChild(iframe);
                     },
                     add_condition() {
                         if (!this.editing.workflow.condition) {
@@ -477,9 +518,9 @@
                             });
                         });
                         this.object_info = await (await fetch(`${this.server_address}/object_info`)).json();
-                        this.save_setting();
+                        this.save_settings();
                     },
-                    async clear() {
+                    async clear_history() {
                         await fetch(`${this.server_address}/history`, {
                             method: "POST",
                             headers: {
@@ -489,7 +530,7 @@
                         });
                         this.images = [];
                     },
-                    async download() {
+                    async download_images() {
                         var zip = new JSZip();
                         for (let image of this.images) {
                             let response = await fetch(image.src);
@@ -498,32 +539,42 @@
                         }
                         let content = await zip.generateAsync({type:"blob"});
                         const url = window.URL.createObjectURL(content);
-                        // const iframe = document.createElement('iframe');
-                        // iframe.addEventListener('load', _ => {
-                        //     let a = iframe.contentDocument.createElement('a');
-                        //     a.href = url;
-                        //     a.click();
-                        //     iframe.remove();
-                        //     window.URL.revokeObjectURL(url);
-                        // }, { once: true });
-                        let a = document.createElement('a');
-                        a.href = url;
-                        a.click();
-                        a.remove();
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.addEventListener('load', _ => {
+                            let a = iframe.contentDocument.createElement('a');
+                            a.href = url;
+                            a.click();
+                            setTimeout(_ => {
+                                iframe.remove();
+                                window.URL.revokeObjectURL(url);
+                            }, 100);
+                        }, { once: true });
                         document.body.appendChild(iframe);
                     },
-                    view(index) {
+                    view_image(index) {
                         history.pushState({image_number: index}, "");
                         this.image_number = index;
                     },
                 },
                 async created() {
-                    this.load_setting();
+                    this.load_settings();
                     addEventListener('popstate', e => {
                         if (history.state == null) {
                             this.image_number = null;
                         }
                     });
+                },
+                computed: {
+                    is_valid_name() {
+                        if (this.editing) {
+                            if (this.editing.name.trim() == "") return false;
+                            if (!this.editing.name_) {
+                                if (this.workflows.find(workflow => workflow.name == this.editing.name)) return false;
+                            }
+                        }
+                        return true;
+                    }
                 },
                 watch: {
                     workflows() {
