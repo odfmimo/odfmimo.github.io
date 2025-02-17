@@ -498,14 +498,18 @@
                         }
                         let content = await zip.generateAsync({type:"blob"});
                         const url = window.URL.createObjectURL(content);
-                        const iframe = document.createElement('iframe');
-                        iframe.addEventListener('load', _ => {
-                            let a = iframe.contentDocument.createElement('a');
-                            a.href = url;
-                            a.click();
-                            iframe.remove();
-                            window.URL.revokeObjectURL(url);
-                        }, { once: true });
+                        // const iframe = document.createElement('iframe');
+                        // iframe.addEventListener('load', _ => {
+                        //     let a = iframe.contentDocument.createElement('a');
+                        //     a.href = url;
+                        //     a.click();
+                        //     iframe.remove();
+                        //     window.URL.revokeObjectURL(url);
+                        // }, { once: true });
+                        let a = document.createElement('a');
+                        a.href = url;
+                        a.click();
+                        a.remove();
                         document.body.appendChild(iframe);
                     },
                     view(index) {
