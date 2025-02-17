@@ -29,7 +29,7 @@
                         <div v-if="editing">
                             <div class="d-flex flex-wrap p-3 gap-3">
                                 <div class="d-flex gap-3" style="max-width: 100%;">
-                                    <input class="form-control flex-shrink-1" style="width: 20em;" :class="{'is-invalid': editing.name.trim() == ''}" v-model="editing.name">
+                                    <input class="form-control flex-shrink-1" style="width: 20em; min-width: 0;" :class="{'is-invalid': editing.name.trim() == ''}" v-model="editing.name">
                                     <button type="button" class="btn btn-success" @click="save">Save</button>
                                     <button type="button" class="btn btn-secondary" @click="editing=null">Cancel</button>
                                 </div>
@@ -143,7 +143,7 @@
                         <div v-else>
                             <div class="d-flex flex-wrap p-3 gap-3">
                                 <div class="d-flex gap-3" style="max-width: 100%;">
-                                    <select class="form-select flex-shrink-1" style="width: 20em;" v-model="workflow_name">
+                                    <select class="form-select flex-shrink-1" style="width: 20em; min-width: 0;" v-model="workflow_name">
                                         <option v-for="workflow in workflows" :value="workflow.name">{{ workflow.name }}</option>
                                     </select>
                                     <button type="button" class="btn btn-secondary" @click="edit">Edit</button>
@@ -174,7 +174,7 @@
                     </div>
                 </div>
                 <div class="d-flex flex-wrap p-3 pb-0 gap-3" v-else>
-                    <input class="form-control flex-shrink-1" style="width: 30em;" v-model="server_address">
+                    <input class="form-control flex-shrink-1" style="width: 30em; min-width: 0;" v-model="server_address">
                     <button type="button" class="btn btn-primary" @click="connect">Connect</button>
                 </div>
             </div>
