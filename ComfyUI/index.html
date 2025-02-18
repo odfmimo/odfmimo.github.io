@@ -573,6 +573,11 @@
                             this.image_number = null;
                         }
                     });
+                    let server_address = (new URLSearchParams(location.search)).get('server_address');
+                    if (server_address) {
+                        this.server_address = server_address;
+                        await this.connect();
+                    }
                 },
                 computed: {
                     is_valid_name() {
