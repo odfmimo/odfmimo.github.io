@@ -216,12 +216,23 @@
                         let settings = JSON.parse(localStorage.getItem('comfyui')) ?? {};
                         this.server_address = settings.server_address ?? 'http://127.0.0.1:8188';
                         this.workflows = settings.workflows ?? [];
+                        this.workflow_name = settings.workflow_name;
                     },
                     save_settings() {
                         localStorage.setItem('comfyui', JSON.stringify({
                             server_address: this.server_address,
                             workflows: this.workflows,
+                            workflow_name: this.workflow_name,
                         }));
+                    },
+                    watch_settings() {
+                        if (!this.workflows.find(workflow => workflow.name == this.workflow_name)) {
+                            if (this.workflows.length > 0) {
+                                this.workflow_name = this.workflows[0].name;
+                            }
+                            else this.workflow_name = null;
+                        }
+                        this.save_settings();
                     },
                     get_default(class_type) {
                         let inputs = {};
@@ -392,7 +403,6 @@
                     remove_workflow() {
                         if (this.workflow_name) {
                             this.workflows = this.workflows.filter(workflow => workflow.name != this.workflow_name);
-                            this.save_settings();
                         }
                         this.editing = null;
                     },
@@ -408,7 +418,6 @@
                             else {
                                 this.workflows.push(structuredClone(toRaw(this.editing)));
                             }
-                            this.save_settings();
 
                             this.workflow_name = this.editing.name;
                             this.editing = null;
@@ -578,12 +587,10 @@
                 },
                 watch: {
                     workflows() {
-                        if (!this.workflows.find(workflow => workflow.name == this.workflow_name)) {
-                            if (this.workflows.length > 0) {
-                                this.workflow_name = this.workflows[0].name;
-                            }
-                            else this.workflow_name = null;
-                        }
+                        this.watch_settings();
+                    },
+                    workflow_name() {
+                        this.watch_settings();
                     }
                 }
             }).mount('#app')
