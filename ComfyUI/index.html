@@ -458,7 +458,7 @@
                             iframe.style.display = 'none';
                             iframe.addEventListener('load', _ => {
                                 let a = iframe.contentDocument.createElement('a');
-                                a.download = 'settings.json'
+                                a.download = `${workflow.name}.json`
                                 a.href = url;
                                 a.click();
                                 setTimeout(_ => {
