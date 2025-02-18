@@ -3,8 +3,8 @@
     <head>
         <title>ComfyUI</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/css/bootstrap.min.css">
         <link rel="shortcut icon" href="#">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/css/bootstrap.min.css">
     </head>
     <body>
         <div id="app">
@@ -33,17 +33,8 @@
                                     <button type="button" class="btn btn-success" @click="save_workflow">Save</button>
                                     <button type="button" class="btn btn-secondary" @click="editing=null">Cancel</button>
                                 </div>
-                                <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-secondary" @click="add_workflow">Add</button>
-                                    <button type="button" class="btn btn-secondary" @click="clone_workflow">Clone</button>
-                                    <button type="button" class="btn btn-secondary" @click="remove_workflow">Remove</button>
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-secondary" @click="upload_workflow">Upload</button>
-                                    <button type="button" class="btn btn-secondary" @click="download_workflow">Download</button>
-                                </div>
                             </div>
-                            <div class="d-flex flex-column p-3 gap-3">
+                            <div class="d-flex flex-column p-3 gap-3" @input="autocomplete_input($event)" @focusout="filtered_autocomplete = null">
                                 <div class="d-flex flex-wrap gap-3">
                                     <div>
                                         Checkpoint
@@ -142,6 +133,13 @@
                                         <button type="button" class="btn btn-secondary" @click="add_condition">Add</button>
                                     </div>
                                 </div>
+                                <div class="position-absolute overflow-x-auto" ref="autocomplete">
+                                    <ul class="list-group list-group-horizontal" v-if="filtered_autocomplete">
+                                        <li class="list-group-item text-nowrap" v-for="item in filtered_autocomplete">
+                                            <span>{{ item.name }}</span><span class="badge text-bg-secondary">{{ item.count }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                         <div v-else>
@@ -150,7 +148,18 @@
                                     <select class="form-select flex-shrink-1" style="width: 20em; min-width: 0;" v-model="workflow_name">
                                         <option v-for="workflow in workflows" :value="workflow.name">{{ workflow.name }}</option>
                                     </select>
-                                    <button type="button" class="btn btn-secondary" @click="edit_workflow">Edit</button>
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-secondary" @click="edit_workflow">Edit</button>
+                                        <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-reference="parent"></button>
+                                        <ul class="dropdown-menu">
+                                            <li><span class="dropdown-item" @click="add_workflow">Add</span></li>
+                                            <li><span class="dropdown-item" @click="clone_workflow">Clone</span></li>
+                                            <li><span class="dropdown-item" @click="remove_workflow">Remove</span></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><span class="dropdown-item" @click="upload_workflow">Upload</span></li>
+                                            <li><span class="dropdown-item" @click="download_workflow">Download</span></li>
+                                        </ul>
+                                    </div>                                      
                                 </div>
                                 <div class="d-flex gap-2">
                                     <div class="input-group" style="flex-wrap: nowrap;">
@@ -166,8 +175,8 @@
                     </div>
                     <div class="d-flex flex-column p-3 gap-3">
                         <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-secondary" @click="connect">Refresh</button>
-                            <button type="button" class="btn btn-dark" @click="clear_history">Clear</button>
+                            <button type="button" class="btn btn-dark" @click="connect">Refresh</button>
+                            <button type="button" class="btn btn-secondary" @click="clear_history">Clear</button>
                             <button type="button" class="btn btn-light" @click="download_images">Download</button>
                         </div>
                         <div class="container">
@@ -210,6 +219,7 @@
                         batch_count: 1,
                         images: [],
                         image_number: null,
+                        filtered_autocomplete: null,
                     }
                 },
                 methods: {
@@ -397,7 +407,7 @@
                         if (this.workflow_name) {
                             this.editing = {
                                 name: "",
-                                workflow: structuredClone(toRaw(this.editing.workflow))
+                                workflow: structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name).workflow))
                             };
                         }
                     },
@@ -405,7 +415,6 @@
                         if (this.workflow_name) {
                             this.workflows = this.workflows.filter(workflow => workflow.name != this.workflow_name);
                         }
-                        this.editing = null;
                     },
                     save_workflow() {
                         if (this.is_valid_name) {
@@ -433,7 +442,7 @@
                                 const reader = new FileReader();
                                 reader.addEventListener('load', _ => {
                                     let workflow = JSON.parse(reader.result);
-                                    workflow.name_ = "";
+                                    workflow.name_ = undefined;
                                     this.editing = workflow;
                                 });
                                 reader.readAsText(file);
@@ -442,24 +451,23 @@
                         input.click();
                     },
                     download_workflow() {
-                        let workflow = {
-                            name: this.editing.name,
-                            workflow: structuredClone(toRaw(this.editing.workflow))
-                        };
-                        let url = window.URL.createObjectURL(new Blob([JSON.stringify(workflow)], {type: 'application/octet-stream'}));
-                        const iframe = document.createElement('iframe');
-                        iframe.style.display = 'none';
-                        iframe.addEventListener('load', _ => {
-                            let a = iframe.contentDocument.createElement('a');
-                            a.download = 'settings.json'
-                            a.href = url;
-                            a.click();
-                            setTimeout(_ => {
-                                iframe.remove();
-                                window.URL.revokeObjectURL(url);
-                            }, 100);
-                        }, { once: true });
-                        document.body.appendChild(iframe);
+                        if (this.workflow_name) {
+                            let workflow = structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name)));
+                            let url = window.URL.createObjectURL(new Blob([JSON.stringify(workflow)], {type: 'application/octet-stream'}));
+                            const iframe = document.createElement('iframe');
+                            iframe.style.display = 'none';
+                            iframe.addEventListener('load', _ => {
+                                let a = iframe.contentDocument.createElement('a');
+                                a.download = 'settings.json'
+                                a.href = url;
+                                a.click();
+                                setTimeout(_ => {
+                                    iframe.remove();
+                                    window.URL.revokeObjectURL(url);
+                                }, 100);
+                            }, { once: true });
+                            document.body.appendChild(iframe);
+                        }
                     },
                     add_condition() {
                         if (!this.editing.workflow.condition) {
@@ -501,7 +509,6 @@
                                     this.ws = null;
                                 }
                             }));
-
                             ws.addEventListener("message", async event => {
                                 console.log("Message from server:", event.data);
 
@@ -535,6 +542,12 @@
                             });
                         });
                         this.object_info = await (await fetch(`${this.server_address}/object_info`)).json();
+                        this.autocomplete = (await (await fetch(`${this.server_address}/pysssss/autocomplete`)).text())
+                            .split('\n').map(item => item.split(','))
+                            .map(item => ({
+                                name: ['(', ')', '[', ']'].reduce((acc, cur) => acc.replaceAll(cur, '\\' + cur), item[0].trim().replaceAll('_', ' ')),
+                                count: Number(item[1].trim())
+                            }));
                         this.save_settings();
                     },
                     async clear_history() {
@@ -572,6 +585,24 @@
                     view_image(index) {
                         history.pushState({image_number: index}, "");
                         this.image_number = index;
+                    },
+                    autocomplete_input(event) {
+                        let target = event.target;
+                        let text = target.value;
+                        let end = event.target.selectionEnd;
+                        let start = text.substring(0, end).lastIndexOf(',');
+                        let segment = text.substring(start+1, end).trim();
+                        if (segment != "") {
+                            let result = this.autocomplete.filter(autocomplete => autocomplete.name.includes(segment));
+                            this.filtered_autocomplete = result.slice(0, 25);
+                            let target_rect = target.getBoundingClientRect();
+                            let parent_rect = this.$refs.autocomplete.offsetParent.getBoundingClientRect();
+                            this.$refs.autocomplete.style.top = `${target_rect.top - parent_rect.top}px`;
+                            this.$refs.autocomplete.style.left = `${target_rect.left - parent_rect.left}px`;
+                            this.$refs.autocomplete.style.width = `${target_rect.width}px`;
+                            this.$refs.autocomplete.style.transform = 'translate(0, -100%)';
+                        }
+                        else this.filtered_autocomplete = null;
                     },
                 },
                 async created() {
