@@ -179,7 +179,7 @@
                 </div>
                 <div class="d-flex flex-wrap p-3 pb-0 gap-2" v-else>
                     <input class="form-control flex-shrink-1" style="width: 30em; min-width: 0;" v-model="server_address">
-                    <button type="button" class="btn btn-primary" @click="connect">Connect</button>
+                    <button type="button" class="btn btn-primary" :disabled="ws" @click="connect">Connect</button>
                 </div>
             </div>
         </div>
@@ -200,6 +200,7 @@
             createApp({
                 data() {
                     return {
+                        ws: null,
                         server_address: "",
                         object_info: null,
                         workflow_name: null,
@@ -482,19 +483,26 @@
                                 this.ws.close();
                             } catch (e) {}
                             console.log("Connecting...");
-                            this.ws = new WebSocket(`${this.server_address}/ws?clientId=${client_id}`);
-                            this.ws.addEventListener("open", (event) => {
+                            let ws = new WebSocket(`${this.server_address}/ws?clientId=${client_id}`);
+                            this.ws = ws;
+                            ws.addEventListener("open", (event) => {
                                 console.log("WebSocket is open");
                                 resolve();
                             });
-                            this.ws.addEventListener("close", (event) => {
+                            ws.addEventListener("close", (event) => {
                                 console.log("WebSocket is closed");
+                                if (ws == this.ws) {
+                                    this.ws = null;
+                                }
                             });
-                            this.ws.addEventListener("error", (event => {
+                            ws.addEventListener("error", (event => {
                                 console.log("WebSocket error:", event.data);
+                                if (ws == this.ws) {
+                                    this.ws = null;
+                                }
                             }));
 
-                            this.ws.addEventListener("message", async event => {
+                            ws.addEventListener("message", async event => {
                                 console.log("Message from server:", event.data);
 
                                 let message = JSON.parse(event.data);
