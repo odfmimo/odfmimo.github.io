@@ -58,6 +58,34 @@
                                         </select>
                                     </div>
                                 </div>
+                                <div>
+                                    Lora
+                                    <div class="d-flex flex-column align-items-start gap-1" v-if="editing.workflow.lora">
+                                        <div class="card" v-for="lora in editing.workflow.lora">
+                                            <div class="card-body">
+                                                <div class="d-flex flex-wrap gap-3">
+                                                    <div>
+                                                        Lora Name
+                                                        <select class="form-select" v-model="lora.lora_name">
+                                                            <option v-for="lora_name in object_info['LoraLoader']['input']['required']['lora_name'][0]" :value="lora_name">{{ lora_name }}</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        Strength Model
+                                                        <input type="number" class="form-control" :step="object_info['LoraLoader']['input']['required']['strength_model'][1]['step']" :min="object_info['LoraLoader']['input']['required']['strength_model'][1]['min']" :max="object_info['LoraLoader']['input']['required']['strength_model'][1]['max']" v-model="lora.strength_model">
+                                                    </div>
+                                                    <div>
+                                                        Strength Clip
+                                                        <input type="number" class="form-control" :step="object_info['LoraLoader']['input']['required']['strength_clip'][1]['step']" :min="object_info['LoraLoader']['input']['required']['strength_clip'][1]['min']" :max="object_info['LoraLoader']['input']['required']['strength_clip'][1]['max']" v-model="lora.strength_clip">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="pt-1">
+                                        <button type="button" class="btn btn-secondary" @click="add_lora">Add</button>
+                                    </div>
+                                </div>
                                 <div class="d-flex flex-wrap gap-3">
                                     <div>
                                         Steps
@@ -309,6 +337,17 @@
                             let clip_output = CheckpointLoaderSimple_node['CLIP'];
                             let vae_output = CheckpointLoaderSimple_node['VAE'];
 
+                            if (workflow.lora) {
+                                for (let lora of workflow.lora) {
+                                    let LoraLoader_node = add_node('LoraLoader', {
+                                        model: model_output, clip: clip_output,
+                                        lora_name: lora.lora_name, strength_model: lora.strength_model, strength_clip: lora.strength_clip,
+                                    });
+                                    model_output = LoraLoader_node['MODEL'];
+                                    clip_output = LoraLoader_node['CLIP'];
+                                }
+                            }
+
                             if (workflow.clip_set_last_layer_bool) {
                                 let CLIPSetLastLayer_node = add_node('CLIPSetLastLayer', {stop_at_clip_layer: workflow.stop_at_clip_layer, clip: clip_output});
                                 clip_output = CLIPSetLastLayer_node['CLIP'];
@@ -469,6 +508,21 @@
                             document.body.appendChild(iframe);
                         }
                     },
+                    add_lora() {
+                        if (!this.editing.workflow.lora) {
+                            this.editing.workflow.lora = [];
+                        }
+                        let default_LoraLoader = this.get_default('LoraLoader');
+                        this.editing.workflow.lora.push({
+                            lora_name: default_LoraLoader['lora_name'],
+                            strength_model: default_LoraLoader['strength_model'],
+                            strength_clip: default_LoraLoader['strength_clip'],
+                        });
+                    },
+                    remove_lora(lora) {
+                        let idx = this.editing.workflow.lora.indexOf(lora);
+                        this.editing.workflow.lora.splice(idx, 1);
+                    },
                     add_condition() {
                         if (!this.editing.workflow.condition) {
                             this.editing.workflow.condition = [];
@@ -479,7 +533,7 @@
                             height: default_ConditioningSetAreaPercentage['height'],
                             x: default_ConditioningSetAreaPercentage['x'],
                             y: default_ConditioningSetAreaPercentage['y'],
-                        })
+                        });
                     },
                     remove_condition(condition) {
                         let idx = this.editing.workflow.condition.indexOf(condition);
