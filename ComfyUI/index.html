@@ -467,10 +467,8 @@
                         if (this.is_valid_name) {
                             if (this.editing.name_) {
                                 let target = this.workflows.find(workflow => workflow.name == this.editing.name_);
-                                target = {
-                                    name: this.editing.name,
-                                    workflow: structuredClone(toRaw(this.editing.workflow))
-                                }
+                                target.name = this.editing.name;
+                                target.workflow: structuredClone(toRaw(this.editing.workflow));
                             }
                             else {
                                 this.workflows.push({
