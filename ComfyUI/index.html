@@ -465,12 +465,12 @@
                     },
                     save_workflow() {
                         if (this.is_valid_name) {
-                            if (this.editing.name_ && this.editing.name_ != this.editing.name) {
-                                this.workflows = this.workflows.filter(workflow => workflow.name != this.editing.name_);
-                            }
-                            let target = this.workflows.find(workflow => workflow.name == this.editing.name);
-                            if (target) {
-                                target.workflow = structuredClone(toRaw(this.editing.workflow));
+                            if (this.editing.name_) {
+                                let target = this.workflows.find(workflow => workflow.name == this.editing.name_);
+                                target = {
+                                    name: this.editing.name,
+                                    workflow: structuredClone(toRaw(this.editing.workflow))
+                                }
                             }
                             else {
                                 this.workflows.push({
