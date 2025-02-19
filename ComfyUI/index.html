@@ -451,7 +451,7 @@
                     clone_workflow() {
                         if (this.workflow_name) {
                             this.editing = {
-                                name: "",
+                                name: this.workflow_name,
                                 workflow: structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name).workflow))
                             };
                         }
@@ -471,7 +471,10 @@
                                 target.workflow = structuredClone(toRaw(this.editing.workflow));
                             }
                             else {
-                                this.workflows.push(structuredClone(toRaw(this.editing)));
+                                this.workflows.push({
+                                    name: this.editing.name,
+                                    workflow: structuredClone(toRaw(this.editing.workflow))
+                                });
                             }
 
                             this.workflow_name = this.editing.name;
