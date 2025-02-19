@@ -707,7 +707,7 @@
                     is_valid_name() {
                         if (this.editing) {
                             if (this.editing.name.trim() == "") return false;
-                            if (!this.editing.name_) {
+                            if (!this.editing.name_ || this.editing.name != this.editing.name_) {
                                 if (this.workflows.find(workflow => workflow.name == this.editing.name)) return false;
                             }
                         }
