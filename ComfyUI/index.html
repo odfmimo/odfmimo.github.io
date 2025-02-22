@@ -18,20 +18,20 @@
                 <div class="w-100 h-100 carousel slide">
                     <div class="w-100 h-100 carousel-inner">
                         <div class="w-100 h-100 carousel-item active">
-                            <img class="w-100 h-100 object-fit-scale" :src="images[image_number]['src']">
+                            <img class="w-100 h-100 object-fit-scale" :src="tab_images[image_number]['src']">
                         </div>
                     </div>
                     <button class="carousel-control-prev" type="button" data-bs-slide="prev" @click="image_number = Math.max(0, image_number - 1)">
                         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                     </button>
-                    <button class="carousel-control-next" type="button" data-bs-slide="next" @click="image_number = Math.min(images.length - 1, image_number + 1)">
+                    <button class="carousel-control-next" type="button" data-bs-slide="next" @click="image_number = Math.min(tab_images.length - 1, image_number + 1)">
                         <span class="carousel-control-next-icon" aria-hidden="true"></span>
                     </button>                    
                 </div>
             </div>
             <div v-else>
                 <div v-if="object_info">
-                    <div class="border-bottom">
+                    <div>
                         <div v-if="editing">
                             <div class="d-flex flex-wrap p-3 gap-3">
                                 <div class="d-flex gap-2" style="max-width: 100%;">
@@ -207,15 +207,27 @@
                             </div>
                         </div>
                     </div>
-                    <div class="d-flex flex-column p-3 gap-3">
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-dark" @click="connect">Refresh</button>
-                            <button type="button" class="btn btn-secondary" @click="clear_history">Clear</button>
-                            <button type="button" class="btn btn-light" @click="download_images">Download</button>
-                        </div>
-                        <div class="container">
-                            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
-                                <img v-for="(image, index) in images" :src="image['src']" @click="view_image(index)">
+                    <div>
+                        <ul class="nav nav-tabs">
+                            <li class="nav-item">
+                                <span class="nav-link" :class="{active: tab_index==null}" @click="tab_index=null">Uncategorized</span>
+                            </li>
+                            <li class="nav-item" v-for="(tab, index) in tabs">
+                                <span class="nav-link" :class="{active: tab_index==index}" @click="tab_index=index">Tab {{ index }}</span>
+                            </li>
+                            <li class="nav-item">
+                                <span class="nav-link" @click="add_tab">+</span>
+                            </li>
+                        </ul>
+                        <div class="d-flex flex-column p-3 gap-3">
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-secondary" @click="remove_tab(tab_index)">Remove</button>
+                                <button type="button" class="btn btn-dark" @click="download_images">Download</button>
+                            </div>
+                            <div class="container">
+                                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+                                    <img v-for="(image, index) in tab_images" :src="image['src']" @click="view_image(index)">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -256,6 +268,8 @@
                         images: [],
                         image_number: null,
                         filtered_autocomplete: null,
+                        tabs: [],
+                        tab_index: null,
                     }
                 },
                 methods: {
@@ -404,13 +418,17 @@
 
                             add_node('PreviewImage', {images: image_output});
 
-                            let prompt_id = await (await fetch(`${this.server_address}/prompt`, {
+                            let prompt_id = (await (await fetch(`${this.server_address}/prompt`, {
                                 method: "POST",
                                 headers: {
                                     "Content-Type": "application/json",
                                 },
                                 body: JSON.stringify({"prompt": prompt, "client_id": client_id}),
-                            })).json()['prompt_id'];
+                            })).json())['prompt_id'];
+
+                            if (this.tab_index != null) {
+                                this.tabs[this.tab_index].push(prompt_id);
+                            }
                         }
                     },
                     async stop() {
@@ -460,7 +478,17 @@
                     },
                     remove_workflow() {
                         if (this.workflow_name) {
-                            this.workflows = this.workflows.filter(workflow => workflow.name != this.workflow_name);
+                            let index = this.workflows.findIndex(workflow => workflow.name == this.workflow_name);
+                            this.workflows.splice(index, 1);
+                            if (this.workflows.length == 0) {
+                                this.workflow_name = null;
+                            }
+                            else if (index < this.workflows.length) {
+                                this.workflow_name = this.workflows[index].name;
+                            }
+                            else {
+                                this.workflow_name = this.workflows[this.workflows.length - 1].name;
+                            }
                         }
                     },
                     save_workflow() {
@@ -548,6 +576,18 @@
                         let idx = this.editing.workflow.condition.indexOf(condition);
                         this.editing.workflow.condition.splice(idx, 1);
                     },
+                    add_tab() {
+                        this.tabs.push([]);
+                        this.tab_index = this.tabs.length - 1;
+                    },
+                    remove_tab(tab_index) {
+                        if (tab_index !== null) {
+                            this.tabs.splice(tab_index, 1);
+                            if (this.tab_index >= this.tabs.length) {
+                                this.tab_index = this.tabs.length - 1;
+                            }
+                        }
+                    },
                     async connect() {
                         await new Promise(resolve => {
                             try {
@@ -595,6 +635,7 @@
                                                         let params = new URLSearchParams(data);
                                                         let url_values = params.toString();
                                                         data['src'] = `${this.server_address}/view?${url_values}`;
+                                                        data['prompt_id'] = history['prompt']?.[1];
                                                         images.push(data);
                                                     }
                                                 }
@@ -625,7 +666,7 @@
                     },
                     async download_images() {
                         var zip = new JSZip();
-                        for (let image of this.images) {
+                        for (let image of this.tab_images) {
                             let response = await fetch(image.src);
                             let blob = await response.blob();
                             zip.file(image.filename, blob);
@@ -693,7 +734,7 @@
                                 this.image_number = Math.max(0, this.image_number - 1);
                             }
                             else if (e.key == "ArrowRight") {
-                                this.image_number = Math.min(this.images.length - 1, this.image_number + 1);
+                                this.image_number = Math.min(this.tab_images.length - 1, this.image_number + 1);
                             }
                         }
                     });
@@ -712,6 +753,14 @@
                             }
                         }
                         return true;
+                    },
+                    tab_images() {
+                        if (this.tab_index == null) {
+                            return this.images.filter(image => !this.tabs.flat().includes(image['prompt_id']));
+                        }
+                        else {
+                            return this.images.filter(image => this.tabs[this.tab_index].includes(image['prompt_id']));
+                        }
                     }
                 },
                 watch: {
