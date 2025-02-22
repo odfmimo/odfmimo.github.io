@@ -581,9 +581,14 @@
                         this.tab_index = this.tabs.length - 1;
                     },
                     remove_tab(tab_index) {
-                        if (tab_index !== null) {
+                        if (tab_index != null) {
                             this.tabs.splice(tab_index, 1);
-                            if (this.tab_index >= this.tabs.length) {
+                            if (this.tabs.length == 0) {
+                                this.tab_index = null;
+                            }
+                            else if (this.tab_index < this.tabs.length) {
+                            }
+                            else {
                                 this.tab_index = this.tabs.length - 1;
                             }
                         }
