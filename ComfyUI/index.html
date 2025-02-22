@@ -210,7 +210,7 @@
                     <div>
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
-                                <span class="nav-link" :class="{active: tab_index==null}" @click="tab_index=null">Uncategorized</span>
+                                <span class="nav-link" :class="{active: tab_index==null}" @click="tab_index=null">All</span>
                             </li>
                             <li class="nav-item" v-for="(tab, index) in tabs">
                                 <span class="nav-link" :class="{active: tab_index==index}" @click="tab_index=index">Tab {{ index }}</span>
@@ -756,7 +756,7 @@
                     },
                     tab_images() {
                         if (this.tab_index == null) {
-                            return this.images.filter(image => !this.tabs.flat().includes(image['prompt_id']));
+                            return this.images;
                         }
                         else {
                             return this.images.filter(image => this.tabs[this.tab_index].includes(image['prompt_id']));
