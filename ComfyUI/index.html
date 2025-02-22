@@ -213,15 +213,18 @@
                                 <span class="nav-link" :class="{active: tab_index==null}" @click="tab_index=null">All</span>
                             </li>
                             <li class="nav-item" v-for="(tab, index) in tabs">
-                                <span class="nav-link" :class="{active: tab_index==index}" @click="tab_index=index">Tab {{ index }}</span>
+                                <span class="nav-link" :class="{active: tab_index==index}">
+                                    <span @click="tab_index=index">Tab {{ index + 1}}</span>
+                                    <button type="button" class="btn btn-close ms-1" style="padding: 0;" @click="remove_tab(index)"></button>
+                                </span>
                             </li>
                             <li class="nav-item">
-                                <span class="nav-link" @click="add_tab">+</span>
+                                <span class="nav-link" @click="add_tab">Tab {{ tabs.length + 1}}</span>
                             </li>
                         </ul>
                         <div class="d-flex flex-column p-3 gap-3">
                             <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-secondary" @click="remove_tab(tab_index)">Remove</button>
+                                <button type="button" class="btn btn-secondary" @click="clear_tab">Clear</button>
                                 <button type="button" class="btn btn-dark" @click="download_images">Download</button>
                             </div>
                             <div class="container">
@@ -591,6 +594,14 @@
                             else {
                                 this.tab_index = this.tabs.length - 1;
                             }
+                        }
+                    },
+                    clear_tab() {
+                        if (this.tab_index == null) {
+                            this.clear_history();
+                        }
+                        else {
+                            this.tabs[this.tab_index] = [];
                         }
                     },
                     async connect() {
