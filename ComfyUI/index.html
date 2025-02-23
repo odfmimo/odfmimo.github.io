@@ -54,7 +54,7 @@
                                             <div class="input-group-text">
                                                 <input class="form-check-input mt-0" type="checkbox" v-model="editing.workflow.clip_set_last_layer_bool">
                                             </div>
-                                            <input type="number" class="form-control" :step="object_info['CLIPSetLastLayer']['input']['required']['stop_at_clip_layer'][1]['step']" :min="object_info['CLIPSetLastLayer']['input']['required']['stop_at_clip_layer'][1]['min']" :max="object_info['CLIPSetLastLayer']['input']['required']['stop_at_clip_layer'][1]['max']" :disabled="!editing.workflow.clip_set_last_layer_bool" v-model="editing.workflow.stop_at_clip_layer" >   
+                                            <input type="number" class="form-control" :disabled="!editing.workflow.clip_set_last_layer_bool" v-bind="object_info['CLIPSetLastLayer']['input']['required']['stop_at_clip_layer'][1]" v-model="editing.workflow.stop_at_clip_layer" >   
                                         </div>                             
                                     </div>
                                     <div>
@@ -78,11 +78,11 @@
                                                     </div>
                                                     <div>
                                                         Strength Model
-                                                        <input type="number" class="form-control" :step="object_info['LoraLoader']['input']['required']['strength_model'][1]['step']" :min="object_info['LoraLoader']['input']['required']['strength_model'][1]['min']" :max="object_info['LoraLoader']['input']['required']['strength_model'][1]['max']" v-model="lora.strength_model">
+                                                        <input type="number" class="form-control" v-bind="object_info['LoraLoader']['input']['required']['strength_model'][1]" v-model="lora.strength_model">
                                                     </div>
                                                     <div>
                                                         Strength Clip
-                                                        <input type="number" class="form-control" :step="object_info['LoraLoader']['input']['required']['strength_clip'][1]['step']" :min="object_info['LoraLoader']['input']['required']['strength_clip'][1]['min']" :max="object_info['LoraLoader']['input']['required']['strength_clip'][1]['max']" v-model="lora.strength_clip">
+                                                        <input type="number" class="form-control" v-bind="object_info['LoraLoader']['input']['required']['strength_clip'][1]" v-model="lora.strength_clip">
                                                     </div>
                                                 </div>
                                             </div>
@@ -95,11 +95,11 @@
                                 <div class="d-flex flex-wrap gap-3">
                                     <div>
                                         Steps
-                                        <input type="number" class="form-control" :step="object_info['KSampler']['input']['required']['steps'][1]['step']" :min="object_info['KSampler']['input']['required']['steps'][1]['min']" :max="object_info['KSampler']['input']['required']['steps'][1]['max']" v-model="editing.workflow.steps">
+                                        <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['steps'][1]" v-model="editing.workflow.steps">
                                     </div>
                                     <div>
                                         CFG
-                                        <input type="number" class="form-control" :step="object_info['KSampler']['input']['required']['cfg'][1]['step']" :min="object_info['KSampler']['input']['required']['cfg'][1]['min']" :max="object_info['KSampler']['input']['required']['cfg'][1]['max']" v-model="editing.workflow.cfg">
+                                        <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['cfg'][1]" v-model="editing.workflow.cfg">
                                     </div>
                                     <div>
                                         Sampler
@@ -140,19 +140,19 @@
                                                     <div class="d-flex gap-3">
                                                         <div>
                                                             Width
-                                                            <input type="number" class="form-control" :step="object_info['ConditioningSetAreaPercentage']['input']['required']['width'][1]['step']" :min="object_info['ConditioningSetAreaPercentage']['input']['required']['width'][1]['min']" :max="object_info['ConditioningSetAreaPercentage']['input']['required']['width'][1]['max']" v-model="condition.width">
+                                                            <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['width'][1]" v-model="condition.width">
                                                         </div>
                                                         <div>
                                                             Height
-                                                            <input type="number" class="form-control" :step="object_info['ConditioningSetAreaPercentage']['input']['required']['height'][1]['step']" :min="object_info['ConditioningSetAreaPercentage']['input']['required']['height'][1]['min']" :max="object_info['ConditioningSetAreaPercentage']['input']['required']['height'][1]['max']" v-model="condition.height">
+                                                            <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['height'][1]" v-model="condition.height">
                                                         </div>
                                                         <div>
                                                             X
-                                                            <input type="number" class="form-control" :step="object_info['ConditioningSetAreaPercentage']['input']['required']['x'][1]['step']" :min="object_info['ConditioningSetAreaPercentage']['input']['required']['x'][1]['min']" :max="object_info['ConditioningSetAreaPercentage']['input']['required']['x'][1]['max']" v-model="condition.x">
+                                                            <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['x'][1]" v-model="condition.x">
                                                         </div>
                                                         <div>
                                                             Y
-                                                            <input type="number" class="form-control" :step="object_info['ConditioningSetAreaPercentage']['input']['required']['y'][1]['step']" :min="object_info['ConditioningSetAreaPercentage']['input']['required']['y'][1]['min']" :max="object_info['ConditioningSetAreaPercentage']['input']['required']['y'][1]['max']" v-model="condition.y">
+                                                            <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['y'][1]" v-model="condition.y">
                                                         </div>
                                                     </div>
                                                     <div>
