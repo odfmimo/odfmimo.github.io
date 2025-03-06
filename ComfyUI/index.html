@@ -636,6 +636,9 @@
                                     }
                                 });
                             this.images = images;
+                            
+                            let queue = await (await fetch(`${this.server_address}/queue`)).json();
+                            this.queue_remaining = queue['queue_running'].length + queue['queue_pending'].length;
                         }, 100);
                     },
                     async clear_history() {
@@ -676,21 +679,23 @@
                     },
                     autocomplete_input(event) {
                         let target = event.target;
-                        let text = target.value;
-                        let end = event.target.selectionEnd;
-                        let start = text.substring(0, end).lastIndexOf(',');
-                        let segment = text.substring(start+1, end).trim();
-                        if (segment != "") {
-                            let result = this.autocomplete.filter(autocomplete => autocomplete.name.includes(segment));
-                            this.filtered_autocomplete = result.slice(0, 25);
-                            let target_rect = target.getBoundingClientRect();
-                            let parent_rect = this.$refs.autocomplete.offsetParent.getBoundingClientRect();
-                            this.$refs.autocomplete.style.top = `${target_rect.top - parent_rect.top}px`;
-                            this.$refs.autocomplete.style.left = `${target_rect.left - parent_rect.left}px`;
-                            this.$refs.autocomplete.style.width = `${target_rect.width}px`;
-                            this.$refs.autocomplete.style.transform = 'translate(0, -100%)';
+                        if (target.tagName.toLowerCase() == 'textarea') {
+                            let text = target.value;
+                            let end = event.target.selectionEnd;
+                            let start = text.substring(0, end).lastIndexOf(',');
+                            let segment = text.substring(start+1, end).trim();
+                            if (segment != "") {
+                                let result = this.autocomplete.filter(autocomplete => autocomplete.name.includes(segment));
+                                this.filtered_autocomplete = result.slice(0, 25);
+                                let target_rect = target.getBoundingClientRect();
+                                let parent_rect = this.$refs.autocomplete.offsetParent.getBoundingClientRect();
+                                this.$refs.autocomplete.style.top = `${target_rect.top - parent_rect.top}px`;
+                                this.$refs.autocomplete.style.left = `${target_rect.left - parent_rect.left}px`;
+                                this.$refs.autocomplete.style.width = `${target_rect.width}px`;
+                                this.$refs.autocomplete.style.transform = 'translate(0, -100%)';
+                            }
+                            else this.filtered_autocomplete = null;
                         }
-                        else this.filtered_autocomplete = null;
                     },
                 },
                 async created() {
@@ -745,7 +750,7 @@
                         else {
                             return this.images.filter(image => this.tabs[this.tab_index].includes(image['prompt_id']));
                         }
-                    }
+                    },
                 },
                 watch: {
                     workflows() {
@@ -753,7 +758,7 @@
                     },
                     workflow_name() {
                         this.watch_settings();
-                    }
+                    },
                 }
             }).mount('#app')
         </script>
