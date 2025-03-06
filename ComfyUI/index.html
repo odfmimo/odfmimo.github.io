@@ -614,7 +614,7 @@
                                 count: Number(item[1].trim())
                             }));
 
-                        if (this.intervalID) clearInterval(intervalID);
+                        if (this.intervalID) clearInterval(this.intervalID);
                         this.intervalID = setInterval(async _ => {
                             let images = [];
                             Object.values((await (await fetch(`${this.server_address}/history`)).json()))
