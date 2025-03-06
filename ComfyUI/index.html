@@ -237,7 +237,7 @@
                 </div>
                 <div class="d-flex flex-wrap p-3 pb-0 gap-2" v-else>
                     <input class="form-control flex-shrink-1" style="width: 30em; min-width: 0;" v-model="server_address">
-                    <button type="button" class="btn btn-primary" :disabled="ws" @click="connect">Connect</button>
+                    <button type="button" class="btn btn-primary" :disabled="object_info" @click="connect">Connect</button>
                 </div>
             </div>
         </div>
@@ -260,7 +260,6 @@
             createApp({
                 data() {
                     return {
-                        ws: null,
                         server_address: "",
                         object_info: null,
                         workflow_name: null,
@@ -605,70 +604,38 @@
                         }
                     },
                     async connect() {
-                        await new Promise(resolve => {
-                            try {
-                                this.ws.close();
-                            } catch (e) {}
-                            console.log("Connecting...");
-                            let ws = new WebSocket(`${this.server_address}/ws?clientId=${client_id}`);
-                            this.ws = ws;
-                            ws.addEventListener("open", (event) => {
-                                console.log("WebSocket is open");
-                                resolve();
-                            });
-                            ws.addEventListener("close", (event) => {
-                                console.log("WebSocket is closed");
-                                if (ws == this.ws) {
-                                    this.ws = null;
-                                }
-                            });
-                            ws.addEventListener("error", (event => {
-                                console.log("WebSocket error:", event.data);
-                                if (ws == this.ws) {
-                                    this.ws = null;
-                                }
-                            }));
-                            ws.addEventListener("message", async event => {
-                                console.log("Message from server:", event.data);
-
-                                let message = JSON.parse(event.data);
-                                if (message['type'] == 'status') {
-                                    let data = message['data'];
-                                    let queue_remaining = data['status']?.['exec_info']?.['queue_remaining'];
-                                    if (queue_remaining != null) {
-                                        this.queue_remaining = queue_remaining;
-                                    }
-
-                                    let images = [];
-                                    Object.values((await (await fetch(`${this.server_address}/history`)).json()))
-                                        .sort((a, b) => (a['prompt']?.[0] > b['prompt']?.[0]))
-                                        .forEach(history => {
-                                            for (let node_id of Object.keys(history['outputs'])) {
-                                                let node_output = history['outputs'][node_id];
-                                                if ('images' in node_output) {
-                                                    for (let image of node_output['images']) {
-                                                        let data = {"filename": image['filename'], "subfolder": image['subfolder'], "type": image['type']};
-                                                        let params = new URLSearchParams(data);
-                                                        let url_values = params.toString();
-                                                        data['src'] = `${this.server_address}/view?${url_values}`;
-                                                        data['prompt_id'] = history['prompt']?.[1];
-                                                        images.push(data);
-                                                    }
-                                                }
-                                            }
-                                        });
-                                    this.images = images;
-                                }
-                            });
-                        });
                         this.object_info = await (await fetch(`${this.server_address}/object_info`)).json();
+                        this.save_settings();
+
                         this.autocomplete = (await (await fetch(`${this.server_address}/pysssss/autocomplete`)).text())
                             .split('\n').map(item => item.split(','))
                             .map(item => ({
                                 name: ['(', ')', '[', ']'].reduce((acc, cur) => acc.replaceAll(cur, '\\' + cur), item[0].trim().replaceAll('_', ' ')),
                                 count: Number(item[1].trim())
                             }));
-                        this.save_settings();
+
+                        if (this.intervalID) clearInterval(intervalID);
+                        this.intervalID = setInterval(async _ => {
+                            let images = [];
+                            Object.values((await (await fetch(`${this.server_address}/history`)).json()))
+                                .sort((a, b) => (a['prompt']?.[0] > b['prompt']?.[0]))
+                                .forEach(history => {
+                                    for (let node_id of Object.keys(history['outputs'])) {
+                                        let node_output = history['outputs'][node_id];
+                                        if ('images' in node_output) {
+                                            for (let image of node_output['images']) {
+                                                let data = {"filename": image['filename'], "subfolder": image['subfolder'], "type": image['type']};
+                                                let params = new URLSearchParams(data);
+                                                let url_values = params.toString();
+                                                data['src'] = `${this.server_address}/view?${url_values}`;
+                                                data['prompt_id'] = history['prompt']?.[1];
+                                                images.push(data);
+                                            }
+                                        }
+                                    }
+                                });
+                            this.images = images;
+                        }, 100);
                     },
                     async clear_history() {
                         await fetch(`${this.server_address}/history`, {
