@@ -480,6 +480,10 @@
                                 let target = this.workflows.find(workflow => workflow.name == this.editing.name_);
                                 target.name = this.editing.name;
                                 target.workflow = structuredClone(toRaw(this.editing.workflow));
+                                for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow == target)) {
+                                    let idx = this.prompt_ids.indexOf(prompt_id);
+                                    this.prompt_ids.splice(idx, 1);
+                                }
                             }
                             else {
                                 this.workflows.push({
