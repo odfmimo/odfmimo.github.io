@@ -19,13 +19,13 @@
                 <div class="w-100 h-100 carousel slide">
                     <div class="w-100 h-100 carousel-inner">
                         <div class="w-100 h-100 carousel-item active">
-                            <img class="w-100 h-100 object-fit-scale" :src="tab_images[image_number]['src']">
+                            <img class="w-100 h-100 object-fit-scale" :src="workflow_images[image_number]['src']">
                         </div>
                     </div>
                     <button class="carousel-control-prev" type="button" data-bs-slide="prev" @click="image_number = Math.max(0, image_number - 1)">
                         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                     </button>
-                    <button class="carousel-control-next" type="button" data-bs-slide="next" @click="image_number = Math.min(tab_images.length - 1, image_number + 1)">
+                    <button class="carousel-control-next" type="button" data-bs-slide="next" @click="image_number = Math.min(workflow_images.length - 1, image_number + 1)">
                         <span class="carousel-control-next-icon" aria-hidden="true"></span>
                     </button>                    
                 </div>
@@ -209,28 +209,14 @@
                         </div>
                     </div>
                     <div>
-                        <ul class="nav nav-tabs">
-                            <li class="nav-item">
-                                <span class="nav-link" :class="{active: tab_index==null}" @click="tab_index=null">All</span>
-                            </li>
-                            <li class="nav-item" v-for="(tab, index) in tabs">
-                                <span class="nav-link" :class="{active: tab_index==index}">
-                                    <span @click="tab_index=index">Tab {{ index + 1}}</span>
-                                    <button type="button" class="btn btn-close ms-1" style="padding: 0;" @click="remove_tab(index)"></button>
-                                </span>
-                            </li>
-                            <li class="nav-item">
-                                <span class="nav-link" @click="add_tab">Tab {{ tabs.length + 1}}</span>
-                            </li>
-                        </ul>
                         <div class="d-flex flex-column p-3 gap-3">
                             <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-secondary" @click="clear_tab">Clear</button>
-                                <button type="button" class="btn btn-dark" @click="download_images">Download</button>
+                                <button type="button" class="btn btn-secondary" @click="clear_workflow_images">Clear</button>
+                                <button type="button" class="btn btn-dark" @click="download_workflow_images">Download</button>
                             </div>
                             <div class="container">
                                 <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
-                                    <img v-for="(image, index) in tab_images" :src="image['src']" @click="view_image(index)">
+                                    <img v-for="(image, index) in workflow_images" :src="image['src']" @click="view_image(index)">
                                 </div>
                             </div>
                         </div>
@@ -271,8 +257,7 @@
                         images: [],
                         image_number: null,
                         filtered_autocomplete: null,
-                        tabs: [],
-                        tab_index: null,
+                        prompt_ids: [],
                     }
                 },
                 methods: {
@@ -315,112 +300,111 @@
                         return inputs;
                     },
                     async queue(event) {
-                        for (let _ of Array(this.batch_count)) {
-                            let workflow = null;
-                            if (this.editing) {
-                                workflow = this.editing.workflow;
-                            }
-                            else if (this.workflow_name) {
-                                workflow = this.workflows.find(workflow => workflow.name == this.workflow_name).workflow
-                            }
-                            else return
-                            
-                            workflow = structuredClone(toRaw(workflow));
-                            let prompt = {};
-                            const add_node = (class_type, inputs_ = {}) => {
-                                let inputs = structuredClone(inputs_);
-                                let object_info = this.object_info[class_type];
-                                for (let [key, value] of Object.entries(object_info['input']['required'])) {
-                                    if (!(key in inputs)) {
-                                        if (value[1] instanceof Object && 'default' in value[1]) {
-                                            inputs[key] = value[1]?.['default'];
-                                        }
-                                        else if (Array.isArray(value[0])) {
-                                            inputs[key] = value[0][0];
-                                        }
-                                        else {
-                                            if (value[0] == "STRING") {
-                                                inputs[key] = "";
-                                            }
+                        let workflow = null;
+                        if (this.editing) {
+                            workflow = this.editing;
+                        }
+                        else if (this.workflow_name) {
+                            workflow = this.workflows.find(workflow => workflow.name == this.workflow_name);
+                        }
+                        else return;
+                        
+                        let prompt = {};
+                        const add_node = (class_type, inputs_ = {}) => {
+                            let inputs = structuredClone(inputs_);
+                            let object_info = this.object_info[class_type];
+                            for (let [key, value] of Object.entries(object_info['input']['required'])) {
+                                if (!(key in inputs)) {
+                                    if (value[1] instanceof Object && 'default' in value[1]) {
+                                        inputs[key] = value[1]?.['default'];
+                                    }
+                                    else if (Array.isArray(value[0])) {
+                                        inputs[key] = value[0][0];
+                                    }
+                                    else {
+                                        if (value[0] == "STRING") {
+                                            inputs[key] = "";
                                         }
                                     }
                                 }
-                                let node = {class_type, inputs};
-
-                                let key = String(Math.max(0, ...Object.keys(prompt).map(key => Number(key))) + 1);
-                                prompt[key] = node;
-                                
-                                let outputs = {};
-                                for (let [index, output_name] of object_info['output_name'].entries()) {
-                                    outputs[output_name] = [key, index];
-                                }
-                                return outputs;
-                            };
-
-                            let CheckpointLoaderSimple_node = add_node('CheckpointLoaderSimple', {ckpt_name: workflow.checkpoint});
-                            let model_output = CheckpointLoaderSimple_node['MODEL'];
-                            let clip_output = CheckpointLoaderSimple_node['CLIP'];
-                            let vae_output = CheckpointLoaderSimple_node['VAE'];
-
-                            if (workflow.lora) {
-                                for (let lora of workflow.lora) {
-                                    let LoraLoader_node = add_node('LoraLoader', {
-                                        model: model_output, clip: clip_output,
-                                        lora_name: lora.lora_name, strength_model: lora.strength_model, strength_clip: lora.strength_clip,
-                                    });
-                                    model_output = LoraLoader_node['MODEL'];
-                                    clip_output = LoraLoader_node['CLIP'];
-                                }
                             }
+                            let node = {class_type, inputs};
 
-                            if (workflow.clip_set_last_layer_bool) {
-                                let CLIPSetLastLayer_node = add_node('CLIPSetLastLayer', {stop_at_clip_layer: workflow.stop_at_clip_layer, clip: clip_output});
-                                clip_output = CLIPSetLastLayer_node['CLIP'];
-                            }
-
-                            let CLIPTextEncode_positive_node = add_node('CLIPTextEncode', {text: workflow.positive_text, clip: clip_output});
-                            let positive_output = CLIPTextEncode_positive_node['CONDITIONING'];
-                            let CLIPTextEncode_negative_node = add_node('CLIPTextEncode', {text: workflow.negative_text, clip: clip_output});
-                            let negative_output = CLIPTextEncode_negative_node['CONDITIONING'];
-
-                            if (workflow.condition) {
-                                for (let condition of workflow.condition) {
-                                    let CLIPTextEncode_node = add_node('CLIPTextEncode', {text: condition.text, clip: clip_output});
-                                    let ConditioningSetAreaPercentage_node = add_node('ConditioningSetAreaPercentage', {
-                                        conditioning: CLIPTextEncode_node['CONDITIONING'],
-                                        width: condition.width, height: condition.height, x: condition.x, y: condition.y
-                                    });
-                                    let ConditioningConcat_node = add_node('ConditioningConcat', {conditioning_to: positive_output, conditioning_from: ConditioningSetAreaPercentage_node['CONDITIONING']});
-                                    positive_output = ConditioningConcat_node['CONDITIONING'];
-                                }
-                            }
-
-                            let EmptyLatentImageFromPresetsSDXL_node = add_node('EmptyLatentImageFromPresetsSDXL', {preset: workflow.size_preset});
-
-                            let KSampler_seed_info = this.object_info['KSampler']['input']['required']['seed'][1];
-                            let KSampler_seed = Math.floor(Math.random() * (KSampler_seed_info['max'] - KSampler_seed_info['min']) + KSampler_seed_info['min']);
-                            let KSampler_node = add_node('KSampler', {
-                                model: model_output,positive: positive_output, negative: negative_output, latent_image: EmptyLatentImageFromPresetsSDXL_node['latent'],
-                                seed: KSampler_seed, steps: workflow.steps, cfg: workflow.cfg, sampler_name: workflow.sampler_name, scheduler: workflow.scheduler,
-                            });
+                            let key = String(Math.max(0, ...Object.keys(prompt).map(key => Number(key))) + 1);
+                            prompt[key] = node;
                             
-                            let VAEDecode_node = add_node('VAEDecode', {samples: KSampler_node['LATENT'], vae: vae_output});
-                            let image_output = VAEDecode_node['IMAGE'];
-
-                            if (workflow.face_detailer_bool) {
-                                let UltralyticsDetectorProvider_node = add_node('UltralyticsDetectorProvider');
-                                let FaceDetailer_seed_info = this.object_info['FaceDetailer']['input']['required']['seed'][1];
-                                let FaceDetailer_seed = Math.floor(Math.random() * (FaceDetailer_seed_info['max'] - FaceDetailer_seed_info['min']) + FaceDetailer_seed_info['min']);
-                                let FaceDetailer_node = add_node('FaceDetailer', {
-                                    image: image_output, model: model_output, clip: clip_output, vae: vae_output, positive: positive_output, negative: negative_output,
-                                    seed: FaceDetailer_seed, steps: workflow.steps, cfg: workflow.cfg, sampler_name: workflow.sampler_name, scheduler: workflow.scheduler,
-                                    bbox_detector: UltralyticsDetectorProvider_node['BBOX_DETECTOR'],
-                                });
-                                image_output = FaceDetailer_node['image'];
+                            let outputs = {};
+                            for (let [index, output_name] of object_info['output_name'].entries()) {
+                                outputs[output_name] = [key, index];
                             }
+                            return outputs;
+                        };
 
-                            add_node('PreviewImage', {images: image_output});
+                        let CheckpointLoaderSimple_node = add_node('CheckpointLoaderSimple', {ckpt_name: workflow.workflow.checkpoint});
+                        let model_output = CheckpointLoaderSimple_node['MODEL'];
+                        let clip_output = CheckpointLoaderSimple_node['CLIP'];
+                        let vae_output = CheckpointLoaderSimple_node['VAE'];
 
+                        if (workflow.workflow.lora) {
+                            for (let lora of workflow.workflow.lora) {
+                                let LoraLoader_node = add_node('LoraLoader', {
+                                    model: model_output, clip: clip_output,
+                                    lora_name: lora.lora_name, strength_model: lora.strength_model, strength_clip: lora.strength_clip,
+                                });
+                                model_output = LoraLoader_node['MODEL'];
+                                clip_output = LoraLoader_node['CLIP'];
+                            }
+                        }
+
+                        if (workflow.workflow.clip_set_last_layer_bool) {
+                            let CLIPSetLastLayer_node = add_node('CLIPSetLastLayer', {stop_at_clip_layer: workflow.workflow.stop_at_clip_layer, clip: clip_output});
+                            clip_output = CLIPSetLastLayer_node['CLIP'];
+                        }
+
+                        let CLIPTextEncode_positive_node = add_node('CLIPTextEncode', {text: workflow.workflow.positive_text, clip: clip_output});
+                        let positive_output = CLIPTextEncode_positive_node['CONDITIONING'];
+                        let CLIPTextEncode_negative_node = add_node('CLIPTextEncode', {text: workflow.workflow.negative_text, clip: clip_output});
+                        let negative_output = CLIPTextEncode_negative_node['CONDITIONING'];
+
+                        if (workflow.workflow.condition) {
+                            for (let condition of workflow.workflow.condition) {
+                                let CLIPTextEncode_node = add_node('CLIPTextEncode', {text: condition.text, clip: clip_output});
+                                let ConditioningSetAreaPercentage_node = add_node('ConditioningSetAreaPercentage', {
+                                    conditioning: CLIPTextEncode_node['CONDITIONING'],
+                                    width: condition.width, height: condition.height, x: condition.x, y: condition.y
+                                });
+                                let ConditioningConcat_node = add_node('ConditioningConcat', {conditioning_to: positive_output, conditioning_from: ConditioningSetAreaPercentage_node['CONDITIONING']});
+                                positive_output = ConditioningConcat_node['CONDITIONING'];
+                            }
+                        }
+
+                        let EmptyLatentImageFromPresetsSDXL_node = add_node('EmptyLatentImageFromPresetsSDXL', {preset: workflow.workflow.size_preset});
+
+                        let KSampler_seed_info = this.object_info['KSampler']['input']['required']['seed'][1];
+                        let KSampler_seed = Math.floor(Math.random() * (KSampler_seed_info['max'] - KSampler_seed_info['min']) + KSampler_seed_info['min']);
+                        let KSampler_node = add_node('KSampler', {
+                            model: model_output,positive: positive_output, negative: negative_output, latent_image: EmptyLatentImageFromPresetsSDXL_node['latent'],
+                            seed: KSampler_seed, steps: workflow.workflow.steps, cfg: workflow.workflow.cfg, sampler_name: workflow.workflow.sampler_name, scheduler: workflow.workflow.scheduler,
+                        });
+                        
+                        let VAEDecode_node = add_node('VAEDecode', {samples: KSampler_node['LATENT'], vae: vae_output});
+                        let image_output = VAEDecode_node['IMAGE'];
+
+                        if (workflow.workflow.face_detailer_bool) {
+                            let UltralyticsDetectorProvider_node = add_node('UltralyticsDetectorProvider');
+                            let FaceDetailer_seed_info = this.object_info['FaceDetailer']['input']['required']['seed'][1];
+                            let FaceDetailer_seed = Math.floor(Math.random() * (FaceDetailer_seed_info['max'] - FaceDetailer_seed_info['min']) + FaceDetailer_seed_info['min']);
+                            let FaceDetailer_node = add_node('FaceDetailer', {
+                                image: image_output, model: model_output, clip: clip_output, vae: vae_output, positive: positive_output, negative: negative_output,
+                                seed: FaceDetailer_seed, steps: workflow.workflow.steps, cfg: workflow.workflow.cfg, sampler_name: workflow.workflow.sampler_name, scheduler: workflow.workflow.scheduler,
+                                bbox_detector: UltralyticsDetectorProvider_node['BBOX_DETECTOR'],
+                            });
+                            image_output = FaceDetailer_node['image'];
+                        }
+
+                        add_node('PreviewImage', {images: image_output});
+
+                        for (let _ of Array(this.batch_count)) {
                             let prompt_id = (await (await fetch(`${this.server_address}/prompt`, {
                                 method: "POST",
                                 headers: {
@@ -429,9 +413,7 @@
                                 body: JSON.stringify({"prompt": prompt, "client_id": client_id}),
                             })).json())['prompt_id'];
 
-                            if (this.tab_index != null) {
-                                this.tabs[this.tab_index].push(prompt_id);
-                            }
+                            this.prompt_ids.push({prompt_id: prompt_id, workflow: workflow});
                         }
                     },
                     async stop() {
@@ -475,19 +457,19 @@
                         if (this.workflow_name) {
                             this.editing = {
                                 name: this.workflow_name,
-                                workflow: structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name).workflow))
+                                workflow: structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name).workflow)),
                             };
                         }
                     },
                     remove_workflow() {
                         if (this.workflow_name) {
-                            let index = this.workflows.findIndex(workflow => workflow.name == this.workflow_name);
-                            this.workflows.splice(index, 1);
+                            let idx = this.workflows.findIndex(workflow => workflow.name == this.workflow_name);
+                            this.workflows.splice(idx, 1);
                             if (this.workflows.length == 0) {
                                 this.workflow_name = null;
                             }
-                            else if (index < this.workflows.length) {
-                                this.workflow_name = this.workflows[index].name;
+                            else if (idx < this.workflows.length) {
+                                this.workflow_name = this.workflows[idx].name;
                             }
                             else {
                                 this.workflow_name = this.workflows[this.workflows.length - 1].name;
@@ -521,8 +503,10 @@
                                 const reader = new FileReader();
                                 reader.addEventListener('load', _ => {
                                     let workflow = JSON.parse(reader.result);
-                                    workflow.name_ = undefined;
-                                    this.editing = workflow;
+                                    this.editing = {
+                                        name: workflow.name,
+                                        workflow: workflow.workflow,
+                                    };
                                 });
                                 reader.readAsText(file);
                             }
@@ -579,31 +563,6 @@
                         let idx = this.editing.workflow.condition.indexOf(condition);
                         this.editing.workflow.condition.splice(idx, 1);
                     },
-                    add_tab() {
-                        this.tabs.push([]);
-                        this.tab_index = this.tabs.length - 1;
-                    },
-                    remove_tab(tab_index) {
-                        if (tab_index != null) {
-                            this.tabs.splice(tab_index, 1);
-                            if (this.tabs.length == 0) {
-                                this.tab_index = null;
-                            }
-                            else if (this.tab_index < this.tabs.length) {
-                            }
-                            else {
-                                this.tab_index = this.tabs.length - 1;
-                            }
-                        }
-                    },
-                    clear_tab() {
-                        if (this.tab_index == null) {
-                            this.clear_history();
-                        }
-                        else {
-                            this.tabs[this.tab_index] = [];
-                        }
-                    },
                     async connect() {
                         this.object_info = await (await fetch(`${this.server_address}/object_info`)).json();
                         this.save_settings();
@@ -651,10 +610,16 @@
                         });
                         this.images = [];
                     },
-                    async download_images() {
+                    clear_workflow_images() {
+                        for (let image of this.workflow_images) {
+                            let idx = this.prompt_ids.findIndex(prompt_id => prompt_id.prompt_id == image['prompt_id']);
+                            this.prompt_ids.splice(idx, 1);
+                        }
+                    },
+                    async download_workflow_images() {
                         var zip = new JSZip();
-                        for (let image of this.tab_images) {
-                            let response = await fetch(image.src);
+                        for (let image of this.workflow_images) {
+                            let response = await fetch(image['src']);
                             let blob = await response.blob();
                             zip.file(image.filename, blob);
                         }
@@ -723,7 +688,7 @@
                                 this.image_number = Math.max(0, this.image_number - 1);
                             }
                             else if (e.key == "ArrowRight") {
-                                this.image_number = Math.min(this.tab_images.length - 1, this.image_number + 1);
+                                this.image_number = Math.min(this.workflow_images.length - 1, this.image_number + 1);
                             }
                         }
                     });
@@ -743,13 +708,13 @@
                         }
                         return true;
                     },
-                    tab_images() {
-                        if (this.tab_index == null) {
-                            return this.images;
+                    workflow_images() {
+                        if (!this.editing && this.workflow_name) {
+                            let workflow = this.workflows.find(workflow => workflow.name == this.workflow_name);
+                            let prompt_ids = this.prompt_ids.filter(prompt_id => prompt_id.workflow == workflow).map(prompt_id => prompt_id.prompt_id);
+                            return this.images.filter(image => prompt_ids.includes(image['prompt_id']));
                         }
-                        else {
-                            return this.images.filter(image => this.tabs[this.tab_index].includes(image['prompt_id']));
-                        }
+                        else return [];
                     },
                 },
                 watch: {
