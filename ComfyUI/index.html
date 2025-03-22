@@ -238,7 +238,7 @@
                 </div>
                 <div class="d-flex flex-wrap p-3 pb-0 gap-2" v-else>
                     <input class="form-control flex-shrink-1" style="width: 30em; min-width: 0;" v-model="server_address">
-                    <button type="button" class="btn btn-primary" :disabled="object_info" @click="connect">Connect</button>
+                    <button type="button" class="btn btn-primary" :disabled="object_info != null" @click="connect">Connect</button>
                 </div>
             </div>
         </div>
