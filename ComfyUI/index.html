@@ -628,7 +628,7 @@
                                   console.log(resp);
                               }
                         });
-                        tokenClient.requestAccessToken({access_type: "offline"});
+                        tokenClient.requestAccessToken();
                     },
                     async clear_history() {
                         await fetch(`${this.server_address}/history`, {
