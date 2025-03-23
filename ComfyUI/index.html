@@ -630,7 +630,7 @@
                             });
                             id = response.result.id;
                         }
-                        await gapi.client.drive.files().update({
+                        await gapi.client.drive.files.update({
                             fileId: id,
                             media: {
                                 mimeType: 'application/json',
