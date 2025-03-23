@@ -615,7 +615,7 @@
                             await gapi.client.init({
                                 clientId: CLIENT_ID,
                                 scope: SCOPES,
-                            };
+                            });
                             const authInstance = gapi.auth2.getAuthInstance();
                             const user = authInstance.currentUser.get();
                             if (isAuthorized) {
