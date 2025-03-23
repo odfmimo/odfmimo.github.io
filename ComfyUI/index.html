@@ -261,26 +261,6 @@
                     }
                 },
                 methods: {
-                    load_settings() {
-                        let settings = JSON.parse(localStorage.getItem('comfyui')) ?? {};
-                        this.workflows = settings.workflows ?? [];
-                        this.workflow_name = settings.workflow_name;
-                    },
-                    save_settings() {
-                        localStorage.setItem('comfyui', JSON.stringify({
-                            workflows: this.workflows,
-                            workflow_name: this.workflow_name,
-                        }));
-                    },
-                    watch_settings() {
-                        if (!this.workflows.find(workflow => workflow.name == this.workflow_name)) {
-                            if (this.workflows.length > 0) {
-                                this.workflow_name = this.workflows[0].name;
-                            }
-                            else this.workflow_name = null;
-                        }
-                        this.save_settings();
-                    },
                     get_default(class_type) {
                         let inputs = {};
                         let object_info = this.object_info[class_type];
@@ -567,7 +547,6 @@
                     },
                     async connect() {
                         this.object_info = await (await fetch(`${this.server_address}/object_info`)).json();
-                        this.save_settings();
 
                         this.autocomplete = (await (await fetch(`${this.server_address}/pysssss/autocomplete`)).text())
                             .split('\n').map(item => item.split(','))
@@ -605,41 +584,90 @@
                         await this.login_google();
                     },
                     async login_google() {
-                        const CLIENT_ID = '557013433801-pqs3efmq56l4ti0l2311djqr1pv4ok6t.apps.googleusercontent.com';
-                        const API_KEY = 'AIzaSyA4C0YD7pvZ5-ctUuwWIwJhmZTHdd1zZtk';
-                        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
-                        const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
-
-                        await new Promise(resolve => {
-                            gapi.load('client', async _ => {
-                                await gapi.client.init({
-                                    apiKey: API_KEY,
-                                    discoveryDocs: [DISCOVERY_DOC],
+                        return new Promise(resolve => {
+                            const CLIENT_ID = '557013433801-pqs3efmq56l4ti0l2311djqr1pv4ok6t.apps.googleusercontent.com';
+                            const API_KEY = 'AIzaSyA4C0YD7pvZ5-ctUuwWIwJhmZTHdd1zZtk';
+                            const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+                            const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
+    
+                            await new Promise(resolve => {
+                                gapi.load('client', async _ => {
+                                    await gapi.client.init({
+                                        apiKey: API_KEY,
+                                        discoveryDocs: [DISCOVERY_DOC],
+                                    });
+                                    resolve();
                                 });
-                                resolve();
                             });
-                        });
-                        let tokenClient = google.accounts.oauth2.initTokenClient({
-                              client_id: CLIENT_ID,
-                              scope: SCOPES,
-                              callback: async (resp) => {
-                                  if (resp.error !== undefined) {
-                                      throw (resp);
+                            let tokenClient = google.accounts.oauth2.initTokenClient({
+                                  client_id: CLIENT_ID,
+                                  scope: SCOPES,
+                                  callback: async (resp) => {
+                                      if (resp.error !== undefined) {
+                                          throw (resp);
+                                      }
+                                      resolve();
                                   }
-                                  let response = await gapi.client.drive.files.list({spaces:"appDataFolder",
-                                      'q': "name = 'comfyui.json' and 'appDataFolder' in parents",
-                                      'pageSize': 10,
-                                      'fields': 'files(id, name)',
-                                  });
-                                  let id = response.result.files[0]?.['id'];
-                                  console.log(id);
-                              }
-                        });
-                        if (gapi.client.getToken() === null) {
-                            tokenClient.requestAccessToken({prompt: 'consent'});
-                        } else {
-                            tokenClient.requestAccessToken({prompt: ''});
+                            });
+                            if (gapi.client.getToken() === null) {
+                                tokenClient.requestAccessToken({prompt: 'consent'});
+                            } else {
+                                tokenClient.requestAccessToken({prompt: ''});
+                            }
                         }
+                    },
+                    async save_settings() {
+                        let response = await gapi.client.drive.files.list({spaces:"appDataFolder",
+                            'q': "name = 'comfyui.json' and 'appDataFolder' in parents",
+                            'pageSize': 10,
+                            'fields': 'files(id, name)',
+                        });
+                        let id = response.result.files[0]?.['id'];
+                        if (!id) {
+                            let response = await gapi.client.drive.files.create({
+                                resource: {"name": "comfyui.json", "parents": ["appDataFolder"]},
+                                fields: 'id',
+                            });
+                            id = response.result.id;
+                        }
+                        await gapi.client.drive.files().update({
+                            fileId: id,
+                            media: {
+                                mimeType: 'application/json',
+                                body: new Blob([JSON.stringify({
+                                    workflows: this.workflows,
+                                    workflow_name: this.workflow_name,
+                                })]),
+                            },
+                            fields: 'id',
+                        });
+                    },
+                    async load_settings() {
+                        let response = await gapi.client.drive.files.list({spaces:"appDataFolder",
+                            'q': "name = 'comfyui.json' and 'appDataFolder' in parents",
+                            'pageSize': 10,
+                            'fields': 'files(id, name)',
+                        });
+                        let id = response.result.files[0]?.['id'];
+                        if (id) {
+                            let response = await gapi.client.drive.files.get({
+                                fileId: id,
+                                alt: 'media',
+                            }, { responseType: 'arraybuffer' });
+                            const content = Buffer.from(response.data);
+                            console.log(response.data);
+                            console.log(content);
+                            console.log('File Content:', content.toString());
+                        }
+                    },
+                    watch_settings() {
+                        if (!this.workflows.find(workflow => workflow.name == this.workflow_name)) {
+                            if (this.workflows.length > 0) {
+                                this.workflow_name = this.workflows[0].name;
+                            }
+                            else this.workflow_name = null;
+                        }
+                        this.save_settings();
                     },
                     async clear_history() {
                         await fetch(`${this.server_address}/history`, {
@@ -705,7 +733,6 @@
                     },
                 },
                 async created() {
-                    this.load_settings();
                     window.addEventListener('popstate', e => {
                         if (history.state == null) {
                             this.image_number = null;
