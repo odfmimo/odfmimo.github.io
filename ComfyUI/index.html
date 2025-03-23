@@ -623,15 +623,16 @@
                             'fields': 'files(id, name)',
                         });
                         let id = response.result.files[0]?.['id'];
-                        if (!id) {
-                            let response = await gapi.client.drive.files.create({
-                                resource: {"name": "comfyui.json", "parents": ["appDataFolder"]},
-                                fields: 'id',
+                        if (id) {
+                            let response = await gapi.client.drive.files.delete({
+                                fileId: id
                             });
-                            id = response.result.id;
                         }
-                        await gapi.client.drive.files.update({
-                            fileId: id,
+                        await gapi.client.drive.files.create({
+                            resource: {
+                                name: 'comfyui.json',
+                                parents: ['appDataFolder'],
+                            },
                             media: {
                                 mimeType: 'application/json',
                                 body: new Blob([JSON.stringify({
