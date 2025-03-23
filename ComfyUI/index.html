@@ -606,6 +606,7 @@
                                       if (resp.error !== undefined) {
                                           throw (resp);
                                       }
+                                      console.log(resp);
                                       resolve();
                                   }
                             });
@@ -617,6 +618,7 @@
                         });
                     },
                     async save_settings() {
+                        console.log(gapi.client.getToken());
                         let response = await gapi.client.drive.files.list({
                             spaces: "appDataFolder",
                             q: "name = 'comfyui.json' and 'appDataFolder' in parents",
