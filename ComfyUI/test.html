@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="https://apis.google.com/js/api.js"></script>
+    </head>
+    <body>
+        <script>
+gapi.load('client:auth2', _ => {
+    gapi.client.init({
+        apiKey: 'AIzaSyA4C0YD7pvZ5-ctUuwWIwJhmZTHdd1zZtk',
+        clientId: '557013433801-pqs3efmq56l4ti0l2311djqr1pv4ok6t.apps.googleusercontent.com',
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+        scope: 'https://www.googleapis.com/auth/drive.file'
+    }).then(function () {
+        gapi.auth2.getAuthInstance().signIn().then(function () {
+            console.log("Success");
+        });
+    });
+});
+        </script>
+    </body>
+</html>
