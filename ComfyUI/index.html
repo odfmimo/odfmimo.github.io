@@ -604,6 +604,9 @@
                             this.queue_remaining = queue['queue_running'].length + queue['queue_pending'].length;
                         }, 100);
 
+                        await this.login_google();
+                    },
+                    async login_google() {
                         const CLIENT_ID = '557013433801-pqs3efmq56l4ti0l2311djqr1pv4ok6t.apps.googleusercontent.com';
                         const API_KEY = 'AIzaSyA4C0YD7pvZ5-ctUuwWIwJhmZTHdd1zZtk';
                         const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
@@ -628,7 +631,11 @@
                                   console.log(resp);
                               }
                         });
-                        tokenClient.requestAccessToken();
+                        if (gapi.client.getToken() === null) {
+                            tokenClient.requestAccessToken({prompt: 'consent'});
+                        } else {
+                            tokenClient.requestAccessToken({prompt: ''});
+                        }
                     },
                     async clear_history() {
                         await fetch(`${this.server_address}/history`, {
