@@ -247,7 +247,7 @@
             createApp({
                 data() {
                     return {
-                        server_address: "",
+                        server_address: "http://127.0.0.1:8188",
                         object_info: null,
                         workflow_name: null,
                         workflows: [],
@@ -263,13 +263,11 @@
                 methods: {
                     load_settings() {
                         let settings = JSON.parse(localStorage.getItem('comfyui')) ?? {};
-                        this.server_address = settings.server_address ?? 'http://127.0.0.1:8188';
                         this.workflows = settings.workflows ?? [];
                         this.workflow_name = settings.workflow_name;
                     },
                     save_settings() {
                         localStorage.setItem('comfyui', JSON.stringify({
-                            server_address: this.server_address,
                             workflows: this.workflows,
                             workflow_name: this.workflow_name,
                         }));
@@ -637,7 +635,13 @@
                             tokenClient.requestAccessToken({prompt: ''});
                         }
 
-                        console.log(gapi.client.drive);
+                        let response = await temp1.files.list({spaces:"appDataFolder",
+                            'q': "name = 'comfyui.json' and 'appDataFolder' in parents",
+                            'pageSize': 10,
+                            'fields': 'files(id, name)',
+                        });
+                        let id = response.result.files[0]?.['id'];
+                        console.log(id);
                     },
                     async clear_history() {
                         await fetch(`${this.server_address}/history`, {
