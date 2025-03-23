@@ -243,6 +243,7 @@
             var client_id = uuid41();
             
             import { createApp, toRaw } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+            import { Octokit } from "https://esm.sh/@octokit/core";
 
             createApp({
                 data() {
@@ -580,89 +581,31 @@
                             let queue = await (await fetch(`${this.server_address}/queue`)).json();
                             this.queue_remaining = queue['queue_running'].length + queue['queue_pending'].length;
                         }, 100);
-
-                        await this.login_google();
                     },
-                    async login_google() {
-                        return new Promise(async resolve => {
-                            const CLIENT_ID = '557013433801-pqs3efmq56l4ti0l2311djqr1pv4ok6t.apps.googleusercontent.com';
-                            const API_KEY = 'AIzaSyA4C0YD7pvZ5-ctUuwWIwJhmZTHdd1zZtk';
-                            const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
-                            const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
-    
-                            await new Promise(resolve => {
-                                gapi.load('client', async _ => {
-                                    await gapi.client.init({
-                                        apiKey: API_KEY,
-                                        discoveryDocs: [DISCOVERY_DOC],
-                                    });
-                                    resolve();
-                                });
-                            });
-                            let tokenClient = google.accounts.oauth2.initTokenClient({
-                                  client_id: CLIENT_ID,
-                                  scope: SCOPES,
-                                  callback: async (resp) => {
-                                      if (resp.error !== undefined) {
-                                          throw (resp);
-                                      }
-                                      console.log(resp);
-                                      resolve();
-                                  }
-                            });
-                            if (gapi.client.getToken() === null) {
-                                tokenClient.requestAccessToken({prompt: 'consent'});
-                            } else {
-                                tokenClient.requestAccessToken({prompt: ''});
+                    async save_settings() {
+                        await this.octokit.request('PATCH /gists/5c213f4bb9852630af086a3425e48eb2', {
+                            files: {
+                                'comfyui.json': {
+                                    content: JSON.stringify({
+                                        workflows: this.workflows,
+                                        workflow_name: this.workflow_name,
+                                    }),
+                                }
+                            },
+                            headers: {
+                                'X-GitHub-Api-Version': '2022-11-28'
                             }
                         });
                     },
-                    async save_settings() {
-                        console.log(gapi.client.getToken());
-                        let response = await gapi.client.drive.files.list({
-                            spaces: "appDataFolder",
-                            q: "name = 'comfyui.json' and 'appDataFolder' in parents",
-                            pageSize: 10,
-                            fields: 'files(id, name)',
-                        });
-                        let id = response.result.files[0]?.['id'];
-                        if (id) {
-                            let response = await gapi.client.drive.files.delete({
-                                fileId: id
-                            });
-                        }
-                        await gapi.client.drive.files.create({
-                            resource: {
-                                name: 'comfyui.json',
-                                parents: ['appDataFolder'],
-                            },
-                            media: {
-                                mimeType: 'application/json',
-                                body: new Blob([JSON.stringify({
-                                    workflows: this.workflows,
-                                    workflow_name: this.workflow_name,
-                                })]),
-                            },
-                            fields: 'id',
-                        });
-                    },
                     async load_settings() {
-                        let response = await gapi.client.drive.files.list({spaces:"appDataFolder",
-                            'q': "name = 'comfyui.json' and 'appDataFolder' in parents",
-                            'pageSize': 10,
-                            'fields': 'files(id, name)',
+                        let response = await octokit.request('GET /gists/5c213f4bb9852630af086a3425e48eb2', {
+                            headers: {
+                                'X-GitHub-Api-Version': '2022-11-28'
+                            }
                         });
-                        let id = response.result.files[0]?.['id'];
-                        if (id) {
-                            let response = await gapi.client.drive.files.get({
-                                fileId: id,
-                                alt: 'media',
-                            }, { responseType: 'arraybuffer' });
-                            const content = Buffer.from(response.data);
-                            console.log(response.data);
-                            console.log(content);
-                            console.log('File Content:', content.toString());
-                        }
+                        let settings = JSON.parse(response.data.files['comfyui.json'].content);
+                        this.workflows = settings.workflows ?? [];
+                        this.workflow_name = settings.workflow_name;
                     },
                     watch_settings() {
                         if (!this.workflows.find(workflow => workflow.name == this.workflow_name)) {
@@ -737,6 +680,11 @@
                     },
                 },
                 async created() {
+                    this.octokit = new Octokit({
+                        auth: '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'
+                    });
+                    this.load_settings();
+                    
                     window.addEventListener('popstate', e => {
                         if (history.state == null) {
                             this.image_number = null;
