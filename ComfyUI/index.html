@@ -617,10 +617,11 @@
                         });
                     },
                     async save_settings() {
-                        let response = await gapi.client.drive.files.list({spaces:"appDataFolder",
-                            'q': "name = 'comfyui.json' and 'appDataFolder' in parents",
-                            'pageSize': 10,
-                            'fields': 'files(id, name)',
+                        let response = await gapi.client.drive.files.list({
+                            spaces: "appDataFolder",
+                            q: "name = 'comfyui.json' and 'appDataFolder' in parents",
+                            pageSize: 10,
+                            fields: 'files(id, name)',
                         });
                         let id = response.result.files[0]?.['id'];
                         if (id) {
