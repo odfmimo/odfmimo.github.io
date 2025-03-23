@@ -598,7 +598,7 @@
                         });
                     },
                     async load_settings() {
-                        let response = await octokit.request('GET /gists/5c213f4bb9852630af086a3425e48eb2', {
+                        let response = await this.octokit.request('GET /gists/5c213f4bb9852630af086a3425e48eb2', {
                             headers: {
                                 'X-GitHub-Api-Version': '2022-11-28'
                             }
