@@ -626,7 +626,13 @@
                                   if (resp.error !== undefined) {
                                       throw (resp);
                                   }
-                                  console.log(resp);
+                                  let response = await gapi.client.drive.files.list({spaces:"appDataFolder",
+                                      'q': "name = 'comfyui.json' and 'appDataFolder' in parents",
+                                      'pageSize': 10,
+                                      'fields': 'files(id, name)',
+                                  });
+                                  let id = response.result.files[0]?.['id'];
+                                  console.log(id);
                               }
                         });
                         if (gapi.client.getToken() === null) {
@@ -634,14 +640,6 @@
                         } else {
                             tokenClient.requestAccessToken({prompt: ''});
                         }
-
-                        let response = await temp1.files.list({spaces:"appDataFolder",
-                            'q': "name = 'comfyui.json' and 'appDataFolder' in parents",
-                            'pageSize': 10,
-                            'fields': 'files(id, name)',
-                        });
-                        let id = response.result.files[0]?.['id'];
-                        console.log(id);
                     },
                     async clear_history() {
                         await fetch(`${this.server_address}/history`, {
