@@ -699,7 +699,10 @@
                             });
                         }
                         catch (e) {
-                            // location.href = "https://github.com/login/oauth/authorize?client_id=Iv23liWRsQFOTUzTyCsV";
+                            let url = new URL("https://github.com/login/oauth/authorize");
+                            url.searchParams.set("client_id", "Iv23liWRsQFOTUzTyCsV");
+                            url.searchParams.set("redirect_uri", "https://odfmimo.github.io/ComfyUI/index.html");
+                            location.href = url;
                         }
                         
                         window.addEventListener('popstate', e => {
