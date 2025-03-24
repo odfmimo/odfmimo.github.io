@@ -27,198 +27,6 @@
         <div id="app">
             <template v-if="true">
                 <template v-if="object_info && workflows">
-                    <div v-if="editing">
-                        <div class="d-flex flex-wrap p-3 gap-3">
-                            <div class="d-flex gap-2" style="max-width: 100%;">
-                                <input class="form-control flex-shrink-1" style="width: 20em; min-width: 0;" :class="{'is-invalid': !is_valid_workflow_name}" v-model="editing.name">
-                                <button type="button" class="btn btn-success" @click="save_workflow">Save</button>
-                                <button type="button" class="btn btn-secondary" @click="editing=null">Cancel</button>
-                            </div>
-                        </div>
-                        <div class="d-flex flex-column p-3 gap-3" @input="autocomplete_input($event)" @focusout="filtered_autocomplete = null">
-                            <div class="d-flex flex-wrap gap-3">
-                                <div>
-                                    Checkpoint
-                                    <select class="form-select" style="max-width: 30em;" v-model="editing.workflow.checkpoint">
-                                        <option v-for="checkpoint in object_info['CheckpointLoaderSimple']['input']['required']['ckpt_name'][0]" :value="checkpoint">{{ checkpoint }}</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    CLIP Set Last Layer
-                                    <div class="input-group">
-                                        <div class="input-group-text">
-                                            <input class="form-check-input mt-0" type="checkbox" v-model="editing.workflow.clip_set_last_layer_bool">
-                                        </div>
-                                        <input type="number" class="form-control" :disabled="!editing.workflow.clip_set_last_layer_bool" v-bind="object_info['CLIPSetLastLayer']['input']['required']['stop_at_clip_layer'][1]" v-model="editing.workflow.stop_at_clip_layer" >   
-                                    </div>                             
-                                </div>
-                                <div>
-                                    Size Preset
-                                    <select class="form-select" v-model="editing.workflow.size_preset">
-                                        <option v-for="size_preset in object_info['EmptyLatentImageFromPresetsSDXL']['input']['required']['preset'][0]" :value="size_preset">{{ size_preset }}</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div>
-                                Lora
-                                <div class="d-flex flex-column align-items-start gap-1" v-if="editing.workflow.lora">
-                                    <div class="card" v-for="lora in editing.workflow.lora">
-                                        <div class="card-body">
-                                            <div class="d-flex flex-wrap gap-3">
-                                                <div>
-                                                    Lora Name
-                                                    <select class="form-select" v-model="lora.lora_name">
-                                                        <option v-for="lora_name in object_info['LoraLoader']['input']['required']['lora_name'][0]" :value="lora_name">{{ lora_name }}</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    Strength Model
-                                                    <input type="number" class="form-control" v-bind="object_info['LoraLoader']['input']['required']['strength_model'][1]" v-model="lora.strength_model">
-                                                </div>
-                                                <div>
-                                                    Strength Clip
-                                                    <input type="number" class="form-control" v-bind="object_info['LoraLoader']['input']['required']['strength_clip'][1]" v-model="lora.strength_clip">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="pt-1">
-                                    <button type="button" class="btn btn-secondary" @click="add_lora">Add</button>
-                                </div>
-                            </div>
-                            <div class="d-flex flex-wrap gap-3">
-                                <div>
-                                    Steps
-                                    <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['steps'][1]" v-model="editing.workflow.steps">
-                                </div>
-                                <div>
-                                    CFG
-                                    <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['cfg'][1]" v-model="editing.workflow.cfg">
-                                </div>
-                                <div>
-                                    Sampler
-                                    <select class="form-select" v-model="editing.workflow.sampler_name">
-                                        <option v-for="sampler_name in object_info['KSampler']['input']['required']['sampler_name'][0]" :value="sampler_name">{{ sampler_name }}</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    Scheduler
-                                    <select class="form-select" v-model="editing.workflow.scheduler">
-                                        <option v-for="scheduler in object_info['KSampler']['input']['required']['scheduler'][0]" :value="scheduler">{{ scheduler }}</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div>
-                                <div>
-                                    <input class="form-check-input" type="checkbox" v-model="editing.workflow.face_detailer_bool">
-                                    Face Detailer
-                                </div>
-                            </div>
-                            <div>
-                                Positive Base
-                                <textarea class="form-control" v-model="editing.workflow.positive_text"></textarea>
-                            </div>
-                            <div>
-                                Negative Base
-                                <textarea class="form-control" v-model="editing.workflow.negative_text"></textarea>
-                            </div>
-                            <div>
-                                Regional Conditioning
-                                <div class="d-flex flex-column gap-1" v-if="editing.workflow.condition">
-                                    <div class="card" v-for="condition in editing.workflow.condition">
-                                        <div class="card-body">
-                                            <div class="d-flex flex-column gap-3">
-                                                <div>
-                                                    <button type="button" class="btn btn-secondary" @click="remove_condition(condition)">Remove</button>
-                                                </div>
-                                                <div class="d-flex gap-3">
-                                                    <div>
-                                                        Width
-                                                        <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['width'][1]" v-model="condition.width">
-                                                    </div>
-                                                    <div>
-                                                        Height
-                                                        <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['height'][1]" v-model="condition.height">
-                                                    </div>
-                                                    <div>
-                                                        X
-                                                        <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['x'][1]" v-model="condition.x">
-                                                    </div>
-                                                    <div>
-                                                        Y
-                                                        <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['y'][1]" v-model="condition.y">
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    Text
-                                                    <textarea class="form-control" v-model="condition.text"></textarea>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="pt-1">
-                                    <button type="button" class="btn btn-secondary" @click="add_condition">Add</button>
-                                </div>
-                            </div>
-                            <div class="position-absolute overflow-x-auto" ref="autocomplete">
-                                <ul class="list-group list-group-horizontal" v-if="filtered_autocomplete">
-                                    <li class="list-group-item text-nowrap" v-for="item in filtered_autocomplete">
-                                        <span>{{ item.name }}</span><span class="badge text-bg-secondary">{{ item.count }}</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-else>
-                        <div class="d-flex flex-wrap p-3 gap-3">
-                            <div class="d-flex gap-2" style="max-width: 100%;">
-                                <select class="form-select flex-shrink-1" style="width: 20em; min-width: 0;" v-model="workflow_name">
-                                    <option v-for="workflow in workflows" :value="workflow.name">{{ workflow.name }}</option>
-                                </select>
-                                <div class="btn-group">
-                                    <button type="button" class="btn btn-secondary" @click="edit_workflow">Edit</button>
-                                    <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-reference="parent"></button>
-                                    <ul class="dropdown-menu">
-                                        <li><span class="dropdown-item" @click="add_workflow">Add</span></li>
-                                        <li><span class="dropdown-item" @click="clone_workflow">Clone</span></li>
-                                        <li><span class="dropdown-item" @click="remove_workflow">Remove</span></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><span class="dropdown-item" @click="upload_workflow">Upload</span></li>
-                                        <li><span class="dropdown-item" @click="download_workflow">Download</span></li>
-                                    </ul>
-                                </div>                                      
-                            </div>
-                            <div class="d-flex gap-2">
-                                <div class="input-group" style="flex-wrap: nowrap;">
-                                    <button type="button" class="btn btn-primary" @click="queue">Queue</button>
-                                    <input type="number" class="form-control" min="1" max="100" step="1" v-model="batch_count">
-                                </div>
-                                <button type="button" class="btn btn-danger text-nowrap" @click="stop">
-                                    Stop <span class="badge text-bg-secondary">{{ queue_remaining }}</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="d-flex flex-column p-3 gap-3">
-                                <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-secondary" @click="clear_workflow_images">Clear</button>
-                                    <button type="button" class="btn btn-dark" @click="download_workflow_images">Download</button>
-                                </div>
-                                <div class="container">
-                                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
-                                        <div class="col" v-for="(image, index) in workflow_images">
-                                            <div class="position-relative">
-                                                <img class="w-100" :src="image['src']" @click="view_image(index)">
-                                                <button type="button" class="btn-close position-absolute top-0 end-0" @click="delete_image(index)"></button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                     <div class="position-absolute w-100 h-100 bg-black" v-if="image_number != null">
                         <div class="w-100 h-100 carousel slide">
                             <div class="w-100 h-100 carousel-inner">
@@ -234,6 +42,200 @@
                             </button>                    
                         </div>
                     </div>
+                    <template v-show="image_number == null">
+                        <div v-if="editing">
+                            <div class="d-flex flex-wrap p-3 gap-3">
+                                <div class="d-flex gap-2" style="max-width: 100%;">
+                                    <input class="form-control flex-shrink-1" style="width: 20em; min-width: 0;" :class="{'is-invalid': !is_valid_workflow_name}" v-model="editing.name">
+                                    <button type="button" class="btn btn-success" @click="save_workflow">Save</button>
+                                    <button type="button" class="btn btn-secondary" @click="editing=null">Cancel</button>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-column p-3 gap-3" @input="autocomplete_input($event)" @focusout="filtered_autocomplete = null">
+                                <div class="d-flex flex-wrap gap-3">
+                                    <div>
+                                        Checkpoint
+                                        <select class="form-select" style="max-width: 30em;" v-model="editing.workflow.checkpoint">
+                                            <option v-for="checkpoint in object_info['CheckpointLoaderSimple']['input']['required']['ckpt_name'][0]" :value="checkpoint">{{ checkpoint }}</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        CLIP Set Last Layer
+                                        <div class="input-group">
+                                            <div class="input-group-text">
+                                                <input class="form-check-input mt-0" type="checkbox" v-model="editing.workflow.clip_set_last_layer_bool">
+                                            </div>
+                                            <input type="number" class="form-control" :disabled="!editing.workflow.clip_set_last_layer_bool" v-bind="object_info['CLIPSetLastLayer']['input']['required']['stop_at_clip_layer'][1]" v-model="editing.workflow.stop_at_clip_layer" >   
+                                        </div>                             
+                                    </div>
+                                    <div>
+                                        Size Preset
+                                        <select class="form-select" v-model="editing.workflow.size_preset">
+                                            <option v-for="size_preset in object_info['EmptyLatentImageFromPresetsSDXL']['input']['required']['preset'][0]" :value="size_preset">{{ size_preset }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    Lora
+                                    <div class="d-flex flex-column align-items-start gap-1" v-if="editing.workflow.lora">
+                                        <div class="card" v-for="lora in editing.workflow.lora">
+                                            <div class="card-body">
+                                                <div class="d-flex flex-wrap gap-3">
+                                                    <div>
+                                                        Lora Name
+                                                        <select class="form-select" v-model="lora.lora_name">
+                                                            <option v-for="lora_name in object_info['LoraLoader']['input']['required']['lora_name'][0]" :value="lora_name">{{ lora_name }}</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        Strength Model
+                                                        <input type="number" class="form-control" v-bind="object_info['LoraLoader']['input']['required']['strength_model'][1]" v-model="lora.strength_model">
+                                                    </div>
+                                                    <div>
+                                                        Strength Clip
+                                                        <input type="number" class="form-control" v-bind="object_info['LoraLoader']['input']['required']['strength_clip'][1]" v-model="lora.strength_clip">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="pt-1">
+                                        <button type="button" class="btn btn-secondary" @click="add_lora">Add</button>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <div>
+                                        Steps
+                                        <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['steps'][1]" v-model="editing.workflow.steps">
+                                    </div>
+                                    <div>
+                                        CFG
+                                        <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['cfg'][1]" v-model="editing.workflow.cfg">
+                                    </div>
+                                    <div>
+                                        Sampler
+                                        <select class="form-select" v-model="editing.workflow.sampler_name">
+                                            <option v-for="sampler_name in object_info['KSampler']['input']['required']['sampler_name'][0]" :value="sampler_name">{{ sampler_name }}</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        Scheduler
+                                        <select class="form-select" v-model="editing.workflow.scheduler">
+                                            <option v-for="scheduler in object_info['KSampler']['input']['required']['scheduler'][0]" :value="scheduler">{{ scheduler }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div>
+                                        <input class="form-check-input" type="checkbox" v-model="editing.workflow.face_detailer_bool">
+                                        Face Detailer
+                                    </div>
+                                </div>
+                                <div>
+                                    Positive Base
+                                    <textarea class="form-control" v-model="editing.workflow.positive_text"></textarea>
+                                </div>
+                                <div>
+                                    Negative Base
+                                    <textarea class="form-control" v-model="editing.workflow.negative_text"></textarea>
+                                </div>
+                                <div>
+                                    Regional Conditioning
+                                    <div class="d-flex flex-column gap-1" v-if="editing.workflow.condition">
+                                        <div class="card" v-for="condition in editing.workflow.condition">
+                                            <div class="card-body">
+                                                <div class="d-flex flex-column gap-3">
+                                                    <div>
+                                                        <button type="button" class="btn btn-secondary" @click="remove_condition(condition)">Remove</button>
+                                                    </div>
+                                                    <div class="d-flex gap-3">
+                                                        <div>
+                                                            Width
+                                                            <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['width'][1]" v-model="condition.width">
+                                                        </div>
+                                                        <div>
+                                                            Height
+                                                            <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['height'][1]" v-model="condition.height">
+                                                        </div>
+                                                        <div>
+                                                            X
+                                                            <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['x'][1]" v-model="condition.x">
+                                                        </div>
+                                                        <div>
+                                                            Y
+                                                            <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['y'][1]" v-model="condition.y">
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        Text
+                                                        <textarea class="form-control" v-model="condition.text"></textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="pt-1">
+                                        <button type="button" class="btn btn-secondary" @click="add_condition">Add</button>
+                                    </div>
+                                </div>
+                                <div class="position-absolute overflow-x-auto" ref="autocomplete">
+                                    <ul class="list-group list-group-horizontal" v-if="filtered_autocomplete">
+                                        <li class="list-group-item text-nowrap" v-for="item in filtered_autocomplete">
+                                            <span>{{ item.name }}</span><span class="badge text-bg-secondary">{{ item.count }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else>
+                            <div class="d-flex flex-wrap p-3 gap-3">
+                                <div class="d-flex gap-2" style="max-width: 100%;">
+                                    <select class="form-select flex-shrink-1" style="width: 20em; min-width: 0;" v-model="workflow_name">
+                                        <option v-for="workflow in workflows" :value="workflow.name">{{ workflow.name }}</option>
+                                    </select>
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-secondary" @click="edit_workflow">Edit</button>
+                                        <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-reference="parent"></button>
+                                        <ul class="dropdown-menu">
+                                            <li><span class="dropdown-item" @click="add_workflow">Add</span></li>
+                                            <li><span class="dropdown-item" @click="clone_workflow">Clone</span></li>
+                                            <li><span class="dropdown-item" @click="remove_workflow">Remove</span></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><span class="dropdown-item" @click="upload_workflow">Upload</span></li>
+                                            <li><span class="dropdown-item" @click="download_workflow">Download</span></li>
+                                        </ul>
+                                    </div>                                      
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <div class="input-group" style="flex-wrap: nowrap;">
+                                        <button type="button" class="btn btn-primary" @click="queue">Queue</button>
+                                        <input type="number" class="form-control" min="1" max="100" step="1" v-model="batch_count">
+                                    </div>
+                                    <button type="button" class="btn btn-danger text-nowrap" @click="stop">
+                                        Stop <span class="badge text-bg-secondary">{{ queue_remaining }}</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="d-flex flex-column p-3 gap-3">
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-secondary" @click="clear_workflow_images">Clear</button>
+                                        <button type="button" class="btn btn-dark" @click="download_workflow_images">Download</button>
+                                    </div>
+                                    <div class="container">
+                                        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+                                            <div class="col" v-for="(image, index) in workflow_images">
+                                                <div class="position-relative">
+                                                    <img class="w-100" :src="image['src']" @click="view_image(index)">
+                                                    <button type="button" class="btn-close position-absolute top-0 end-0" @click="delete_image(index)"></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
                 </template>
                 <div class="d-flex flex-column align-items-start p-3 gap-2" v-else>
                     <div>
