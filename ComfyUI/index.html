@@ -13,13 +13,19 @@
             }
         </style>
         <script>
-            let readyPromise = new Promise(resolve => {
+            let readyPromise = new Promise(async resolve => {
                 if (history.state != null) {
                     history.back();
                 }
                 else {
                     let url = new URL(location.href);
                     let code = url.searchParams.get('code');
+                    if (code) {
+                        
+                    }
+                    else {
+                        resolve();
+                    }
                 }
             });
         </script>
