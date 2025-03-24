@@ -489,6 +489,10 @@
                         if (this.workflow_name) {
                             let idx = this.workflows.findIndex(workflow => workflow.name == this.workflow_name);
                             this.workflows.splice(idx, 1);
+                            for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.workflow_name)) {
+                                let idx = this.prompt_ids.indexOf(prompt_id);
+                                this.prompt_ids.splice(idx, 1);
+                            }
                             if (this.workflows.length == 0) {
                                 this.workflow_name = null;
                             }
