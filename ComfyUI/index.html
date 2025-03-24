@@ -593,6 +593,11 @@
                     async connect() {
                         this.is_connecting = true;
                         try {
+                            const socket = new WebSocket(`${this.server_address}/ws?clientId=${this.client_id}`);
+                            socket.addEventListener("message", function (event) {
+                                console.log("Message from server ", event.data);
+                            });
+                            
                             this.object_info = await (await fetch(`${this.server_address}/object_info`)).json();
 
                             try {
