@@ -689,8 +689,7 @@
                         });
                     }
                     catch (e) {
-                        history.replaceState(null, "", "https://github.com/login/oauth/authorize?client_id=Iv23liWRsQFOTUzTyCsV");
-                        location.reload();
+                        location.href = "https://github.com/login/oauth/authorize?client_id=Iv23liWRsQFOTUzTyCsV";
                     }
                     
                     window.addEventListener('popstate', e => {
