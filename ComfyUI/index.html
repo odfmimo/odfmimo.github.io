@@ -235,21 +235,6 @@
             }
 
             import { Octokit } from "https://esm.sh/@octokit/core";
-            try {
-                let access_token = JSON.parse(localStorage.get("ComfyUI")).access_token;
-                const octokit = new Octokit({
-                    auth: access_token
-                });
-                let response = await octokit.request('GET /gists', {
-                    headers: {
-                        'X-GitHub-Api-Version': '2022-11-28'
-                    }
-                });
-            }
-            catch (e) {
-                location.href = "https://github.com/login/oauth/authorize?client_id=Iv23liWRsQFOTUzTyCsV";
-                return;
-            }
             
             const uuid41 = () => ('xxxxxxxx-xxxx-4xxx-Nxxx-xxxxxxxxxxxx'
                 .replace(/x/g, () =>  ((Math.random()*16)|0).toString(16))
@@ -692,7 +677,21 @@
                     },
                 },
                 async created() {
-                    this.load_settings();
+                    try {
+                        let access_token = JSON.parse(localStorage.get("ComfyUI")).access_token;
+                        const octokit = new Octokit({
+                            auth: access_token
+                        });
+                        let response = await octokit.request('GET /gists', {
+                            headers: {
+                                'X-GitHub-Api-Version': '2022-11-28'
+                            }
+                        });
+                    }
+                    catch (e) {
+                        history.replaceState(null, "", "https://github.com/login/oauth/authorize?client_id=Iv23liWRsQFOTUzTyCsV");
+                        location.reload();
+                    }
                     
                     window.addEventListener('popstate', e => {
                         if (history.state == null) {
