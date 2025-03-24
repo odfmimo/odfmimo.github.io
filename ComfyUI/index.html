@@ -223,7 +223,12 @@
                                 </div>
                                 <div class="container">
                                     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
-                                        <img v-for="(image, index) in workflow_images" :src="image['src']" @click="view_image(index)">
+                                        <div class="col" v-for="(image, index) in workflow_images">
+                                            <div class="position-relative">
+                                                <img class="w-100" :src="image['src']" @click="view_image(index)">
+                                                <button type="button" class="btn-close position-absolute top-0 end-0" @click="delete_image(index)"></button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -816,6 +821,10 @@
                     view_image(index) {
                         history.pushState({image_number: index}, "");
                         this.image_number = index;
+                    },
+                    delete_image(index) {
+                        let idx = this.prompt_ids.findIndex(prompt_id => prompt_id.prompt_id == this.workflow_images[index]['prompt_id']);
+                        this.prompt_ids.splice(idx, 1);
                     },
                     autocomplete_input(event) {
                         let target = event.target;
