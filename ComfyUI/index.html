@@ -15,7 +15,7 @@
     </head>
     <body>
         <div id="app">
-            <template>
+            <template v-if="true">
                 <div class="position-absolute w-100 h-100 bg-black" v-if="image_number != null">
                     <div class="w-100 h-100 carousel slide">
                         <div class="w-100 h-100 carousel-inner">
@@ -233,275 +233,415 @@
             if (history.state != null) {
                 history.back();
             }
-
-            import { Octokit } from "https://esm.sh/@octokit/core";
+            else {
+                const uuid41 = () => ('xxxxxxxx-xxxx-4xxx-Nxxx-xxxxxxxxxxxx'
+                    .replace(/x/g, () =>  ((Math.random()*16)|0).toString(16))
+                    .replace(/N/g, () => ((Math.random()*4)|0 + 8).toString(16)));
             
-            const uuid41 = () => ('xxxxxxxx-xxxx-4xxx-Nxxx-xxxxxxxxxxxx'
-                .replace(/x/g, () =>  ((Math.random()*16)|0).toString(16))
-                .replace(/N/g, () => ((Math.random()*4)|0 + 8).toString(16)));
-            
-            import { createApp, toRaw } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
-            createApp({
-                data() {
-                    return {
-                        client_id: uuid41(),
-                        server_address: "http://127.0.0.1:8188",
-                        object_info: null,
-                        workflow_name: null,
-                        workflows: [],
-                        editing: null,
-                        queue_remaining: 0,
-                        batch_count: 1,
-                        images: [],
-                        image_number: null,
-                        filtered_autocomplete: null,
-                        prompt_ids: [],
-                    }
-                },
-                methods: {
-                    get_default(class_type) {
-                        let inputs = {};
-                        let object_info = this.object_info[class_type];
-                        for (let [key, value] of Object.entries(object_info['input']['required'])) {
-                            if (!(key in inputs)) {
-                                if (value[1] instanceof Object && 'default' in value[1]) {
-                                    inputs[key] = value[1]?.['default'];
-                                }
-                                else if (Array.isArray(value[0])) {
-                                    inputs[key] = value[0][0];
-                                }
-                                else inputs[key] = null;
-                            }
+                import { createApp, toRaw } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+                import { Octokit } from "https://esm.sh/@octokit/core"
+                
+                createApp({
+                    data() {
+                        return {
+                            client_id: uuid41(),
+                            server_address: "http://127.0.0.1:8188",
+                            object_info: null,
+                            workflow_name: null,
+                            workflows: [],
+                            editing: null,
+                            queue_remaining: 0,
+                            batch_count: 1,
+                            images: [],
+                            image_number: null,
+                            filtered_autocomplete: null,
+                            prompt_ids: [],
                         }
-                        return inputs;
                     },
-                    async queue(event) {
-                        let workflow = null;
-                        if (this.editing) {
-                            workflow = this.editing;
-                        }
-                        else if (this.workflow_name) {
-                            workflow = this.workflows.find(workflow => workflow.name == this.workflow_name);
-                        }
-                        else return;
-                        
-                        for (let _ of Array(this.batch_count)) {
-                            let prompt = {};
-                            const add_node = (class_type, inputs_ = {}) => {
-                                let inputs = structuredClone(inputs_);
-                                let object_info = this.object_info[class_type];
-                                for (let [key, value] of Object.entries(object_info['input']['required'])) {
-                                    if (!(key in inputs)) {
-                                        if (value[1] instanceof Object && 'default' in value[1]) {
-                                            inputs[key] = value[1]?.['default'];
-                                        }
-                                        else if (Array.isArray(value[0])) {
-                                            inputs[key] = value[0][0];
-                                        }
-                                        else {
-                                            if (value[0] == "STRING") {
-                                                inputs[key] = "";
+                    methods: {
+                        get_default(class_type) {
+                            let inputs = {};
+                            let object_info = this.object_info[class_type];
+                            for (let [key, value] of Object.entries(object_info['input']['required'])) {
+                                if (!(key in inputs)) {
+                                    if (value[1] instanceof Object && 'default' in value[1]) {
+                                        inputs[key] = value[1]?.['default'];
+                                    }
+                                    else if (Array.isArray(value[0])) {
+                                        inputs[key] = value[0][0];
+                                    }
+                                    else inputs[key] = null;
+                                }
+                            }
+                            return inputs;
+                        },
+                        async queue(event) {
+                            let workflow = null;
+                            if (this.editing) {
+                                workflow = this.editing;
+                            }
+                            else if (this.workflow_name) {
+                                workflow = this.workflows.find(workflow => workflow.name == this.workflow_name);
+                            }
+                            else return;
+                            
+                            for (let _ of Array(this.batch_count)) {
+                                let prompt = {};
+                                const add_node = (class_type, inputs_ = {}) => {
+                                    let inputs = structuredClone(inputs_);
+                                    let object_info = this.object_info[class_type];
+                                    for (let [key, value] of Object.entries(object_info['input']['required'])) {
+                                        if (!(key in inputs)) {
+                                            if (value[1] instanceof Object && 'default' in value[1]) {
+                                                inputs[key] = value[1]?.['default'];
+                                            }
+                                            else if (Array.isArray(value[0])) {
+                                                inputs[key] = value[0][0];
+                                            }
+                                            else {
+                                                if (value[0] == "STRING") {
+                                                    inputs[key] = "";
+                                                }
                                             }
                                         }
                                     }
+                                    let node = {class_type, inputs};
+        
+                                    let key = String(Math.max(0, ...Object.keys(prompt).map(key => Number(key))) + 1);
+                                    prompt[key] = node;
+                                    
+                                    let outputs = {};
+                                    for (let [index, output_name] of object_info['output_name'].entries()) {
+                                        outputs[output_name] = [key, index];
+                                    }
+                                    return outputs;
+                                };
+        
+                                let CheckpointLoaderSimple_node = add_node('CheckpointLoaderSimple', {ckpt_name: workflow.workflow.checkpoint});
+                                let model_output = CheckpointLoaderSimple_node['MODEL'];
+                                let clip_output = CheckpointLoaderSimple_node['CLIP'];
+                                let vae_output = CheckpointLoaderSimple_node['VAE'];
+        
+                                if (workflow.workflow.lora) {
+                                    for (let lora of workflow.workflow.lora) {
+                                        let LoraLoader_node = add_node('LoraLoader', {
+                                            model: model_output, clip: clip_output,
+                                            lora_name: lora.lora_name, strength_model: lora.strength_model, strength_clip: lora.strength_clip,
+                                        });
+                                        model_output = LoraLoader_node['MODEL'];
+                                        clip_output = LoraLoader_node['CLIP'];
+                                    }
                                 }
-                                let node = {class_type, inputs};
-    
-                                let key = String(Math.max(0, ...Object.keys(prompt).map(key => Number(key))) + 1);
-                                prompt[key] = node;
-                                
-                                let outputs = {};
-                                for (let [index, output_name] of object_info['output_name'].entries()) {
-                                    outputs[output_name] = [key, index];
+        
+                                if (workflow.workflow.clip_set_last_layer_bool) {
+                                    let CLIPSetLastLayer_node = add_node('CLIPSetLastLayer', {stop_at_clip_layer: workflow.workflow.stop_at_clip_layer, clip: clip_output});
+                                    clip_output = CLIPSetLastLayer_node['CLIP'];
                                 }
-                                return outputs;
-                            };
-    
-                            let CheckpointLoaderSimple_node = add_node('CheckpointLoaderSimple', {ckpt_name: workflow.workflow.checkpoint});
-                            let model_output = CheckpointLoaderSimple_node['MODEL'];
-                            let clip_output = CheckpointLoaderSimple_node['CLIP'];
-                            let vae_output = CheckpointLoaderSimple_node['VAE'];
-    
-                            if (workflow.workflow.lora) {
-                                for (let lora of workflow.workflow.lora) {
-                                    let LoraLoader_node = add_node('LoraLoader', {
-                                        model: model_output, clip: clip_output,
-                                        lora_name: lora.lora_name, strength_model: lora.strength_model, strength_clip: lora.strength_clip,
-                                    });
-                                    model_output = LoraLoader_node['MODEL'];
-                                    clip_output = LoraLoader_node['CLIP'];
+        
+                                let CLIPTextEncode_positive_node = add_node('CLIPTextEncode', {text: workflow.workflow.positive_text, clip: clip_output});
+                                let positive_output = CLIPTextEncode_positive_node['CONDITIONING'];
+                                let CLIPTextEncode_negative_node = add_node('CLIPTextEncode', {text: workflow.workflow.negative_text, clip: clip_output});
+                                let negative_output = CLIPTextEncode_negative_node['CONDITIONING'];
+        
+                                if (workflow.workflow.condition) {
+                                    for (let condition of workflow.workflow.condition) {
+                                        let CLIPTextEncode_node = add_node('CLIPTextEncode', {text: condition.text, clip: clip_output});
+                                        let ConditioningSetAreaPercentage_node = add_node('ConditioningSetAreaPercentage', {
+                                            conditioning: CLIPTextEncode_node['CONDITIONING'],
+                                            width: condition.width, height: condition.height, x: condition.x, y: condition.y
+                                        });
+                                        let ConditioningConcat_node = add_node('ConditioningConcat', {conditioning_to: positive_output, conditioning_from: ConditioningSetAreaPercentage_node['CONDITIONING']});
+                                        positive_output = ConditioningConcat_node['CONDITIONING'];
+                                    }
                                 }
-                            }
-    
-                            if (workflow.workflow.clip_set_last_layer_bool) {
-                                let CLIPSetLastLayer_node = add_node('CLIPSetLastLayer', {stop_at_clip_layer: workflow.workflow.stop_at_clip_layer, clip: clip_output});
-                                clip_output = CLIPSetLastLayer_node['CLIP'];
-                            }
-    
-                            let CLIPTextEncode_positive_node = add_node('CLIPTextEncode', {text: workflow.workflow.positive_text, clip: clip_output});
-                            let positive_output = CLIPTextEncode_positive_node['CONDITIONING'];
-                            let CLIPTextEncode_negative_node = add_node('CLIPTextEncode', {text: workflow.workflow.negative_text, clip: clip_output});
-                            let negative_output = CLIPTextEncode_negative_node['CONDITIONING'];
-    
-                            if (workflow.workflow.condition) {
-                                for (let condition of workflow.workflow.condition) {
-                                    let CLIPTextEncode_node = add_node('CLIPTextEncode', {text: condition.text, clip: clip_output});
-                                    let ConditioningSetAreaPercentage_node = add_node('ConditioningSetAreaPercentage', {
-                                        conditioning: CLIPTextEncode_node['CONDITIONING'],
-                                        width: condition.width, height: condition.height, x: condition.x, y: condition.y
-                                    });
-                                    let ConditioningConcat_node = add_node('ConditioningConcat', {conditioning_to: positive_output, conditioning_from: ConditioningSetAreaPercentage_node['CONDITIONING']});
-                                    positive_output = ConditioningConcat_node['CONDITIONING'];
-                                }
-                            }
-    
-                            let EmptyLatentImageFromPresetsSDXL_node = add_node('EmptyLatentImageFromPresetsSDXL', {preset: workflow.workflow.size_preset});
-    
-                            let KSampler_seed_info = this.object_info['KSampler']['input']['required']['seed'][1];
-                            let KSampler_seed = Math.floor(Math.random() * (KSampler_seed_info['max'] - KSampler_seed_info['min']) + KSampler_seed_info['min']);
-                            let KSampler_node = add_node('KSampler', {
-                                model: model_output,positive: positive_output, negative: negative_output, latent_image: EmptyLatentImageFromPresetsSDXL_node['latent'],
-                                seed: KSampler_seed, steps: workflow.workflow.steps, cfg: workflow.workflow.cfg, sampler_name: workflow.workflow.sampler_name, scheduler: workflow.workflow.scheduler,
-                            });
-                            
-                            let VAEDecode_node = add_node('VAEDecode', {samples: KSampler_node['LATENT'], vae: vae_output});
-                            let image_output = VAEDecode_node['IMAGE'];
-    
-                            if (workflow.workflow.face_detailer_bool) {
-                                let UltralyticsDetectorProvider_node = add_node('UltralyticsDetectorProvider');
-                                let FaceDetailer_seed_info = this.object_info['FaceDetailer']['input']['required']['seed'][1];
-                                let FaceDetailer_seed = Math.floor(Math.random() * (FaceDetailer_seed_info['max'] - FaceDetailer_seed_info['min']) + FaceDetailer_seed_info['min']);
-                                let FaceDetailer_node = add_node('FaceDetailer', {
-                                    image: image_output, model: model_output, clip: clip_output, vae: vae_output, positive: positive_output, negative: negative_output,
-                                    seed: FaceDetailer_seed, steps: workflow.workflow.steps, cfg: workflow.workflow.cfg, sampler_name: workflow.workflow.sampler_name, scheduler: workflow.workflow.scheduler,
-                                    bbox_detector: UltralyticsDetectorProvider_node['BBOX_DETECTOR'],
+        
+                                let EmptyLatentImageFromPresetsSDXL_node = add_node('EmptyLatentImageFromPresetsSDXL', {preset: workflow.workflow.size_preset});
+        
+                                let KSampler_seed_info = this.object_info['KSampler']['input']['required']['seed'][1];
+                                let KSampler_seed = Math.floor(Math.random() * (KSampler_seed_info['max'] - KSampler_seed_info['min']) + KSampler_seed_info['min']);
+                                let KSampler_node = add_node('KSampler', {
+                                    model: model_output,positive: positive_output, negative: negative_output, latent_image: EmptyLatentImageFromPresetsSDXL_node['latent'],
+                                    seed: KSampler_seed, steps: workflow.workflow.steps, cfg: workflow.workflow.cfg, sampler_name: workflow.workflow.sampler_name, scheduler: workflow.workflow.scheduler,
                                 });
-                                image_output = FaceDetailer_node['image'];
-                            }
+                                
+                                let VAEDecode_node = add_node('VAEDecode', {samples: KSampler_node['LATENT'], vae: vae_output});
+                                let image_output = VAEDecode_node['IMAGE'];
+        
+                                if (workflow.workflow.face_detailer_bool) {
+                                    let UltralyticsDetectorProvider_node = add_node('UltralyticsDetectorProvider');
+                                    let FaceDetailer_seed_info = this.object_info['FaceDetailer']['input']['required']['seed'][1];
+                                    let FaceDetailer_seed = Math.floor(Math.random() * (FaceDetailer_seed_info['max'] - FaceDetailer_seed_info['min']) + FaceDetailer_seed_info['min']);
+                                    let FaceDetailer_node = add_node('FaceDetailer', {
+                                        image: image_output, model: model_output, clip: clip_output, vae: vae_output, positive: positive_output, negative: negative_output,
+                                        seed: FaceDetailer_seed, steps: workflow.workflow.steps, cfg: workflow.workflow.cfg, sampler_name: workflow.workflow.sampler_name, scheduler: workflow.workflow.scheduler,
+                                        bbox_detector: UltralyticsDetectorProvider_node['BBOX_DETECTOR'],
+                                    });
+                                    image_output = FaceDetailer_node['image'];
+                                }
+        
+                                add_node('PreviewImage', {images: image_output});
     
-                            add_node('PreviewImage', {images: image_output});
-
-                            let prompt_id = (await (await fetch(`${this.server_address}/prompt`, {
+                                let prompt_id = (await (await fetch(`${this.server_address}/prompt`, {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({"prompt": prompt, "client_id": this.client_id}),
+                                })).json())['prompt_id'];
+    
+                                this.prompt_ids.push({prompt_id: prompt_id, workflow: workflow});
+                            }
+                        },
+                        async stop() {
+                            await fetch(`${this.server_address}/queue`, {
                                 method: "POST",
                                 headers: {
                                     "Content-Type": "application/json",
                                 },
-                                body: JSON.stringify({"prompt": prompt, "client_id": this.client_id}),
-                            })).json())['prompt_id'];
-
-                            this.prompt_ids.push({prompt_id: prompt_id, workflow: workflow});
-                        }
-                    },
-                    async stop() {
-                        await fetch(`${this.server_address}/queue`, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({"clear": true}),
-                        });
-                        await fetch(`${this.server_address}/interrupt`, {
-                            method: "POST",
-                        });
-                    },
-                    edit_workflow() {
-                        if (this.workflow_name) {
-                            this.editing = structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name)));
-                            this.editing.name_ = this.workflow_name;
-                        }
-                        else this.add_workflow();
-                    },
-                    add_workflow() {
-                        let default_CheckpointLoaderSimple = this.get_default('CheckpointLoaderSimple');
-                        let default_EmptyLatentImageFromPresetsSDXL = this.get_default('EmptyLatentImageFromPresetsSDXL');
-                        let default_KSampler = this.get_default('KSampler');
-                        let default_CLIPSetLastLayer = this.get_default('CLIPSetLastLayer');
-                        this.editing = {
-                            name: "",
-                            workflow: {
-                                checkpoint: default_CheckpointLoaderSimple['ckpt_name'],
-                                size_preset: default_EmptyLatentImageFromPresetsSDXL['preset'],
-                                steps: default_KSampler['steps'],
-                                cfg: default_KSampler['cfg'],
-                                sampler_name: default_KSampler['sampler_name'],
-                                scheduler: default_KSampler['scheduler'],
-                                stop_at_clip_layer: default_CLIPSetLastLayer['stop_at_clip_layer'],
+                                body: JSON.stringify({"clear": true}),
+                            });
+                            await fetch(`${this.server_address}/interrupt`, {
+                                method: "POST",
+                            });
+                        },
+                        edit_workflow() {
+                            if (this.workflow_name) {
+                                this.editing = structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name)));
+                                this.editing.name_ = this.workflow_name;
                             }
-                        };
-                    },
-                    clone_workflow() {
-                        if (this.workflow_name) {
+                            else this.add_workflow();
+                        },
+                        add_workflow() {
+                            let default_CheckpointLoaderSimple = this.get_default('CheckpointLoaderSimple');
+                            let default_EmptyLatentImageFromPresetsSDXL = this.get_default('EmptyLatentImageFromPresetsSDXL');
+                            let default_KSampler = this.get_default('KSampler');
+                            let default_CLIPSetLastLayer = this.get_default('CLIPSetLastLayer');
                             this.editing = {
-                                name: this.workflow_name,
-                                workflow: structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name).workflow)),
+                                name: "",
+                                workflow: {
+                                    checkpoint: default_CheckpointLoaderSimple['ckpt_name'],
+                                    size_preset: default_EmptyLatentImageFromPresetsSDXL['preset'],
+                                    steps: default_KSampler['steps'],
+                                    cfg: default_KSampler['cfg'],
+                                    sampler_name: default_KSampler['sampler_name'],
+                                    scheduler: default_KSampler['scheduler'],
+                                    stop_at_clip_layer: default_CLIPSetLastLayer['stop_at_clip_layer'],
+                                }
                             };
-                        }
-                    },
-                    remove_workflow() {
-                        if (this.workflow_name) {
-                            let idx = this.workflows.findIndex(workflow => workflow.name == this.workflow_name);
-                            this.workflows.splice(idx, 1);
-                            if (this.workflows.length == 0) {
-                                this.workflow_name = null;
+                        },
+                        clone_workflow() {
+                            if (this.workflow_name) {
+                                this.editing = {
+                                    name: this.workflow_name,
+                                    workflow: structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name).workflow)),
+                                };
                             }
-                            else if (idx < this.workflows.length) {
-                                this.workflow_name = this.workflows[idx].name;
-                            }
-                            else {
-                                this.workflow_name = this.workflows[this.workflows.length - 1].name;
-                            }
-                        }
-                    },
-                    save_workflow() {
-                        if (this.is_valid_name) {
-                            if (this.editing.name_) {
-                                let target = this.workflows.find(workflow => workflow.name == this.editing.name_);
-                                target.name = this.editing.name;
-                                target.workflow = structuredClone(toRaw(this.editing.workflow));
-                                for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow == target)) {
-                                    let idx = this.prompt_ids.indexOf(prompt_id);
-                                    this.prompt_ids.splice(idx, 1);
+                        },
+                        remove_workflow() {
+                            if (this.workflow_name) {
+                                let idx = this.workflows.findIndex(workflow => workflow.name == this.workflow_name);
+                                this.workflows.splice(idx, 1);
+                                if (this.workflows.length == 0) {
+                                    this.workflow_name = null;
+                                }
+                                else if (idx < this.workflows.length) {
+                                    this.workflow_name = this.workflows[idx].name;
+                                }
+                                else {
+                                    this.workflow_name = this.workflows[this.workflows.length - 1].name;
                                 }
                             }
-                            else {
-                                this.workflows.push({
-                                    name: this.editing.name,
-                                    workflow: structuredClone(toRaw(this.editing.workflow))
-                                });
+                        },
+                        save_workflow() {
+                            if (this.is_valid_name) {
+                                if (this.editing.name_) {
+                                    let target = this.workflows.find(workflow => workflow.name == this.editing.name_);
+                                    target.name = this.editing.name;
+                                    target.workflow = structuredClone(toRaw(this.editing.workflow));
+                                    for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow == target)) {
+                                        let idx = this.prompt_ids.indexOf(prompt_id);
+                                        this.prompt_ids.splice(idx, 1);
+                                    }
+                                }
+                                else {
+                                    this.workflows.push({
+                                        name: this.editing.name,
+                                        workflow: structuredClone(toRaw(this.editing.workflow))
+                                    });
+                                }
+    
+                                this.workflow_name = this.editing.name;
+                                this.editing = null;
                             }
-
-                            this.workflow_name = this.editing.name;
-                            this.editing = null;
-                        }
-                    },
-                    upload_workflow() {
-                        let input = document.createElement('input');
-                        input.type = 'file';
-                        input.style.display = 'none';
-                        input.addEventListener('change', _ => {
-                            for (let file of input.files) {
-                                const reader = new FileReader();
-                                reader.addEventListener('load', _ => {
-                                    let workflow = JSON.parse(reader.result);
-                                    this.editing = {
-                                        name: workflow.name,
-                                        workflow: workflow.workflow,
-                                    };
-                                });
-                                reader.readAsText(file);
+                        },
+                        upload_workflow() {
+                            let input = document.createElement('input');
+                            input.type = 'file';
+                            input.style.display = 'none';
+                            input.addEventListener('change', _ => {
+                                for (let file of input.files) {
+                                    const reader = new FileReader();
+                                    reader.addEventListener('load', _ => {
+                                        let workflow = JSON.parse(reader.result);
+                                        this.editing = {
+                                            name: workflow.name,
+                                            workflow: workflow.workflow,
+                                        };
+                                    });
+                                    reader.readAsText(file);
+                                }
+                            });
+                            input.click();
+                        },
+                        download_workflow() {
+                            if (this.workflow_name) {
+                                let workflow = structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name)));
+                                let url = window.URL.createObjectURL(new Blob([JSON.stringify(workflow)], {type: 'application/octet-stream'}));
+                                const iframe = document.createElement('iframe');
+                                iframe.style.display = 'none';
+                                iframe.addEventListener('load', _ => {
+                                    let a = iframe.contentDocument.createElement('a');
+                                    a.download = `${workflow.name}.json`
+                                    a.href = url;
+                                    a.click();
+                                    setTimeout(_ => {
+                                        iframe.remove();
+                                        window.URL.revokeObjectURL(url);
+                                    }, 100);
+                                }, { once: true });
+                                document.body.appendChild(iframe);
                             }
-                        });
-                        input.click();
-                    },
-                    download_workflow() {
-                        if (this.workflow_name) {
-                            let workflow = structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name)));
-                            let url = window.URL.createObjectURL(new Blob([JSON.stringify(workflow)], {type: 'application/octet-stream'}));
+                        },
+                        add_lora() {
+                            if (!this.editing.workflow.lora) {
+                                this.editing.workflow.lora = [];
+                            }
+                            let default_LoraLoader = this.get_default('LoraLoader');
+                            this.editing.workflow.lora.push({
+                                lora_name: default_LoraLoader['lora_name'],
+                                strength_model: default_LoraLoader['strength_model'],
+                                strength_clip: default_LoraLoader['strength_clip'],
+                            });
+                        },
+                        remove_lora(lora) {
+                            let idx = this.editing.workflow.lora.indexOf(lora);
+                            this.editing.workflow.lora.splice(idx, 1);
+                        },
+                        add_condition() {
+                            if (!this.editing.workflow.condition) {
+                                this.editing.workflow.condition = [];
+                            }
+                            let default_ConditioningSetAreaPercentage = this.get_default('ConditioningSetAreaPercentage');
+                            this.editing.workflow.condition.push({
+                                width: default_ConditioningSetAreaPercentage['width'],
+                                height: default_ConditioningSetAreaPercentage['height'],
+                                x: default_ConditioningSetAreaPercentage['x'],
+                                y: default_ConditioningSetAreaPercentage['y'],
+                            });
+                        },
+                        remove_condition(condition) {
+                            let idx = this.editing.workflow.condition.indexOf(condition);
+                            this.editing.workflow.condition.splice(idx, 1);
+                        },
+                        async connect() {
+                            this.object_info = await (await fetch(`${this.server_address}/object_info`)).json();
+    
+                            this.autocomplete = (await (await fetch(`${this.server_address}/pysssss/autocomplete`)).text())
+                                .split('\n').map(item => item.split(','))
+                                .map(item => ({
+                                    name: ['(', ')', '[', ']'].reduce((acc, cur) => acc.replaceAll(cur, '\\' + cur), item[0].trim().replaceAll('_', ' ')),
+                                    count: Number(item[1].trim())
+                                }));
+    
+                            if (this.intervalID) clearInterval(this.intervalID);
+                            this.intervalID = setInterval(async _ => {
+                                let images = [];
+                                Object.values((await (await fetch(`${this.server_address}/history`)).json()))
+                                    .sort((a, b) => (a['prompt']?.[0] > b['prompt']?.[0]))
+                                    .forEach(history => {
+                                        for (let node_id of Object.keys(history['outputs'])) {
+                                            let node_output = history['outputs'][node_id];
+                                            if ('images' in node_output) {
+                                                for (let image of node_output['images']) {
+                                                    let data = {"filename": image['filename'], "subfolder": image['subfolder'], "type": image['type']};
+                                                    let params = new URLSearchParams(data);
+                                                    let url_values = params.toString();
+                                                    data['src'] = `${this.server_address}/view?${url_values}`;
+                                                    data['prompt_id'] = history['prompt']?.[1];
+                                                    images.push(data);
+                                                }
+                                            }
+                                        }
+                                    });
+                                this.images = images;
+                                
+                                let queue = await (await fetch(`${this.server_address}/queue`)).json();
+                                this.queue_remaining = queue['queue_running'].length + queue['queue_pending'].length;
+                            }, 100);
+                        },
+                        async save_settings() {
+                            // await this.octokit.request('PATCH /gists/5c213f4bb9852630af086a3425e48eb2', {
+                            //     files: {
+                            //         'comfyui.json': {
+                            //             content: JSON.stringify({
+                            //                 workflows: this.workflows,
+                            //                 workflow_name: this.workflow_name,
+                            //             }),
+                            //         }
+                            //     },
+                            //     headers: {
+                            //         'X-GitHub-Api-Version': '2022-11-28'
+                            //     }
+                            // });
+                        },
+                        async load_settings() {
+                            // let response = await this.octokit.request('GET /gists/5c213f4bb9852630af086a3425e48eb2', {
+                            //     headers: {
+                            //         'X-GitHub-Api-Version': '2022-11-28'
+                            //     }
+                            // });
+                            // let settings = JSON.parse(response.data.files['comfyui.json'].content);
+                            // this.workflows = settings.workflows ?? [];
+                            // this.workflow_name = settings.workflow_name;
+                        },
+                        watch_settings() {
+                            if (!this.workflows.find(workflow => workflow.name == this.workflow_name)) {
+                                if (this.workflows.length > 0) {
+                                    this.workflow_name = this.workflows[0].name;
+                                }
+                                else this.workflow_name = null;
+                            }
+                            this.save_settings();
+                        },
+                        async clear_history() {
+                            await fetch(`${this.server_address}/history`, {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({"clear": true}),
+                            });
+                            this.images = [];
+                        },
+                        clear_workflow_images() {
+                            for (let image of this.workflow_images) {
+                                let idx = this.prompt_ids.findIndex(prompt_id => prompt_id.prompt_id == image['prompt_id']);
+                                this.prompt_ids.splice(idx, 1);
+                            }
+                        },
+                        async download_workflow_images() {
+                            var zip = new JSZip();
+                            for (let image of this.workflow_images) {
+                                let response = await fetch(image['src']);
+                                let blob = await response.blob();
+                                zip.file(image.filename, blob);
+                            }
+                            let content = await zip.generateAsync({type:"blob"});
+                            const url = window.URL.createObjectURL(content);
                             const iframe = document.createElement('iframe');
                             iframe.style.display = 'none';
                             iframe.addEventListener('load', _ => {
                                 let a = iframe.contentDocument.createElement('a');
-                                a.download = `${workflow.name}.json`
                                 a.href = url;
                                 a.click();
                                 setTimeout(_ => {
@@ -510,249 +650,110 @@
                                 }, 100);
                             }, { once: true });
                             document.body.appendChild(iframe);
-                        }
-                    },
-                    add_lora() {
-                        if (!this.editing.workflow.lora) {
-                            this.editing.workflow.lora = [];
-                        }
-                        let default_LoraLoader = this.get_default('LoraLoader');
-                        this.editing.workflow.lora.push({
-                            lora_name: default_LoraLoader['lora_name'],
-                            strength_model: default_LoraLoader['strength_model'],
-                            strength_clip: default_LoraLoader['strength_clip'],
-                        });
-                    },
-                    remove_lora(lora) {
-                        let idx = this.editing.workflow.lora.indexOf(lora);
-                        this.editing.workflow.lora.splice(idx, 1);
-                    },
-                    add_condition() {
-                        if (!this.editing.workflow.condition) {
-                            this.editing.workflow.condition = [];
-                        }
-                        let default_ConditioningSetAreaPercentage = this.get_default('ConditioningSetAreaPercentage');
-                        this.editing.workflow.condition.push({
-                            width: default_ConditioningSetAreaPercentage['width'],
-                            height: default_ConditioningSetAreaPercentage['height'],
-                            x: default_ConditioningSetAreaPercentage['x'],
-                            y: default_ConditioningSetAreaPercentage['y'],
-                        });
-                    },
-                    remove_condition(condition) {
-                        let idx = this.editing.workflow.condition.indexOf(condition);
-                        this.editing.workflow.condition.splice(idx, 1);
-                    },
-                    async connect() {
-                        this.object_info = await (await fetch(`${this.server_address}/object_info`)).json();
-
-                        this.autocomplete = (await (await fetch(`${this.server_address}/pysssss/autocomplete`)).text())
-                            .split('\n').map(item => item.split(','))
-                            .map(item => ({
-                                name: ['(', ')', '[', ']'].reduce((acc, cur) => acc.replaceAll(cur, '\\' + cur), item[0].trim().replaceAll('_', ' ')),
-                                count: Number(item[1].trim())
-                            }));
-
-                        if (this.intervalID) clearInterval(this.intervalID);
-                        this.intervalID = setInterval(async _ => {
-                            let images = [];
-                            Object.values((await (await fetch(`${this.server_address}/history`)).json()))
-                                .sort((a, b) => (a['prompt']?.[0] > b['prompt']?.[0]))
-                                .forEach(history => {
-                                    for (let node_id of Object.keys(history['outputs'])) {
-                                        let node_output = history['outputs'][node_id];
-                                        if ('images' in node_output) {
-                                            for (let image of node_output['images']) {
-                                                let data = {"filename": image['filename'], "subfolder": image['subfolder'], "type": image['type']};
-                                                let params = new URLSearchParams(data);
-                                                let url_values = params.toString();
-                                                data['src'] = `${this.server_address}/view?${url_values}`;
-                                                data['prompt_id'] = history['prompt']?.[1];
-                                                images.push(data);
-                                            }
-                                        }
-                                    }
-                                });
-                            this.images = images;
-                            
-                            let queue = await (await fetch(`${this.server_address}/queue`)).json();
-                            this.queue_remaining = queue['queue_running'].length + queue['queue_pending'].length;
-                        }, 100);
-                    },
-                    async save_settings() {
-                        // await this.octokit.request('PATCH /gists/5c213f4bb9852630af086a3425e48eb2', {
-                        //     files: {
-                        //         'comfyui.json': {
-                        //             content: JSON.stringify({
-                        //                 workflows: this.workflows,
-                        //                 workflow_name: this.workflow_name,
-                        //             }),
-                        //         }
-                        //     },
-                        //     headers: {
-                        //         'X-GitHub-Api-Version': '2022-11-28'
-                        //     }
-                        // });
-                    },
-                    async load_settings() {
-                        // let response = await this.octokit.request('GET /gists/5c213f4bb9852630af086a3425e48eb2', {
-                        //     headers: {
-                        //         'X-GitHub-Api-Version': '2022-11-28'
-                        //     }
-                        // });
-                        // let settings = JSON.parse(response.data.files['comfyui.json'].content);
-                        // this.workflows = settings.workflows ?? [];
-                        // this.workflow_name = settings.workflow_name;
-                    },
-                    watch_settings() {
-                        if (!this.workflows.find(workflow => workflow.name == this.workflow_name)) {
-                            if (this.workflows.length > 0) {
-                                this.workflow_name = this.workflows[0].name;
+                        },
+                        view_image(index) {
+                            history.pushState({image_number: index}, "");
+                            this.image_number = index;
+                        },
+                        autocomplete_input(event) {
+                            let target = event.target;
+                            if (target.tagName.toLowerCase() == 'textarea') {
+                                let text = target.value;
+                                let end = event.target.selectionEnd;
+                                let start = text.substring(0, end).lastIndexOf(',');
+                                let segment = text.substring(start+1, end).trim();
+                                if (segment != "") {
+                                    let result = this.autocomplete.filter(autocomplete => autocomplete.name.includes(segment));
+                                    this.filtered_autocomplete = result.slice(0, 25);
+                                    let target_rect = target.getBoundingClientRect();
+                                    let parent_rect = this.$refs.autocomplete.offsetParent.getBoundingClientRect();
+                                    this.$refs.autocomplete.style.top = `${target_rect.top - parent_rect.top}px`;
+                                    this.$refs.autocomplete.style.left = `${target_rect.left - parent_rect.left}px`;
+                                    this.$refs.autocomplete.style.width = `${target_rect.width}px`;
+                                    this.$refs.autocomplete.style.transform = 'translate(0, -100%)';
+                                }
+                                else this.filtered_autocomplete = null;
                             }
-                            else this.workflow_name = null;
+                        },
+                    },
+                    async created() {
+                        try {
+                            let access_token = JSON.parse(localStorage.get("ComfyUI")).access_token;
+                            const octokit = new Octokit({
+                                auth: access_token
+                            });
+                            let response = await octokit.request('GET /gists', {
+                                headers: {
+                                    'X-GitHub-Api-Version': '2022-11-28'
+                                }
+                            });
                         }
-                        this.save_settings();
-                    },
-                    async clear_history() {
-                        await fetch(`${this.server_address}/history`, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({"clear": true}),
-                        });
-                        this.images = [];
-                    },
-                    clear_workflow_images() {
-                        for (let image of this.workflow_images) {
-                            let idx = this.prompt_ids.findIndex(prompt_id => prompt_id.prompt_id == image['prompt_id']);
-                            this.prompt_ids.splice(idx, 1);
+                        catch (e) {
+                            // location.href = "https://github.com/login/oauth/authorize?client_id=Iv23liWRsQFOTUzTyCsV";
                         }
-                    },
-                    async download_workflow_images() {
-                        var zip = new JSZip();
-                        for (let image of this.workflow_images) {
-                            let response = await fetch(image['src']);
-                            let blob = await response.blob();
-                            zip.file(image.filename, blob);
-                        }
-                        let content = await zip.generateAsync({type:"blob"});
-                        const url = window.URL.createObjectURL(content);
-                        const iframe = document.createElement('iframe');
-                        iframe.style.display = 'none';
-                        iframe.addEventListener('load', _ => {
-                            let a = iframe.contentDocument.createElement('a');
-                            a.href = url;
-                            a.click();
-                            setTimeout(_ => {
-                                iframe.remove();
-                                window.URL.revokeObjectURL(url);
-                            }, 100);
-                        }, { once: true });
-                        document.body.appendChild(iframe);
-                    },
-                    view_image(index) {
-                        history.pushState({image_number: index}, "");
-                        this.image_number = index;
-                    },
-                    autocomplete_input(event) {
-                        let target = event.target;
-                        if (target.tagName.toLowerCase() == 'textarea') {
-                            let text = target.value;
-                            let end = event.target.selectionEnd;
-                            let start = text.substring(0, end).lastIndexOf(',');
-                            let segment = text.substring(start+1, end).trim();
-                            if (segment != "") {
-                                let result = this.autocomplete.filter(autocomplete => autocomplete.name.includes(segment));
-                                this.filtered_autocomplete = result.slice(0, 25);
-                                let target_rect = target.getBoundingClientRect();
-                                let parent_rect = this.$refs.autocomplete.offsetParent.getBoundingClientRect();
-                                this.$refs.autocomplete.style.top = `${target_rect.top - parent_rect.top}px`;
-                                this.$refs.autocomplete.style.left = `${target_rect.left - parent_rect.left}px`;
-                                this.$refs.autocomplete.style.width = `${target_rect.width}px`;
-                                this.$refs.autocomplete.style.transform = 'translate(0, -100%)';
-                            }
-                            else this.filtered_autocomplete = null;
-                        }
-                    },
-                },
-                async created() {
-                    try {
-                        let access_token = JSON.parse(localStorage.get("ComfyUI")).access_token;
-                        const octokit = new Octokit({
-                            auth: access_token
-                        });
-                        let response = await octokit.request('GET /gists', {
-                            headers: {
-                                'X-GitHub-Api-Version': '2022-11-28'
+                        
+                        window.addEventListener('popstate', e => {
+                            if (history.state == null) {
+                                this.image_number = null;
                             }
                         });
-                    }
-                    catch (e) {
-                        // location.href = "https://github.com/login/oauth/authorize?client_id=Iv23liWRsQFOTUzTyCsV";
-                    }
-                    
-                    window.addEventListener('popstate', e => {
-                        if (history.state == null) {
-                            this.image_number = null;
-                        }
-                    });
-                    document.addEventListener("visibilitychange", e => {
-                        if (document.visibilityState === "visible") {
-                            if (this.object_info) {
-                                this.connect();
-                            }
-                        }
-                    });
-                    document.addEventListener("keydown", e => {
-                        if (this.image_number != null) {
-                            if (e.key == "Escape") {
-                                if (history.state != null) {
-                                    history.back();
+                        document.addEventListener("visibilitychange", e => {
+                            if (document.visibilityState === "visible") {
+                                if (this.object_info) {
+                                    this.connect();
                                 }
                             }
-                            else if (e.key == "ArrowLeft") {
-                                this.image_number = Math.max(0, this.image_number - 1);
+                        });
+                        document.addEventListener("keydown", e => {
+                            if (this.image_number != null) {
+                                if (e.key == "Escape") {
+                                    if (history.state != null) {
+                                        history.back();
+                                    }
+                                }
+                                else if (e.key == "ArrowLeft") {
+                                    this.image_number = Math.max(0, this.image_number - 1);
+                                }
+                                else if (e.key == "ArrowRight") {
+                                    this.image_number = Math.min(this.workflow_images.length - 1, this.image_number + 1);
+                                }
                             }
-                            else if (e.key == "ArrowRight") {
-                                this.image_number = Math.min(this.workflow_images.length - 1, this.image_number + 1);
-                            }
+                        });
+                        let server_address = (new URLSearchParams(location.search)).get('server_address');
+                        if (server_address) {
+                            this.server_address = server_address;
+                            await this.connect();
                         }
-                    });
-                    let server_address = (new URLSearchParams(location.search)).get('server_address');
-                    if (server_address) {
-                        this.server_address = server_address;
-                        await this.connect();
+                    },
+                    computed: {
+                        is_valid_name() {
+                            if (this.editing) {
+                                if (this.editing.name.trim() == "") return false;
+                                if (!this.editing.name_ || this.editing.name != this.editing.name_) {
+                                    if (this.workflows.find(workflow => workflow.name == this.editing.name)) return false;
+                                }
+                            }
+                            return true;
+                        },
+                        workflow_images() {
+                            if (!this.editing && this.workflow_name) {
+                                let workflow = this.workflows.find(workflow => workflow.name == this.workflow_name);
+                                let prompt_ids = this.prompt_ids.filter(prompt_id => prompt_id.workflow == workflow).map(prompt_id => prompt_id.prompt_id);
+                                return this.images.filter(image => prompt_ids.includes(image['prompt_id']));
+                            }
+                            else return [];
+                        },
+                    },
+                    watch: {
+                        workflows() {
+                            this.watch_settings();
+                        },
+                        workflow_name() {
+                            this.watch_settings();
+                        },
                     }
-                },
-                computed: {
-                    is_valid_name() {
-                        if (this.editing) {
-                            if (this.editing.name.trim() == "") return false;
-                            if (!this.editing.name_ || this.editing.name != this.editing.name_) {
-                                if (this.workflows.find(workflow => workflow.name == this.editing.name)) return false;
-                            }
-                        }
-                        return true;
-                    },
-                    workflow_images() {
-                        if (!this.editing && this.workflow_name) {
-                            let workflow = this.workflows.find(workflow => workflow.name == this.workflow_name);
-                            let prompt_ids = this.prompt_ids.filter(prompt_id => prompt_id.workflow == workflow).map(prompt_id => prompt_id.prompt_id);
-                            return this.images.filter(image => prompt_ids.includes(image['prompt_id']));
-                        }
-                        else return [];
-                    },
-                },
-                watch: {
-                    workflows() {
-                        this.watch_settings();
-                    },
-                    workflow_name() {
-                        this.watch_settings();
-                    },
-                }
-            }).mount('#app')
+                }).mount('#app')
+            }
         </script>
     </body>
 </html>
