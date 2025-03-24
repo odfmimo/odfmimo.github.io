@@ -15,23 +15,23 @@
     </head>
     <body>
         <div id="app">
-            <div class="position-absolute w-100 h-100 bg-black" v-if="image_number != null">
-                <div class="w-100 h-100 carousel slide">
-                    <div class="w-100 h-100 carousel-inner">
-                        <div class="w-100 h-100 carousel-item active">
-                            <img class="w-100 h-100 object-fit-scale" :src="workflow_images[image_number]['src']">
+            <template>
+                <div class="position-absolute w-100 h-100 bg-black" v-if="image_number != null">
+                    <div class="w-100 h-100 carousel slide">
+                        <div class="w-100 h-100 carousel-inner">
+                            <div class="w-100 h-100 carousel-item active">
+                                <img class="w-100 h-100 object-fit-scale" :src="workflow_images[image_number]['src']">
+                            </div>
                         </div>
+                        <button class="carousel-control-prev" type="button" data-bs-slide="prev" @click="image_number = Math.max(0, image_number - 1)">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-slide="next" @click="image_number = Math.min(workflow_images.length - 1, image_number + 1)">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        </button>                    
                     </div>
-                    <button class="carousel-control-prev" type="button" data-bs-slide="prev" @click="image_number = Math.max(0, image_number - 1)">
-                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                    </button>
-                    <button class="carousel-control-next" type="button" data-bs-slide="next" @click="image_number = Math.min(workflow_images.length - 1, image_number + 1)">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                    </button>                    
                 </div>
-            </div>
-            <div v-else>
-                <div v-if="object_info">
+                <div v-else-if="object_info">
                     <div v-if="editing">
                         <div class="d-flex flex-wrap p-3 gap-3">
                             <div class="d-flex gap-2" style="max-width: 100%;">
@@ -224,7 +224,7 @@
                     <input class="form-control flex-shrink-1" style="width: 30em; min-width: 0;" v-model="server_address">
                     <button type="button" class="btn btn-primary" :disabled="object_info != null" @click="connect">Connect</button>
                 </div>
-            </div>
+            </template>
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/js/bootstrap.bundle.min.js"></script>
@@ -689,7 +689,7 @@
                         });
                     }
                     catch (e) {
-                        location.href = "https://github.com/login/oauth/authorize?client_id=Iv23liWRsQFOTUzTyCsV";
+                        // location.href = "https://github.com/login/oauth/authorize?client_id=Iv23liWRsQFOTUzTyCsV";
                     }
                     
                     window.addEventListener('popstate', e => {
