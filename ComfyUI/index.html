@@ -580,29 +580,29 @@
                         }, 100);
                     },
                     async save_settings() {
-                        await this.octokit.request('PATCH /gists/5c213f4bb9852630af086a3425e48eb2', {
-                            files: {
-                                'comfyui.json': {
-                                    content: JSON.stringify({
-                                        workflows: this.workflows,
-                                        workflow_name: this.workflow_name,
-                                    }),
-                                }
-                            },
-                            headers: {
-                                'X-GitHub-Api-Version': '2022-11-28'
-                            }
-                        });
+                        // await this.octokit.request('PATCH /gists/5c213f4bb9852630af086a3425e48eb2', {
+                        //     files: {
+                        //         'comfyui.json': {
+                        //             content: JSON.stringify({
+                        //                 workflows: this.workflows,
+                        //                 workflow_name: this.workflow_name,
+                        //             }),
+                        //         }
+                        //     },
+                        //     headers: {
+                        //         'X-GitHub-Api-Version': '2022-11-28'
+                        //     }
+                        // });
                     },
                     async load_settings() {
-                        let response = await this.octokit.request('GET /gists/5c213f4bb9852630af086a3425e48eb2', {
-                            headers: {
-                                'X-GitHub-Api-Version': '2022-11-28'
-                            }
-                        });
-                        let settings = JSON.parse(response.data.files['comfyui.json'].content);
-                        this.workflows = settings.workflows ?? [];
-                        this.workflow_name = settings.workflow_name;
+                        // let response = await this.octokit.request('GET /gists/5c213f4bb9852630af086a3425e48eb2', {
+                        //     headers: {
+                        //         'X-GitHub-Api-Version': '2022-11-28'
+                        //     }
+                        // });
+                        // let settings = JSON.parse(response.data.files['comfyui.json'].content);
+                        // this.workflows = settings.workflows ?? [];
+                        // this.workflow_name = settings.workflow_name;
                     },
                     watch_settings() {
                         if (!this.workflows.find(workflow => workflow.name == this.workflow_name)) {
