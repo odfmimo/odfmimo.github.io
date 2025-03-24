@@ -237,9 +237,12 @@
                 const uuid41 = () => ('xxxxxxxx-xxxx-4xxx-Nxxx-xxxxxxxxxxxx'
                     .replace(/x/g, () =>  ((Math.random()*16)|0).toString(16))
                     .replace(/N/g, () => ((Math.random()*4)|0 + 8).toString(16)));
-            
-                import { createApp, toRaw } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
-                import { Octokit } from "https://esm.sh/@octokit/core"
+                
+                // import { createApp, toRaw } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+                // import { Octokit } from "https://esm.sh/@octokit/core"
+                
+                const { createApp, toRaw } = await import('https://unpkg.com/vue@3/dist/vue.esm-browser.js')
+                const { Octokit } = await import("https://esm.sh/@octokit/core");
                 
                 createApp({
                     data() {
