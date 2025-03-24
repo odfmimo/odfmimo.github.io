@@ -26,22 +26,7 @@
     <body>
         <div id="app">
             <template v-if="true">
-                <div v-if="object_info && workflows">
-                    <div class="position-absolute w-100 h-100 bg-black" v-show="image_number != null">
-                        <div class="w-100 h-100 carousel slide">
-                            <div class="w-100 h-100 carousel-inner">
-                                <div class="w-100 h-100 carousel-item active">
-                                    <img class="w-100 h-100 object-fit-scale" :src="workflow_images[image_number]['src']">
-                                </div>
-                            </div>
-                            <button class="carousel-control-prev" type="button" data-bs-slide="prev" @click="image_number = Math.max(0, image_number - 1)">
-                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                            </button>
-                            <button class="carousel-control-next" type="button" data-bs-slide="next" @click="image_number = Math.min(workflow_images.length - 1, image_number + 1)">
-                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                            </button>                    
-                        </div>
-                    </div>
+                <template v-if="object_info && workflows">
                     <div v-if="editing">
                         <div class="d-flex flex-wrap p-3 gap-3">
                             <div class="d-flex gap-2" style="max-width: 100%;">
@@ -234,7 +219,22 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                    <div class="position-absolute w-100 h-100 bg-black" v-show="image_number != null">
+                        <div class="w-100 h-100 carousel slide">
+                            <div class="w-100 h-100 carousel-inner">
+                                <div class="w-100 h-100 carousel-item active">
+                                    <img class="w-100 h-100 object-fit-scale" :src="workflow_images[image_number]['src']">
+                                </div>
+                            </div>
+                            <button class="carousel-control-prev" type="button" data-bs-slide="prev" @click="image_number = Math.max(0, image_number - 1)">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-slide="next" @click="image_number = Math.min(workflow_images.length - 1, image_number + 1)">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            </button>                    
+                        </div>
+                    </div>
+                </template>
                 <div class="d-flex flex-column align-items-start p-3 gap-2" v-else>
                     <div>
                         Server Address
