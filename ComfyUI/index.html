@@ -299,7 +299,7 @@
                     workflow_images() {
                         if (!this.editing && this.workflow_name) {
                             let workflow = this.workflows.find(workflow => workflow.name == this.workflow_name);
-                            let prompt_ids = this.prompt_ids.filter(prompt_id => prompt_id.workflow == workflow).map(prompt_id => prompt_id.prompt_id);
+                            let prompt_ids = this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.workflow_name).map(prompt_id => prompt_id.prompt_id);
                             return this.images.filter(image => prompt_ids.includes(image['prompt_id']));
                         }
                         else return [];
@@ -331,7 +331,8 @@
                             workflow = this.workflows.find(workflow => workflow.name == this.workflow_name);
                         }
                         else return;
-                        
+
+                        workflow = structuredClone(toRaw(workflow));
                         for (let _ of Array(this.batch_count)) {
                             let prompt = {};
                             const add_node = (class_type, inputs_ = {}) => {
@@ -436,7 +437,7 @@
                                 body: JSON.stringify({"prompt": prompt, "client_id": this.client_id}),
                             })).json())['prompt_id'];
 
-                            this.prompt_ids.push({prompt_id: prompt_id, workflow: workflow});
+                            this.prompt_ids.push({prompt_id: prompt_id, workflow_name: workflow.name});
                         }
                     },
                     async stop() {
@@ -505,7 +506,7 @@
                                 let target = this.workflows.find(workflow => workflow.name == this.editing.name_);
                                 target.name = this.editing.name;
                                 target.workflow = structuredClone(toRaw(this.editing.workflow));
-                                for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow == target)) {
+                                for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.editing.name_)) {
                                     let idx = this.prompt_ids.indexOf(prompt_id);
                                     this.prompt_ids.splice(idx, 1);
                                 }
@@ -877,10 +878,6 @@
                         if (!this.is_connecting) {
                             this.save_settings();
                         }
-                    });
-                    this.$watch(() => this.workflow_images, _ => {
-                        console.log(this.prompt_ids);
-                        console.log(this.workflows);
                     });
                 },
             }).mount('#app')
