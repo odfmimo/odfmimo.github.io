@@ -201,8 +201,7 @@
                                             <li><span class="dropdown-item" @click="clone_workflow">Clone</span></li>
                                             <li><span class="dropdown-item" @click="remove_workflow">Remove</span></li>
                                             <li><hr class="dropdown-divider"></li>
-                                            <li><span class="dropdown-item" @click="upload_workflow">Upload</span></li>
-                                            <li><span class="dropdown-item" @click="download_workflow">Download</span></li>
+                                            <li><span class="dropdown-item" @click="upload_workflows">Upload</span></li>
                                         </ul>
                                     </div>                                      
                                 </div>
@@ -530,7 +529,7 @@
                             this.editing = null;
                         }
                     },
-                    upload_workflow() {
+                    /*upload_workflow() {
                         let input = document.createElement('input');
                         input.type = 'file';
                         input.style.display = 'none';
@@ -567,7 +566,7 @@
                             }, { once: true });
                             document.body.appendChild(iframe);
                         }
-                    },
+                    },*/
                     add_lora() {
                         if (!this.editing.workflow.lora) {
                             this.editing.workflow.lora = [];
@@ -658,7 +657,7 @@
                                 this.octokit = new Octokit({
                                     auth: this.access_token
                                 });
-                                await this.load_settings();
+                                await this.download_workflows();
 
                                 let settings = {};
                                 try {
@@ -679,7 +678,7 @@
 
                         this.is_connecting = false;
                     },
-                    async save_settings() {
+                    async upload_workflows() {
                         let url = "/gists";
                         const nextPattern = /(?<=<)([\S]*)(?=>; rel="Next")/i;
                         let pagesRemaining = true;
@@ -735,7 +734,7 @@
                             })
                         }
                     },
-                    async load_settings() {
+                    async download_workflows() {
                         let url = "/gists";
                         const nextPattern = /(?<=<)([\S]*)(?=>; rel="Next")/i;
                         let pagesRemaining = true;
@@ -887,9 +886,9 @@
                             }
                             else this.workflow_name = null;
                         }
-                        if (!this.is_connecting) {
-                            this.save_settings();
-                        }
+                        // if (!this.is_connecting) {
+                        //     this.save_settings();
+                        // }
                     }, { deep: true } );
                 },
             }).mount('#app')
