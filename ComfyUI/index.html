@@ -42,7 +42,7 @@
                             </button>                    
                         </div>
                     </div>
-                    <template v-show="image_number == null">
+                    <div v-show="image_number == null">
                         <div v-if="editing">
                             <div class="d-flex flex-wrap p-3 gap-3">
                                 <div class="d-flex gap-2" style="max-width: 100%;">
@@ -235,7 +235,7 @@
                                 </div>
                             </div>
                         </div>
-                    </template>
+                    </div>
                 </template>
                 <div class="d-flex flex-column align-items-start p-3 gap-2" v-else>
                     <div>
