@@ -597,7 +597,7 @@
                                 try { this.socket.close(); } catch (e) {}
                             }
                             this.socket = new WebSocket(`${this.server_address}/ws?clientId=${this.client_id}`);
-                            this.socket.addEventListener("message", function (event) {
+                            this.socket.addEventListener("message", async event => {
                                 console.log("Message from server ", event.data);
                                 if (event.data.type == "status") {
                                     let images = [];
