@@ -229,8 +229,6 @@
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
-        <script src="https://apis.google.com/js/api.js"></script>
-        <script src="https://accounts.google.com/gsi/client"></script>
         <script type="module">
             if (history.state != null) {
                 history.back();
@@ -239,8 +237,6 @@
             const uuid41 = () => ('xxxxxxxx-xxxx-4xxx-Nxxx-xxxxxxxxxxxx'
                 .replace(/x/g, () =>  ((Math.random()*16)|0).toString(16))
                 .replace(/N/g, () => ((Math.random()*4)|0 + 8).toString(16)));
-
-            var client_id = uuid41();
             
             import { createApp, toRaw } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
             import { Octokit } from "https://esm.sh/@octokit/core";
@@ -248,6 +244,7 @@
             createApp({
                 data() {
                     return {
+                        client_id: uuid41(),
                         server_address: "http://127.0.0.1:8188",
                         object_info: null,
                         workflow_name: null,
@@ -389,7 +386,7 @@
                                 headers: {
                                     "Content-Type": "application/json",
                                 },
-                                body: JSON.stringify({"prompt": prompt, "client_id": client_id}),
+                                body: JSON.stringify({"prompt": prompt, "client_id": this.client_id}),
                             })).json())['prompt_id'];
 
                             this.prompt_ids.push({prompt_id: prompt_id, workflow: workflow});
