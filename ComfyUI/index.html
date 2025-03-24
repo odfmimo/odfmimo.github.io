@@ -881,7 +881,7 @@
                         this.server_address = server_address;
                     }
 
-                    this.$watch(() => [this.workflows, this.workflow_name], _ => {
+                    this.$watch(_ => [this.workflows, this.workflow_name], _ => {
                         if (!this.workflows.find(workflow => workflow.name == this.workflow_name)) {
                             if (this.workflows.length > 0) {
                                 this.workflow_name = this.workflows[0].name;
@@ -891,7 +891,7 @@
                         if (!this.is_connecting) {
                             this.save_settings();
                         }
-                    });
+                    }, { deep: true } );
                 },
             }).mount('#app')
         </script>
