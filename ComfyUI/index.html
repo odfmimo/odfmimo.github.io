@@ -217,9 +217,10 @@
                             </div>
                             <div>
                                 <div class="d-flex flex-column p-3 gap-3">
-                                    <div class="d-flex gap-2">
+                                    <div class="d-flex gap-2 align-items-center">
                                         <button type="button" class="btn btn-secondary" @click="clear_workflow_images">Clear</button>
                                         <button type="button" class="btn btn-dark" @click="download_workflow_images">Download</button>
+                                        <span class="px-1">Total : {{ workflow_images.length }}</span>
                                     </div>
                                     <div class="container">
                                         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
