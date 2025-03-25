@@ -43,19 +43,32 @@
                         </div>
                     </div>
                     <div v-show="image_number == null">
-                        <div v-if="editing">
-                            <div class="d-flex flex-wrap p-3 gap-3">
+                        <div v-if="editing_workflow">
+                            <div class="d-flex flex-column p-3 gap-3">
                                 <div class="d-flex gap-2" style="max-width: 100%;">
-                                    <input class="form-control flex-shrink-1" style="width: 20em; min-width: 0;" :class="{'is-invalid': !is_valid_workflow_name}" v-model="editing.name">
-                                    <button type="button" class="btn btn-success" @click="save_workflow">Save</button>
-                                    <button type="button" class="btn btn-secondary" @click="editing=null">Cancel</button>
+                                    <select class="form-select flex-shrink-1" style="width: 20em; min-width: 0;" @change="edit_workflow(editing_workflow_name)" v-model="editing_workflow_name">
+                                        <option v-for="workflow in workflows" :value="workflow.name">{{ workflow.name }}</option>
+                                    </select>
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-secondary" @click="editing_workflow=null">Close</button>
+                                        <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-reference="parent"></button>
+                                        <ul class="dropdown-menu">
+                                            <li><span class="dropdown-item" @click="add_workflow()">Add</span></li>
+                                            <li><span class="dropdown-item" @click="clone_workflow(editing_workflow_name)">Clone</span></li>
+                                            <li><span class="dropdown-item" @click="remove_workflow(editing_workflow_name)">Remove</span></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2" style="max-width: 100%;">
+                                    <input class="form-control flex-shrink-1" style="width: 20em; min-width: 0;" :class="{'is-invalid': !is_valid_workflow_name}" v-model="editing_workflow.name">
+                                    <button type="button" class="btn btn-success" @click="save_workflow()">Save</button>
                                 </div>
                             </div>
                             <div class="d-flex flex-column p-3 gap-3" @input="autocomplete_input($event)" @focusout="filtered_autocomplete = null">
                                 <div class="d-flex flex-wrap gap-3">
                                     <div>
                                         Checkpoint
-                                        <select class="form-select" style="max-width: 30em;" v-model="editing.workflow.checkpoint">
+                                        <select class="form-select" style="max-width: 30em;" v-model="editing_workflow.workflow.checkpoint">
                                             <option v-for="checkpoint in object_info['CheckpointLoaderSimple']['input']['required']['ckpt_name'][0]" :value="checkpoint">{{ checkpoint }}</option>
                                         </select>
                                     </div>
@@ -63,22 +76,22 @@
                                         CLIP Set Last Layer
                                         <div class="input-group">
                                             <div class="input-group-text">
-                                                <input class="form-check-input mt-0" type="checkbox" v-model="editing.workflow.clip_set_last_layer_bool">
+                                                <input class="form-check-input mt-0" type="checkbox" v-model="editing_workflow.workflow.clip_set_last_layer_bool">
                                             </div>
-                                            <input type="number" class="form-control" :disabled="!editing.workflow.clip_set_last_layer_bool" v-bind="object_info['CLIPSetLastLayer']['input']['required']['stop_at_clip_layer'][1]" v-model="editing.workflow.stop_at_clip_layer" >   
+                                            <input type="number" class="form-control" :disabled="!editing_workflow.workflow.clip_set_last_layer_bool" v-bind="object_info['CLIPSetLastLayer']['input']['required']['stop_at_clip_layer'][1]" v-model="editing_workflow.workflow.stop_at_clip_layer" >   
                                         </div>                             
                                     </div>
                                     <div>
                                         Size Preset
-                                        <select class="form-select" v-model="editing.workflow.size_preset">
+                                        <select class="form-select" v-model="editing_workflow.workflow.size_preset">
                                             <option v-for="size_preset in object_info['EmptyLatentImageFromPresetsSDXL']['input']['required']['preset'][0]" :value="size_preset">{{ size_preset }}</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div>
                                     Lora
-                                    <div class="d-flex flex-column align-items-start gap-1" v-if="editing.workflow.lora">
-                                        <div class="card" v-for="lora in editing.workflow.lora">
+                                    <div class="d-flex flex-column align-items-start gap-1" v-if="editing_workflow.workflow.lora">
+                                        <div class="card" v-for="lora in editing_workflow.workflow.lora">
                                             <div class="card-body">
                                                 <div class="d-flex flex-wrap gap-3">
                                                     <div>
@@ -106,43 +119,43 @@
                                 <div class="d-flex flex-wrap gap-3">
                                     <div>
                                         Steps
-                                        <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['steps'][1]" v-model="editing.workflow.steps">
+                                        <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['steps'][1]" v-model="editing_workflow.workflow.steps">
                                     </div>
                                     <div>
                                         CFG
-                                        <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['cfg'][1]" v-model="editing.workflow.cfg">
+                                        <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['cfg'][1]" v-model="editing_workflow.workflow.cfg">
                                     </div>
                                     <div>
                                         Sampler
-                                        <select class="form-select" v-model="editing.workflow.sampler_name">
+                                        <select class="form-select" v-model="editing_workflow.workflow.sampler_name">
                                             <option v-for="sampler_name in object_info['KSampler']['input']['required']['sampler_name'][0]" :value="sampler_name">{{ sampler_name }}</option>
                                         </select>
                                     </div>
                                     <div>
                                         Scheduler
-                                        <select class="form-select" v-model="editing.workflow.scheduler">
+                                        <select class="form-select" v-model="editing_workflow.workflow.scheduler">
                                             <option v-for="scheduler in object_info['KSampler']['input']['required']['scheduler'][0]" :value="scheduler">{{ scheduler }}</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div>
                                     <div>
-                                        <input class="form-check-input" type="checkbox" v-model="editing.workflow.face_detailer_bool">
+                                        <input class="form-check-input" type="checkbox" v-model="editing_workflow.workflow.face_detailer_bool">
                                         Face Detailer
                                     </div>
                                 </div>
                                 <div>
                                     Positive Base
-                                    <textarea class="form-control" v-model="editing.workflow.positive_text"></textarea>
+                                    <textarea class="form-control" v-model="editing_workflow.workflow.positive_text"></textarea>
                                 </div>
                                 <div>
                                     Negative Base
-                                    <textarea class="form-control" v-model="editing.workflow.negative_text"></textarea>
+                                    <textarea class="form-control" v-model="editing_workflow.workflow.negative_text"></textarea>
                                 </div>
                                 <div>
                                     Regional Conditioning
-                                    <div class="d-flex flex-column gap-1" v-if="editing.workflow.condition">
-                                        <div class="card" v-for="condition in editing.workflow.condition">
+                                    <div class="d-flex flex-column gap-1" v-if="editing_workflow.workflow.condition">
+                                        <div class="card" v-for="condition in editing_workflow.workflow.condition">
                                             <div class="card-body">
                                                 <div class="d-flex flex-column gap-3">
                                                     <div>
@@ -190,20 +203,16 @@
                         <div v-else>
                             <div class="d-flex flex-wrap p-3 gap-3">
                                 <div class="d-flex gap-2" style="max-width: 100%;">
-                                    <select class="form-select flex-shrink-1" style="width: 20em; min-width: 0;" v-model="workflow_name">
+                                    <select class="form-select flex-shrink-1" style="width: 20em; min-width: 0;" v-model="active_workflow_name">
                                         <option v-for="workflow in workflows" :value="workflow.name">{{ workflow.name }}</option>
                                     </select>
                                     <div class="btn-group">
-                                        <button type="button" class="btn btn-secondary" @click="edit_workflow(workflow_name)">Edit</button>
+                                        <button type="button" class="btn btn-secondary" @click="edit_workflow(active_workflow_name)">Edit</button>
                                         <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-reference="parent"></button>
                                         <ul class="dropdown-menu">
-                                            <li><span class="dropdown-item" @click="add_workflow()">Add</span></li>
-                                            <li><span class="dropdown-item" @click="clone_workflow(workflow_name)">Clone</span></li>
-                                            <li><span class="dropdown-item" @click="remove_workflow(workflow_name)">Remove</span></li>
-                                            <li><hr class="dropdown-divider"></li>
                                             <li><span class="dropdown-item" @click="upload_workflows">Upload</span></li>
                                         </ul>
-                                    </div>                                      
+                                    </div>
                                 </div>
                                 <div class="d-flex gap-2">
                                     <div class="input-group" style="flex-wrap: nowrap;">
@@ -279,9 +288,10 @@
                         is_valid_access_token: null,
                         is_connecting: false,
                         object_info: null,
-                        workflow_name: null,
                         workflows: null,
-                        editing: null,
+                        active_workflow_name: null,
+                        editing_workflow_name: null,
+                        editing_workflow: null,
                         queue_remaining: 0,
                         filtered_autocomplete: null,
                         batch_count: 1,
@@ -292,18 +302,18 @@
                 },
                 computed: {
                     is_valid_workflow_name() {
-                        if (this.editing) {
-                            if (this.editing.name.trim() == "") return false;
-                            if (!this.editing.name_ || this.editing.name != this.editing.name_) {
-                                if (this.workflows.find(workflow => workflow.name == this.editing.name)) return false;
+                        if (this.editing_workflow) {
+                            if (this.editing_workflow.name.trim() == "") return false;
+                            if (!this.editing_workflow.name_ || this.editing_workflow.name != this.editing_workflow.name_) {
+                                if (this.workflows.find(workflow => workflow.name == this.editing_workflow.name)) return false;
                             }
                         }
                         return true;
                     },
                     workflow_images() {
-                        if (!this.editing && this.workflow_name) {
-                            let workflow = this.workflows.find(workflow => workflow.name == this.workflow_name);
-                            let prompt_ids = this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.workflow_name).map(prompt_id => prompt_id.prompt_id);
+                        if (!this.editing_workflow && this.active_workflow_name) {
+                            let workflow = this.workflows.find(workflow => workflow.name == this.active_workflow_name);
+                            let prompt_ids = this.prompt_ids.filter(prompt_id => prompt_id.active_workflow_name == this.active_workflow_name).map(prompt_id => prompt_id.prompt_id);
                             return this.images.filter(image => prompt_ids.includes(image['prompt_id']));
                         }
                         else return [];
@@ -328,11 +338,11 @@
                     },
                     async queue(event) {
                         let workflow = null;
-                        if (this.editing) {
-                            workflow = this.editing;
+                        if (this.editing_workflow) {
+                            workflow = this.editing_workflow;
                         }
-                        else if (this.workflow_name) {
-                            workflow = this.workflows.find(workflow => workflow.name == this.workflow_name);
+                        else if (this.active_workflow_name) {
+                            workflow = this.workflows.find(workflow => workflow.name == this.active_workflow_name);
                         }
                         else return;
 
@@ -460,7 +470,9 @@
                         if (workflow_name) {
                             let workflow = this.workflows.find(workflow => workflow.name == workflow_name);
                             if (workflow) {
-                                this.editing = {
+                                this.active_workflow_name = workflow.name;
+                                this.editing_workflow_name = workflow.name;
+                                this.editing_workflow = {
                                     name: workflow.name,
                                     name_: workflow.name,
                                     workflow: structuredClone(toRaw(workflow.workflow)),
@@ -474,7 +486,9 @@
                         let default_EmptyLatentImageFromPresetsSDXL = this.get_default('EmptyLatentImageFromPresetsSDXL');
                         let default_KSampler = this.get_default('KSampler');
                         let default_CLIPSetLastLayer = this.get_default('CLIPSetLastLayer');
-                        this.editing = {
+                        
+                        this.editing_workflow_name = "";
+                        this.editing_workflow = {
                             name: "",
                             workflow: {
                                 checkpoint: default_CheckpointLoaderSimple['ckpt_name'],
@@ -491,7 +505,8 @@
                         if (workflow_name) {
                             let workflow = this.workflows.find(workflow => workflow.name == workflow_name);
                             if (workflow) {
-                                this.editing = {
+                                this.editing_workflow_name = "";
+                                this.editing_workflow = {
                                     name: workflow.name,
                                     workflow: structuredClone(toRaw(workflow.workflow)),
                                 };
@@ -507,15 +522,15 @@
                                     let idx = this.prompt_ids.indexOf(prompt_id);
                                     this.prompt_ids.splice(idx, 1);
                                 }
-                                if (workflow_name == this.workflow_name) {
+                                if (workflow_name == this.active_workflow_name) {
                                     if (this.workflows.length == 0) {
-                                        this.workflow_name = null;
+                                        this.active_workflow_name = null;
                                     }
                                     else if (idx < this.workflows.length) {
-                                        this.workflow_name = this.workflows[idx].name;
+                                        this.active_workflow_name = this.workflows[idx].name;
                                     }
                                     else {
-                                        this.workflow_name = this.workflows[this.workflows.length - 1].name;
+                                        this.active_workflow_name = this.workflows[this.workflows.length - 1].name;
                                     }
                                 }
                             }
@@ -523,24 +538,23 @@
                     },
                     save_workflow() {
                         if (this.is_valid_workflow_name) {
-                            if (this.editing.name_) {
-                                let target = this.workflows.find(workflow => workflow.name == this.editing.name_);
-                                target.name = this.editing.name;
-                                target.workflow = structuredClone(toRaw(this.editing.workflow));
-                                for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.editing.name_)) {
+                            if (this.editing_workflow.name_) {
+                                let target = this.workflows.find(workflow => workflow.name == this.editing_workflow.name_);
+                                target.name = this.editing_workflow.name;
+                                target.workflow = structuredClone(toRaw(this.editing_workflow.workflow));
+                                for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.editing_workflow.name_)) {
                                     let idx = this.prompt_ids.indexOf(prompt_id);
                                     this.prompt_ids.splice(idx, 1);
                                 }
                             }
                             else {
                                 this.workflows.push({
-                                    name: this.editing.name,
-                                    workflow: structuredClone(toRaw(this.editing.workflow))
+                                    name: this.editing_workflow.name,
+                                    workflow: structuredClone(toRaw(this.editing_workflow.workflow))
                                 });
                             }
-
-                            this.workflow_name = this.editing.name;
-                            this.editing = null;
+                            
+                            this.edit_workflow(this.active_workflow_name);
                         }
                     },
                     /*upload_workflow() {
@@ -552,7 +566,7 @@
                                 const reader = new FileReader();
                                 reader.addEventListener('load', _ => {
                                     let workflow = JSON.parse(reader.result);
-                                    this.editing = {
+                                    this.editing_workflow = {
                                         name: workflow.name,
                                         workflow: workflow.workflow,
                                     };
@@ -563,8 +577,8 @@
                         input.click();
                     },
                     download_workflow() {
-                        if (this.workflow_name) {
-                            let workflow = structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name)));
+                        if (this.active_workflow_name) {
+                            let workflow = structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.active_workflow_name)));
                             let url = window.URL.createObjectURL(new Blob([JSON.stringify(workflow)], {type: 'application/octet-stream'}));
                             const iframe = document.createElement('iframe');
                             iframe.style.display = 'none';
@@ -582,26 +596,26 @@
                         }
                     },*/
                     add_lora() {
-                        if (!this.editing.workflow.lora) {
-                            this.editing.workflow.lora = [];
+                        if (!this.editing_workflow.workflow.lora) {
+                            this.editing_workflow.workflow.lora = [];
                         }
                         let default_LoraLoader = this.get_default('LoraLoader');
-                        this.editing.workflow.lora.push({
+                        this.editing_workflow.workflow.lora.push({
                             lora_name: default_LoraLoader['lora_name'],
                             strength_model: default_LoraLoader['strength_model'],
                             strength_clip: default_LoraLoader['strength_clip'],
                         });
                     },
                     remove_lora(lora) {
-                        let idx = this.editing.workflow.lora.indexOf(lora);
-                        this.editing.workflow.lora.splice(idx, 1);
+                        let idx = this.editing_workflow.workflow.lora.indexOf(lora);
+                        this.editing_workflow.workflow.lora.splice(idx, 1);
                     },
                     add_condition() {
-                        if (!this.editing.workflow.condition) {
-                            this.editing.workflow.condition = [];
+                        if (!this.editing_workflow.workflow.condition) {
+                            this.editing_workflow.workflow.condition = [];
                         }
                         let default_ConditioningSetAreaPercentage = this.get_default('ConditioningSetAreaPercentage');
-                        this.editing.workflow.condition.push({
+                        this.editing_workflow.workflow.condition.push({
                             width: default_ConditioningSetAreaPercentage['width'],
                             height: default_ConditioningSetAreaPercentage['height'],
                             x: default_ConditioningSetAreaPercentage['x'],
@@ -609,8 +623,8 @@
                         });
                     },
                     remove_condition(condition) {
-                        let idx = this.editing.workflow.condition.indexOf(condition);
-                        this.editing.workflow.condition.splice(idx, 1);
+                        let idx = this.editing_workflow.workflow.condition.indexOf(condition);
+                        this.editing_workflow.workflow.condition.splice(idx, 1);
                     },
                     async connect() {
                         this.is_connecting = true;
@@ -701,7 +715,6 @@
                             'ComfyUI.json': {
                                 content: JSON.stringify({
                                     workflows: this.workflows,
-                                    workflow_name: this.workflow_name,
                                 })
                             }
                         };
@@ -768,7 +781,6 @@
                                         try {
                                             let json = await (await fetch(file.raw_url)).json();
                                             this.workflows = json.workflows;
-                                            this.workflow_name = json.workflow_name;
                                         }
                                         catch (e) {
                                             console.error(e);
@@ -893,12 +905,12 @@
                         this.server_address = server_address;
                     }
 
-                    this.$watch(_ => [this.workflows, this.workflow_name], _ => {
-                        if (!this.workflows.find(workflow => workflow.name == this.workflow_name)) {
+                    this.$watch(_ => [this.workflows, this.active_workflow_name], _ => {
+                        if (!this.workflows.find(workflow => workflow.name == this.active_workflow_name)) {
                             if (this.workflows.length > 0) {
-                                this.workflow_name = this.workflows[0].name;
+                                this.active_workflow_name = this.workflows[0].name;
                             }
-                            else this.workflow_name = null;
+                            else this.active_workflow_name = null;
                         }
                     }, { deep: true } );
                 },
