@@ -450,27 +450,37 @@
                             this.prompt_ids.push({prompt_id: prompt_id, workflow_name: workflow.name});
                         }
                     },
-                    async remove_prompt(prompt_id) {
-                        let idx = this.prompt_ids.indexOf(prompt_id);
-                        if (idx >= 0) {
-                            this.prompt_ids.splice(idx, 1);
-                            await fetch(`${this.server_address}/queue`, {
+                    async remove_prompts(prompt_ids) {
+                        for (let prompt_id of prompt_ids) {
+                            let idx = this.prompt_ids.indexOf(prompt_id);
+                            if (idx >= 0) {
+                                this.prompt_ids.splice(idx, 1);
+                            }
+                        }
+                        
+                        let prompt_ids_ = prompt_ids.map(prompt_id => prompt_id.prompt_id);
+                        await fetch(`${this.server_address}/queue`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({"delete": prompt_ids_}),
+                        });
+                        await fetch(`${this.server_address}/history`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({"delete": prompt_ids_}),
+                        });
+
+                        let running_prompt_id = (await (await fetch(`${this.server_address}/queue`)).json())['queue_running']?.[1];
+                        if (running_prompt_id && prompt_ids_.includes(running_prompt_id) {
+                            await fetch(`${this.server_address}/interrupt`, {
                                 method: "POST",
-                                headers: {
-                                    "Content-Type": "application/json",
-                                },
-                                body: JSON.stringify({"delete": [prompt_id.prompt_id]}),
-                            });
-                            await fetch(`${this.server_address}/history`, {
-                                method: "POST",
-                                headers: {
-                                    "Content-Type": "application/json",
-                                },
-                                body: JSON.stringify({"delete": [prompt_id.prompt_id]}),
                             });
                         }
-                    }
-                    ,
+                    },
                     async stop() {
                         await fetch(`${this.server_address}/queue`, {
                             method: "POST",
@@ -559,9 +569,7 @@
                             let idx = this.workflows.findIndex(workflow => workflow.name == workflow_name);
                             if (idx >= 0) {
                                 this.workflows.splice(idx, 1);
-                                for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == workflow_name)) {
-                                    this.remove_prompt(prompt_id);
-                                }
+                                this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == workflow_name));
                                 if (workflow_name == this.active_workflow_name) {
                                     if (this.workflows.length == 0) {
                                         this.active_workflow_name = null;
@@ -582,9 +590,7 @@
                                 let target = this.workflows.find(workflow => workflow.name == this.editing_workflow.name_);
                                 target.name = this.editing_workflow.name;
                                 target.workflow = structuredClone(toRaw(this.editing_workflow.workflow));
-                                for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.editing_workflow.name_)) {
-                                    this.remove_prompt(prompt_id);
-                                }
+                                this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.editing_workflow.name_));
                             }
                             else {
                                 this.workflows.push({
@@ -834,9 +840,7 @@
                         this.images = [];
                     },
                     clear_workflow_prompt_ids() {
-                        for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.active_workflow_name)) {
-                            this.remove_prompt(prompt_id);
-                        }
+                        this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.active_workflow_name));
                     },
                     async download_workflow_images() {
                         var zip = new JSZip();
@@ -866,7 +870,7 @@
                     },
                     delete_image(index) {
                         let prompt_id = this.prompt_ids.find(prompt_id => prompt_id.prompt_id == this.workflow_images[index]['prompt_id']);
-                        this.remove_prompt(prompt_id);
+                        this.remove_prompts([prompt_id]);
                     },
                     autocomplete_input(event) {
                         let target = event.target;
