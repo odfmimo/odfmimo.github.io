@@ -475,7 +475,7 @@
                         });
 
                         let running_prompt_id = (await (await fetch(`${this.server_address}/queue`)).json())['queue_running']?.[1];
-                        if (running_prompt_id && prompt_ids_.includes(running_prompt_id) {
+                        if (running_prompt_id && prompt_ids_.includes(running_prompt_id)) {
                             await fetch(`${this.server_address}/interrupt`, {
                                 method: "POST",
                             });
