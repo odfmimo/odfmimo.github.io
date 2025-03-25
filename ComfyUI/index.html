@@ -729,12 +729,13 @@
                                 for (let file of Object.values(gist.files)) {
                                     if (file.filename == "ComfyUI.json") {
                                         found = true;
-                                        await this.octokit.request(`PATCH /gists/${gist.id}`, {
+                                        let response = await this.octokit.request(`PATCH /gists/${gist.id}`, {
                                             files: files,
                                             headers: {
                                                 'X-GitHub-Api-Version': '2022-11-28'
                                             }
-                                        })
+                                        });
+                                        console.log(response);
                                     }
                                     if (found) break;
                                 }
@@ -751,13 +752,14 @@
                             }
                         }
                         if (!found) {
-                            await this.octokit.request(`POST /gists`, {
+                            let response = await this.octokit.request(`POST /gists`, {
                                 public: false,
                                 files: files,
                                 headers: {
                                     'X-GitHub-Api-Version': '2022-11-28'
                                 }
-                            })
+                            });
+                            console.log(response);
                         }
                     },
                     async download_workflows() {
