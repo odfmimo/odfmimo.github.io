@@ -633,7 +633,7 @@
                             }
                             this.socket = new WebSocket(`${this.server_address}/ws?clientId=${this.client_id}`);
                             this.socket.addEventListener("message", async event => {
-                                console.log("Message from server ", event.data);
+                                // console.log("Message from server ", event.data);
                                 let data = {}
                                 try { data = JSON.parse(event.data); } catch(e) {}
                                 if (data.type == "status") {
