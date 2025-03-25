@@ -474,7 +474,7 @@
                             body: JSON.stringify({"delete": prompt_ids_}),
                         });
 
-                        let running_prompt_id = (await (await fetch(`${this.server_address}/queue`)).json())['queue_running']?.[1];
+                        let running_prompt_id = (await (await fetch(`${this.server_address}/queue`)).json())['queue_running'][0]?.[1];
                         if (running_prompt_id && prompt_ids_.includes(running_prompt_id)) {
                             await fetch(`${this.server_address}/interrupt`, {
                                 method: "POST",
