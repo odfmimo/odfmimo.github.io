@@ -456,10 +456,16 @@
                             method: "POST",
                         });
                     },
-                    edit_workflow() {
-                        if (this.workflow_name) {
-                            this.editing = structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name)));
-                            this.editing.name_ = this.workflow_name;
+                    edit_workflow(workflow_name) {
+                        if (workflow_name) {
+                            let workflow = this.workflows.find(workflow => workflow.name == workflow_name);
+                            if (workflow) {
+                                this.editing = {
+                                    name: workflow.name,
+                                    name_: workflow.name;
+                                    workflow: structuredClone(toRaw(workflow.workflow)),
+                                };
+                            }
                         }
                         else this.add_workflow();
                     },
@@ -481,30 +487,37 @@
                             }
                         };
                     },
-                    clone_workflow() {
-                        if (this.workflow_name) {
-                            this.editing = {
-                                name: this.workflow_name,
-                                workflow: structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.workflow_name).workflow)),
-                            };
+                    clone_workflow(workflow_name) {
+                        if (workflow_name) {
+                            let workflow = this.workflows.find(workflow => workflow.name == workflow_name);
+                            if (workflow) {
+                                this.editing = {
+                                    name: workflow.name,
+                                    workflow: structuredClone(toRaw(workflow.workflow)),
+                                };
+                            }
                         }
                     },
-                    remove_workflow() {
-                        if (this.workflow_name) {
-                            let idx = this.workflows.findIndex(workflow => workflow.name == this.workflow_name);
-                            this.workflows.splice(idx, 1);
-                            for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.workflow_name)) {
-                                let idx = this.prompt_ids.indexOf(prompt_id);
-                                this.prompt_ids.splice(idx, 1);
-                            }
-                            if (this.workflows.length == 0) {
-                                this.workflow_name = null;
-                            }
-                            else if (idx < this.workflows.length) {
-                                this.workflow_name = this.workflows[idx].name;
-                            }
-                            else {
-                                this.workflow_name = this.workflows[this.workflows.length - 1].name;
+                    remove_workflow(workflow_name) {
+                        if (workflow_name) {
+                            let idx = this.workflows.findIndex(workflow => workflow.name == workflow_name);
+                            if (idx >= 0) {
+                                this.workflows.splice(idx, 1);
+                                for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == workflow_name)) {
+                                    let idx = this.prompt_ids.indexOf(prompt_id);
+                                    this.prompt_ids.splice(idx, 1);
+                                }
+                                if (workflow_name == this.workflow_name) {
+                                    if (this.workflows.length == 0) {
+                                        this.workflow_name = null;
+                                    }
+                                    else if (idx < this.workflows.length) {
+                                        this.workflow_name = this.workflows[idx].name;
+                                    }
+                                    else {
+                                        this.workflow_name = this.workflows[this.workflows.length - 1].name;
+                                    }
+                                }
                             }
                         }
                     },
