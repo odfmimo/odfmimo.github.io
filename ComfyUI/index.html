@@ -312,8 +312,9 @@
                     },
                     workflow_images() {
                         if (!this.editing_workflow && this.active_workflow_name) {
-                            let workflow = this.workflows.find(workflow => workflow.name == this.active_workflow_name);
-                            let prompt_ids = this.prompt_ids.filter(prompt_id => prompt_id.active_workflow_name == this.active_workflow_name).map(prompt_id => prompt_id.prompt_id);
+                            let prompt_ids = this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.active_workflow_name).map(prompt_id => prompt_id.prompt_id);
+                            console.log(this.prompt_ids);
+                            console.log(prompt_ids);
                             return this.images.filter(image => prompt_ids.includes(image['prompt_id']));
                         }
                         else return [];
