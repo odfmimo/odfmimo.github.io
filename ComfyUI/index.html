@@ -782,6 +782,7 @@
                                         try {
                                             let json = await (await fetch(file.raw_url)).json();
                                             this.workflows = json.workflows;
+                                            console.log(gist);
                                         }
                                         catch (e) {
                                             console.error(e);
