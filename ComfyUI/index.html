@@ -216,7 +216,7 @@
                                 </div>
                                 <div class="d-flex gap-2">
                                     <div class="input-group" style="flex-wrap: nowrap;">
-                                        <button type="button" class="btn btn-primary" @click="queue">Queue</button>
+                                        <button type="button" class="btn btn-primary" @click="queue_prompt">Queue</button>
                                         <input type="number" class="form-control" min="1" max="100" step="1" v-model="batch_count">
                                     </div>
                                     <button type="button" class="btn btn-danger text-nowrap" @click="stop">
@@ -227,7 +227,7 @@
                             <div>
                                 <div class="d-flex flex-column p-3 gap-3">
                                     <div class="d-flex gap-2 align-items-center">
-                                        <button type="button" class="btn btn-secondary" @click="clear_workflow_images">Clear</button>
+                                        <button type="button" class="btn btn-secondary" @click="clear_workflow_prompt_ids">Clear</button>
                                         <button type="button" class="btn btn-dark" @click="download_workflow_images">Download</button>
                                         <span class="px-1">{{ workflow_images.length }} / {{ prompt_ids.filter(prompt_id => prompt_id.workflow_name == active_workflow_name).length }}</span>
                                     </div>
@@ -332,7 +332,7 @@
                         }
                         return inputs;
                     },
-                    async queue(event) {
+                    async queue_prompt() {
                         let workflow = null;
                         if (this.editing_workflow) {
                             workflow = this.editing_workflow;
@@ -450,6 +450,27 @@
                             this.prompt_ids.push({prompt_id: prompt_id, workflow_name: workflow.name});
                         }
                     },
+                    async remove_prompt(prompt_id) {
+                        let idx = this.prompt_ids.indexOf(prompt_id);
+                        if (idx >= 0) {
+                            this.prompt_ids.splice(idx, 1);
+                            await fetch(`${this.server_address}/queue`, {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({"delete": [prompt_id.prompt_id]}),
+                            });
+                            await fetch(`${this.server_address}/history`, {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({"delete": [prompt_id.prompt_id]}),
+                            });
+                        }
+                    }
+                    ,
                     async stop() {
                         await fetch(`${this.server_address}/queue`, {
                             method: "POST",
@@ -539,8 +560,7 @@
                             if (idx >= 0) {
                                 this.workflows.splice(idx, 1);
                                 for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == workflow_name)) {
-                                    let idx = this.prompt_ids.indexOf(prompt_id);
-                                    this.prompt_ids.splice(idx, 1);
+                                    this.remove_prompt(prompt_id);
                                 }
                                 if (workflow_name == this.active_workflow_name) {
                                     if (this.workflows.length == 0) {
@@ -563,8 +583,7 @@
                                 target.name = this.editing_workflow.name;
                                 target.workflow = structuredClone(toRaw(this.editing_workflow.workflow));
                                 for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.editing_workflow.name_)) {
-                                    let idx = this.prompt_ids.indexOf(prompt_id);
-                                    this.prompt_ids.splice(idx, 1);
+                                    this.remove_prompt(prompt_id);
                                 }
                             }
                             else {
@@ -814,10 +833,9 @@
                         });
                         this.images = [];
                     },
-                    clear_workflow_images() {
-                        for (let image of this.workflow_images) {
-                            let idx = this.prompt_ids.findIndex(prompt_id => prompt_id.prompt_id == image['prompt_id']);
-                            this.prompt_ids.splice(idx, 1);
+                    clear_workflow_prompt_ids() {
+                        for (let prompt_id of this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.active_workflow_name)) {
+                            this.remove_prompt(prompt_id);
                         }
                     },
                     async download_workflow_images() {
@@ -847,8 +865,8 @@
                         this.image_number = index;
                     },
                     delete_image(index) {
-                        let idx = this.prompt_ids.findIndex(prompt_id => prompt_id.prompt_id == this.workflow_images[index]['prompt_id']);
-                        this.prompt_ids.splice(idx, 1);
+                        let prompt_id = this.prompt_ids.find(prompt_id => prompt_id.prompt_id == this.workflow_images[index]['prompt_id']);
+                        this.remove_prompt(prompt_id);
                     },
                     autocomplete_input(event) {
                         let target = event.target;
