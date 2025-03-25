@@ -194,12 +194,12 @@
                                         <option v-for="workflow in workflows" :value="workflow.name">{{ workflow.name }}</option>
                                     </select>
                                     <div class="btn-group">
-                                        <button type="button" class="btn btn-secondary" @click="edit_workflow">Edit</button>
+                                        <button type="button" class="btn btn-secondary" @click="edit_workflow(workflow_name)">Edit</button>
                                         <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-reference="parent"></button>
                                         <ul class="dropdown-menu">
-                                            <li><span class="dropdown-item" @click="add_workflow">Add</span></li>
-                                            <li><span class="dropdown-item" @click="clone_workflow">Clone</span></li>
-                                            <li><span class="dropdown-item" @click="remove_workflow">Remove</span></li>
+                                            <li><span class="dropdown-item" @click="add_workflow()">Add</span></li>
+                                            <li><span class="dropdown-item" @click="clone_workflow(workflow_name)">Clone</span></li>
+                                            <li><span class="dropdown-item" @click="remove_workflow(workflow_name)">Remove</span></li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li><span class="dropdown-item" @click="upload_workflows">Upload</span></li>
                                         </ul>
