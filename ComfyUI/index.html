@@ -26,48 +26,48 @@
     <body>
         <div id="app">
             <template v-if="true">
-                <template v-if="object_info && projects">
+                <template v-if="object_info && workflows">
                     <div class="position-absolute w-100 h-100 bg-black" v-if="image_number != null">
                         <div class="w-100 h-100 carousel slide">
                             <div class="w-100 h-100 carousel-inner">
                                 <div class="w-100 h-100 carousel-item active">
-                                    <img class="w-100 h-100 object-fit-scale" :src="project_images[image_number]['src']">
+                                    <img class="w-100 h-100 object-fit-scale" :src="workflow_images[image_number]['src']">
                                 </div>
                             </div>
                             <button class="carousel-control-prev" type="button" data-bs-slide="prev" @click="image_number = Math.max(0, image_number - 1)">
                                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                             </button>
-                            <button class="carousel-control-next" type="button" data-bs-slide="next" @click="image_number = Math.min(project_images.length - 1, image_number + 1)">
+                            <button class="carousel-control-next" type="button" data-bs-slide="next" @click="image_number = Math.min(workflow_images.length - 1, image_number + 1)">
                                 <span class="carousel-control-next-icon" aria-hidden="true"></span>
                             </button>                    
                         </div>
                     </div>
                     <div class="p-3" v-show="image_number == null">
-                        <div class="d-flex flex-column gap-3" v-if="temp_project">
+                        <div class="d-flex flex-column gap-3" v-if="temp_workflow">
                             <div class="d-flex gap-2" style="max-width: 100%;">
-                                <select class="form-select flex-shrink-1" style="width: 20em; min-width: 0;" @change="edit_project(editing_project_name)" v-model="editing_project_name">
-                                    <option v-for="project in projects" :value="project.name">{{ project.name }}</option>
+                                <select class="form-select flex-shrink-1" style="width: 20em; min-width: 0;" @change="edit_workflow(editing_workflow_name)" v-model="editing_workflow_name">
+                                    <option v-for="workflow in workflows" :value="workflow.name">{{ workflow.name }}</option>
                                 </select>
                                 <div class="btn-group">
-                                    <button type="button" class="btn btn-secondary" @click="temp_project=null">Close</button>
+                                    <button type="button" class="btn btn-secondary" @click="temp_workflow=null">Close</button>
                                     <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-reference="parent"></button>
                                     <ul class="dropdown-menu">
-                                        <li><span class="dropdown-item" @click="add_project()">Add</span></li>
-                                        <li><span class="dropdown-item" @click="clone_project(editing_project_name)">Clone</span></li>
-                                        <li><span class="dropdown-item" @click="remove_project(editing_project_name)">Remove</span></li>
+                                        <li><span class="dropdown-item" @click="add_workflow()">Add</span></li>
+                                        <li><span class="dropdown-item" @click="clone_workflow(editing_workflow_name)">Clone</span></li>
+                                        <li><span class="dropdown-item" @click="remove_workflow(editing_workflow_name)">Remove</span></li>
                                     </ul>
                                 </div>
                             </div>
                             <div class="d-flex gap-2" style="max-width: 100%;">
-                                <input class="form-control flex-shrink-1" style="width: 20em; min-width: 0;" :class="{'is-invalid': !is_valid_project_name}" v-model="temp_project.name">
-                                <button type="button" class="btn btn-success" @click="save_project()">Save</button>
+                                <input class="form-control flex-shrink-1" style="width: 20em; min-width: 0;" :class="{'is-invalid': !is_valid_workflow_name}" v-model="temp_workflow.name">
+                                <button type="button" class="btn btn-success" @click="save_workflow()">Save</button>
                             </div>
                             <div @input="autocomplete_input($event)" @focusout="filtered_autocomplete = null">
                                 <div class="d-flex flex-column gap-3">
                                     <div class="d-flex flex-wrap gap-3">
                                         <div>
                                             Checkpoint
-                                            <select class="form-select" style="max-width: 30em;" v-model="temp_project.project.checkpoint">
+                                            <select class="form-select" style="max-width: 30em;" v-model="temp_workflow.workflow.checkpoint">
                                                 <option v-for="checkpoint in object_info['CheckpointLoaderSimple']['input']['required']['ckpt_name'][0]" :value="checkpoint">{{ checkpoint }}</option>
                                             </select>
                                         </div>
@@ -75,22 +75,22 @@
                                             CLIP Set Last Layer
                                             <div class="input-group">
                                                 <div class="input-group-text">
-                                                    <input class="form-check-input mt-0" type="checkbox" v-model="temp_project.project.clip_set_last_layer_bool">
+                                                    <input class="form-check-input mt-0" type="checkbox" v-model="temp_workflow.workflow.clip_set_last_layer_bool">
                                                 </div>
-                                                <input type="number" class="form-control" :disabled="!temp_project.project.clip_set_last_layer_bool" v-bind="object_info['CLIPSetLastLayer']['input']['required']['stop_at_clip_layer'][1]" v-model="temp_project.project.stop_at_clip_layer" >   
+                                                <input type="number" class="form-control" :disabled="!temp_workflow.workflow.clip_set_last_layer_bool" v-bind="object_info['CLIPSetLastLayer']['input']['required']['stop_at_clip_layer'][1]" v-model="temp_workflow.workflow.stop_at_clip_layer" >   
                                             </div>                             
                                         </div>
                                         <div>
                                             Size Preset
-                                            <select class="form-select" v-model="temp_project.project.size_preset">
+                                            <select class="form-select" v-model="temp_workflow.workflow.size_preset">
                                                 <option v-for="size_preset in object_info['EmptyLatentImageFromPresetsSDXL']['input']['required']['preset'][0]" :value="size_preset">{{ size_preset }}</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div>
                                         Lora
-                                        <div class="d-flex flex-column align-items-start gap-1" v-if="temp_project.project.loras">
-                                            <div class="card" v-for="lora in temp_project.project.loras">
+                                        <div class="d-flex flex-column align-items-start gap-1" v-if="temp_workflow.workflow.loras">
+                                            <div class="card" v-for="lora in temp_workflow.workflow.loras">
                                                 <div class="card-body">
                                                     <div class="d-flex flex-wrap gap-3">
                                                         <div>
@@ -118,43 +118,43 @@
                                     <div class="d-flex flex-wrap gap-3">
                                         <div>
                                             Steps
-                                            <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['steps'][1]" v-model="temp_project.project.steps">
+                                            <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['steps'][1]" v-model="temp_workflow.workflow.steps">
                                         </div>
                                         <div>
                                             CFG
-                                            <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['cfg'][1]" v-model="temp_project.project.cfg">
+                                            <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['cfg'][1]" v-model="temp_workflow.workflow.cfg">
                                         </div>
                                         <div>
                                             Sampler
-                                            <select class="form-select" v-model="temp_project.project.sampler_name">
+                                            <select class="form-select" v-model="temp_workflow.workflow.sampler_name">
                                                 <option v-for="sampler_name in object_info['KSampler']['input']['required']['sampler_name'][0]" :value="sampler_name">{{ sampler_name }}</option>
                                             </select>
                                         </div>
                                         <div>
                                             Scheduler
-                                            <select class="form-select" v-model="temp_project.project.scheduler">
+                                            <select class="form-select" v-model="temp_workflow.workflow.scheduler">
                                                 <option v-for="scheduler in object_info['KSampler']['input']['required']['scheduler'][0]" :value="scheduler">{{ scheduler }}</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div>
                                         <div>
-                                            <input class="form-check-input" type="checkbox" v-model="temp_project.project.face_detailer_bool">
+                                            <input class="form-check-input" type="checkbox" v-model="temp_workflow.workflow.face_detailer_bool">
                                             Face Detailer
                                         </div>
                                     </div>
                                     <div>
                                         Positive Base
-                                        <textarea class="form-control" v-model="temp_project.project.positive_text"></textarea>
+                                        <textarea class="form-control" v-model="temp_workflow.workflow.positive_text"></textarea>
                                     </div>
                                     <div>
                                         Negative Base
-                                        <textarea class="form-control" v-model="temp_project.project.negative_text"></textarea>
+                                        <textarea class="form-control" v-model="temp_workflow.workflow.negative_text"></textarea>
                                     </div>
                                     <div>
                                         Regional Conditioning
-                                        <div class="d-flex flex-column gap-1" v-if="temp_project.project.conditions">
-                                            <div class="card" v-for="condition in temp_project.project.conditions">
+                                        <div class="d-flex flex-column gap-1" v-if="temp_workflow.workflow.conditions">
+                                            <div class="card" v-for="condition in temp_workflow.workflow.conditions">
                                                 <div class="card-body">
                                                     <div class="d-flex flex-column gap-3">
                                                         <div>
@@ -203,14 +203,14 @@
                         <div class="d-flex flex-column gap-3" v-else>
                             <div class="d-flex flex-wrap gap-3">
                                 <div class="d-flex gap-2" style="max-width: 100%;">
-                                    <select class="form-select flex-shrink-1" style="width: 20em; min-width: 0;" v-model="active_project_name">
-                                        <option v-for="project in projects" :value="project.name">{{ project.name }}</option>
+                                    <select class="form-select flex-shrink-1" style="width: 20em; min-width: 0;" v-model="active_workflow_name">
+                                        <option v-for="workflow in workflows" :value="workflow.name">{{ workflow.name }}</option>
                                     </select>
                                     <div class="btn-group">
-                                        <button type="button" class="btn btn-secondary" @click="edit_project(active_project_name)">Edit</button>
+                                        <button type="button" class="btn btn-secondary" @click="edit_workflow(active_workflow_name)">Edit</button>
                                         <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-reference="parent"></button>
                                         <ul class="dropdown-menu">
-                                            <li><span class="dropdown-item" @click="upload_projects">Upload</span></li>
+                                            <li><span class="dropdown-item" @click="upload_workflows">Upload</span></li>
                                         </ul>
                                     </div>
                                 </div>
@@ -229,13 +229,13 @@
                                                 <input type="number" class="form-control" min="1" max="100" step="1" v-model="batch_count">
                                             </div>
                                         </div>
-                                        <button type="button" class="btn btn-secondary" @click="clear_project_prompt_ids">Clear</button>
-                                        <button type="button" class="btn btn-dark" @click="download_project_images">Download</button>
-                                        <div class="px-1">{{ project_images.length }} / {{ prompt_ids.filter(prompt_id => prompt_id.project_name == active_project_name).length }}</div>
+                                        <button type="button" class="btn btn-secondary" @click="clear_workflow_prompt_ids">Clear</button>
+                                        <button type="button" class="btn btn-dark" @click="download_workflow_images">Download</button>
+                                        <div class="px-1">{{ workflow_images.length }} / {{ prompt_ids.filter(prompt_id => prompt_id.workflow_name == active_workflow_name).length }}</div>
                                     </div>
                                     <div class="container">
                                         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
-                                            <div class="col" v-for="(image, index) in project_images">
+                                            <div class="col" v-for="(image, index) in workflow_images">
                                                 <div class="position-relative">
                                                     <img class="w-100" :src="image['src']" @click="view_image(index)">
                                                     <button type="button" class="btn-close position-absolute top-0 end-0" @click="delete_image(index)"></button>
@@ -290,10 +290,10 @@
                         is_valid_access_token: null,
                         is_connecting: false,
                         object_info: null,
-                        projects: null,
-                        active_project_name: null,
-                        editing_project_name: null,
-                        temp_project: null,
+                        workflows: null,
+                        active_workflow_name: null,
+                        editing_workflow_name: null,
+                        temp_workflow: null,
                         queue_remaining: 0,
                         filtered_autocomplete: null,
                         batch_count: 1,
@@ -303,17 +303,17 @@
                     }
                 },
                 computed: {
-                    is_valid_project_name() {
-                        if (this.temp_project) {
-                            if (this.temp_project.name.trim() == "") return false;
-                            if (!this.editing_project_name || this.temp_project.name != this.editing_project_name) {
-                                if (this.projects.find(project => project.name == this.temp_project.name)) return false;
+                    is_valid_workflow_name() {
+                        if (this.temp_workflow) {
+                            if (this.temp_workflow.name.trim() == "") return false;
+                            if (!this.editing_workflow_name || this.temp_workflow.name != this.editing_workflow_name) {
+                                if (this.workflows.find(workflow => workflow.name == this.temp_workflow.name)) return false;
                             }
                         }
                         return true;
                     },
-                    project_images() {
-                        let prompt_ids = this.prompt_ids.filter(prompt_id => prompt_id.project_name == this.active_project_name).map(prompt_id => prompt_id.prompt_id);
+                    workflow_images() {
+                        let prompt_ids = this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.active_workflow_name).map(prompt_id => prompt_id.prompt_id);
                         return this.images.filter(image => prompt_ids.includes(image['prompt_id']));
                     },
                 },
@@ -335,13 +335,13 @@
                         return inputs;
                     },
                     async queue_prompt() {
-                        let project = null;
-                        if (!this.temp_project && this.active_project_name) {
-                            project = this.projects.find(project => project.name == this.active_project_name);
+                        let workflow = null;
+                        if (!this.temp_workflow && this.active_workflow_name) {
+                            workflow = this.workflows.find(workflow => workflow.name == this.active_workflow_name);
                         }
                         else return;
 
-                        project = structuredClone(toRaw(project));
+                        workflow = structuredClone(toRaw(workflow));
                         for (let _ of Array(this.batch_count)) {
                             let prompt = {};
                             const add_node = (class_type, inputs_ = {}) => {
@@ -374,13 +374,13 @@
                                 return outputs;
                             };
     
-                            let CheckpointLoaderSimple_node = add_node('CheckpointLoaderSimple', {ckpt_name: project.project.checkpoint});
+                            let CheckpointLoaderSimple_node = add_node('CheckpointLoaderSimple', {ckpt_name: workflow.workflow.checkpoint});
                             let model_output = CheckpointLoaderSimple_node['MODEL'];
                             let clip_output = CheckpointLoaderSimple_node['CLIP'];
                             let vae_output = CheckpointLoaderSimple_node['VAE'];
     
-                            if (project.project.loras) {
-                                for (let lora of project.project.loras) {
+                            if (workflow.workflow.loras) {
+                                for (let lora of workflow.workflow.loras) {
                                     let LoraLoader_node = add_node('LoraLoader', {
                                         model: model_output, clip: clip_output,
                                         lora_name: lora.lora_name, strength_model: lora.strength_model, strength_clip: lora.strength_clip,
@@ -390,18 +390,18 @@
                                 }
                             }
     
-                            if (project.project.clip_set_last_layer_bool) {
-                                let CLIPSetLastLayer_node = add_node('CLIPSetLastLayer', {stop_at_clip_layer: project.project.stop_at_clip_layer, clip: clip_output});
+                            if (workflow.workflow.clip_set_last_layer_bool) {
+                                let CLIPSetLastLayer_node = add_node('CLIPSetLastLayer', {stop_at_clip_layer: workflow.workflow.stop_at_clip_layer, clip: clip_output});
                                 clip_output = CLIPSetLastLayer_node['CLIP'];
                             }
     
-                            let CLIPTextEncode_positive_node = add_node('CLIPTextEncode', {text: project.project.positive_text, clip: clip_output});
+                            let CLIPTextEncode_positive_node = add_node('CLIPTextEncode', {text: workflow.workflow.positive_text, clip: clip_output});
                             let positive_output = CLIPTextEncode_positive_node['CONDITIONING'];
-                            let CLIPTextEncode_negative_node = add_node('CLIPTextEncode', {text: project.project.negative_text, clip: clip_output});
+                            let CLIPTextEncode_negative_node = add_node('CLIPTextEncode', {text: workflow.workflow.negative_text, clip: clip_output});
                             let negative_output = CLIPTextEncode_negative_node['CONDITIONING'];
     
-                            if (project.project.conditions) {
-                                for (let condition of project.project.conditions) {
+                            if (workflow.workflow.conditions) {
+                                for (let condition of workflow.workflow.conditions) {
                                     let CLIPTextEncode_node = add_node('CLIPTextEncode', {text: condition.text, clip: clip_output});
                                     let ConditioningSetAreaPercentage_node = add_node('ConditioningSetAreaPercentage', {
                                         conditioning: CLIPTextEncode_node['CONDITIONING'],
@@ -412,25 +412,25 @@
                                 }
                             }
     
-                            let EmptyLatentImageFromPresetsSDXL_node = add_node('EmptyLatentImageFromPresetsSDXL', {preset: project.project.size_preset});
+                            let EmptyLatentImageFromPresetsSDXL_node = add_node('EmptyLatentImageFromPresetsSDXL', {preset: workflow.workflow.size_preset});
     
                             let KSampler_seed_info = this.object_info['KSampler']['input']['required']['seed'][1];
                             let KSampler_seed = Math.floor(Math.random() * (KSampler_seed_info['max'] - KSampler_seed_info['min']) + KSampler_seed_info['min']);
                             let KSampler_node = add_node('KSampler', {
                                 model: model_output,positive: positive_output, negative: negative_output, latent_image: EmptyLatentImageFromPresetsSDXL_node['latent'],
-                                seed: KSampler_seed, steps: project.project.steps, cfg: project.project.cfg, sampler_name: project.project.sampler_name, scheduler: project.project.scheduler,
+                                seed: KSampler_seed, steps: workflow.workflow.steps, cfg: workflow.workflow.cfg, sampler_name: workflow.workflow.sampler_name, scheduler: workflow.workflow.scheduler,
                             });
                             
                             let VAEDecode_node = add_node('VAEDecode', {samples: KSampler_node['LATENT'], vae: vae_output});
                             let image_output = VAEDecode_node['IMAGE'];
     
-                            if (project.project.face_detailer_bool) {
+                            if (workflow.workflow.face_detailer_bool) {
                                 let UltralyticsDetectorProvider_node = add_node('UltralyticsDetectorProvider');
                                 let FaceDetailer_seed_info = this.object_info['FaceDetailer']['input']['required']['seed'][1];
                                 let FaceDetailer_seed = Math.floor(Math.random() * (FaceDetailer_seed_info['max'] - FaceDetailer_seed_info['min']) + FaceDetailer_seed_info['min']);
                                 let FaceDetailer_node = add_node('FaceDetailer', {
                                     image: image_output, model: model_output, clip: clip_output, vae: vae_output, positive: positive_output, negative: negative_output,
-                                    seed: FaceDetailer_seed, steps: project.project.steps, cfg: project.project.cfg, sampler_name: project.project.sampler_name, scheduler: project.project.scheduler,
+                                    seed: FaceDetailer_seed, steps: workflow.workflow.steps, cfg: workflow.workflow.cfg, sampler_name: workflow.workflow.sampler_name, scheduler: workflow.workflow.scheduler,
                                     bbox_detector: UltralyticsDetectorProvider_node['BBOX_DETECTOR'],
                                 });
                                 image_output = FaceDetailer_node['image'];
@@ -446,7 +446,7 @@
                                 body: JSON.stringify({"prompt": prompt, "client_id": this.client_id}),
                             })).json())['prompt_id'];
 
-                            this.prompt_ids.push({prompt_id: prompt_id, project_name: project.name});
+                            this.prompt_ids.push({prompt_id: prompt_id, workflow_name: workflow.name});
                         }
                     },
                     async remove_prompts(prompt_ids) {
@@ -510,30 +510,30 @@
                         let queue = await (await fetch(`${this.server_address}/queue`)).json();
                         this.queue_remaining = queue['queue_running'].length + queue['queue_pending'].length;
                     },
-                    edit_project(project_name) {
-                        if (project_name) {
-                            let project = this.projects.find(project => project.name == project_name);
-                            if (project) {
-                                this.active_project_name = project.name;
-                                this.editing_project_name = project.name;
-                                this.temp_project = {
-                                    name: project.name,
-                                    project: structuredClone(toRaw(project.project)),
+                    edit_workflow(workflow_name) {
+                        if (workflow_name) {
+                            let workflow = this.workflows.find(workflow => workflow.name == workflow_name);
+                            if (workflow) {
+                                this.active_workflow_name = workflow.name;
+                                this.editing_workflow_name = workflow.name;
+                                this.temp_workflow = {
+                                    name: workflow.name,
+                                    workflow: structuredClone(toRaw(workflow.workflow)),
                                 };
                             }
                         }
-                        else this.add_project();
+                        else this.add_workflow();
                     },
-                    add_project() {
+                    add_workflow() {
                         let default_CheckpointLoaderSimple = this.get_default('CheckpointLoaderSimple');
                         let default_EmptyLatentImageFromPresetsSDXL = this.get_default('EmptyLatentImageFromPresetsSDXL');
                         let default_KSampler = this.get_default('KSampler');
                         let default_CLIPSetLastLayer = this.get_default('CLIPSetLastLayer');
                         
-                        this.editing_project_name = null;
-                        this.temp_project = {
+                        this.editing_workflow_name = null;
+                        this.temp_workflow = {
                             name: "",
-                            project: {
+                            workflow: {
                                 checkpoint: default_CheckpointLoaderSimple['ckpt_name'],
                                 size_preset: default_EmptyLatentImageFromPresetsSDXL['preset'],
                                 steps: default_KSampler['steps'],
@@ -544,57 +544,57 @@
                             }
                         };
                     },
-                    clone_project(project_name) {
-                        if (project_name) {
-                            let project = this.projects.find(project => project.name == project_name);
-                            if (project) {
-                                this.editing_project_name = null;
-                                this.temp_project = {
-                                    name: project.name,
-                                    project: structuredClone(toRaw(project.project)),
+                    clone_workflow(workflow_name) {
+                        if (workflow_name) {
+                            let workflow = this.workflows.find(workflow => workflow.name == workflow_name);
+                            if (workflow) {
+                                this.editing_workflow_name = null;
+                                this.temp_workflow = {
+                                    name: workflow.name,
+                                    workflow: structuredClone(toRaw(workflow.workflow)),
                                 };
                             }
                         }
                     },
-                    remove_project(project_name) {
-                        if (project_name) {
-                            let idx = this.projects.findIndex(project => project.name == project_name);
+                    remove_workflow(workflow_name) {
+                        if (workflow_name) {
+                            let idx = this.workflows.findIndex(workflow => workflow.name == workflow_name);
                             if (idx >= 0) {
-                                this.projects.splice(idx, 1);
-                                this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.project_name == project_name));
-                                if (project_name == this.active_project_name) {
-                                    if (this.projects.length == 0) {
-                                        this.active_project_name = null;
+                                this.workflows.splice(idx, 1);
+                                this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == workflow_name));
+                                if (workflow_name == this.active_workflow_name) {
+                                    if (this.workflows.length == 0) {
+                                        this.active_workflow_name = null;
                                     }
-                                    else if (idx < this.projects.length) {
-                                        this.active_project_name = this.projects[idx].name;
+                                    else if (idx < this.workflows.length) {
+                                        this.active_workflow_name = this.workflows[idx].name;
                                     }
                                     else {
-                                        this.active_project_name = this.projects[this.projects.length - 1].name;
+                                        this.active_workflow_name = this.workflows[this.workflows.length - 1].name;
                                     }
                                 }
                             }
                         }
                     },
-                    save_project() {
-                        if (this.is_valid_project_name) {
-                            if (this.editing_project_name) {
-                                let editing_project = this.projects.find(project => project.name == this.editing_project_name);
-                                this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.project_name == this.editing_project_name));
-                                editing_project.name = this.temp_project.name;
-                                editing_project.project = structuredClone(toRaw(this.temp_project.project));
+                    save_workflow() {
+                        if (this.is_valid_workflow_name) {
+                            if (this.editing_workflow_name) {
+                                let editing_workflow = this.workflows.find(workflow => workflow.name == this.editing_workflow_name);
+                                this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.editing_workflow_name));
+                                editing_workflow.name = this.temp_workflow.name;
+                                editing_workflow.workflow = structuredClone(toRaw(this.temp_workflow.workflow));
                             }
                             else {
-                                this.projects.push({
-                                    name: this.temp_project.name,
-                                    project: structuredClone(toRaw(this.temp_project.project))
+                                this.workflows.push({
+                                    name: this.temp_workflow.name,
+                                    workflow: structuredClone(toRaw(this.temp_workflow.workflow))
                                 });
                             }
                             
-                            this.edit_project(this.temp_project.name);
+                            this.edit_workflow(this.temp_workflow.name);
                         }
                     },
-                    /*upload_project() {
+                    /*upload_workflow() {
                         let input = document.createElement('input');
                         input.type = 'file';
                         input.style.display = 'none';
@@ -602,10 +602,10 @@
                             for (let file of input.files) {
                                 const reader = new FileReader();
                                 reader.addEventListener('load', _ => {
-                                    let project = JSON.parse(reader.result);
-                                    this.temp_project = {
-                                        name: project.name,
-                                        project: project.project,
+                                    let workflow = JSON.parse(reader.result);
+                                    this.temp_workflow = {
+                                        name: workflow.name,
+                                        workflow: workflow.workflow,
                                     };
                                 });
                                 reader.readAsText(file);
@@ -613,15 +613,15 @@
                         });
                         input.click();
                     },
-                    download_project() {
-                        if (this.active_project_name) {
-                            let project = structuredClone(toRaw(this.projects.find(project => project.name == this.active_project_name)));
-                            let url = window.URL.createObjectURL(new Blob([JSON.stringify(project)], {type: 'application/octet-stream'}));
+                    download_workflow() {
+                        if (this.active_workflow_name) {
+                            let workflow = structuredClone(toRaw(this.workflows.find(workflow => workflow.name == this.active_workflow_name)));
+                            let url = window.URL.createObjectURL(new Blob([JSON.stringify(workflow)], {type: 'application/octet-stream'}));
                             const iframe = document.createElement('iframe');
                             iframe.style.display = 'none';
                             iframe.addEventListener('load', _ => {
                                 let a = iframe.contentDocument.createElement('a');
-                                a.download = `${project.name}.json`
+                                a.download = `${workflow.name}.json`
                                 a.href = url;
                                 a.click();
                                 setTimeout(_ => {
@@ -633,26 +633,26 @@
                         }
                     },*/
                     add_lora() {
-                        if (!this.temp_project.project.loras) {
-                            this.temp_project.project.loras = [];
+                        if (!this.temp_workflow.workflow.loras) {
+                            this.temp_workflow.workflow.loras = [];
                         }
                         let default_LoraLoader = this.get_default('LoraLoader');
-                        this.temp_project.project.loras.push({
+                        this.temp_workflow.workflow.loras.push({
                             lora_name: default_LoraLoader['lora_name'],
                             strength_model: default_LoraLoader['strength_model'],
                             strength_clip: default_LoraLoader['strength_clip'],
                         });
                     },
                     remove_lora(lora) {
-                        let idx = this.temp_project.project.loras.indexOf(lora);
-                        this.temp_project.project.loras.splice(idx, 1);
+                        let idx = this.temp_workflow.workflow.loras.indexOf(lora);
+                        this.temp_workflow.workflow.loras.splice(idx, 1);
                     },
                     add_condition() {
-                        if (!this.temp_project.project.conditions) {
-                            this.temp_project.project.conditions = [];
+                        if (!this.temp_workflow.workflow.conditions) {
+                            this.temp_workflow.workflow.conditions = [];
                         }
                         let default_ConditioningSetAreaPercentage = this.get_default('ConditioningSetAreaPercentage');
-                        this.temp_project.project.conditions.push({
+                        this.temp_workflow.workflow.conditions.push({
                             width: default_ConditioningSetAreaPercentage['width'],
                             height: default_ConditioningSetAreaPercentage['height'],
                             x: default_ConditioningSetAreaPercentage['x'],
@@ -660,8 +660,8 @@
                         });
                     },
                     remove_condition(condition) {
-                        let idx = this.temp_project.project.conditions.indexOf(condition);
-                        this.temp_project.project.conditions.splice(idx, 1);
+                        let idx = this.temp_workflow.workflow.conditions.indexOf(condition);
+                        this.temp_workflow.workflow.conditions.splice(idx, 1);
                     },
                     connect_socket() {
                         try { this.socket.close(); } catch (e) {}
@@ -702,7 +702,7 @@
                                 this.octokit = new Octokit({
                                     auth: this.access_token
                                 });
-                                await this.download_projects();
+                                await this.download_workflows();
 
                                 let settings = {};
                                 try {
@@ -723,7 +723,7 @@
 
                         this.is_connecting = false;
                     },
-                    async upload_projects() {
+                    async upload_workflows() {
                         let url = "/gists";
                         const nextPattern = /(?<=<)([\S]*)(?=>; rel="Next")/i;
                         let pagesRemaining = true;
@@ -731,7 +731,7 @@
                         let files = {
                             'ComfyUI.json': {
                                 content: JSON.stringify({
-                                    projects: this.projects,
+                                    workflows: this.workflows,
                                 })
                             }
                         };
@@ -780,7 +780,7 @@
                             console.log(response);
                         }
                     },
-                    async download_projects() {
+                    async download_workflows() {
                         let url = "/gists";
                         const nextPattern = /(?<=<)([\S]*)(?=>; rel="Next")/i;
                         let pagesRemaining = true;
@@ -799,7 +799,7 @@
                                         found = true;
                                         try {
                                             let json = await (await fetch(file.raw_url)).json();
-                                            this.projects = json.projects;
+                                            this.workflows = json.workflows;
                                             console.log(gist);
                                         }
                                         catch (e) {
@@ -820,8 +820,8 @@
                                 url = linkHeader.match(nextPattern)[0];
                             }
                         }
-                        if (!this.projects) {
-                            this.projects = [];
+                        if (!this.workflows) {
+                            this.workflows = [];
                         }
                     },
                     async clear_history() {
@@ -834,12 +834,12 @@
                         });
                         this.images = [];
                     },
-                    clear_project_prompt_ids() {
-                        this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.project_name == this.active_project_name));
+                    clear_workflow_prompt_ids() {
+                        this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.active_workflow_name));
                     },
-                    async download_project_images() {
+                    async download_workflow_images() {
                         var zip = new JSZip();
-                        for (let image of this.project_images) {
+                        for (let image of this.workflow_images) {
                             let response = await fetch(image['src']);
                             let blob = await response.blob();
                             zip.file(image.filename, blob);
@@ -864,7 +864,7 @@
                         this.image_number = index;
                     },
                     delete_image(index) {
-                        let prompt_id = this.prompt_ids.find(prompt_id => prompt_id.prompt_id == this.project_images[index]['prompt_id']);
+                        let prompt_id = this.prompt_ids.find(prompt_id => prompt_id.prompt_id == this.workflow_images[index]['prompt_id']);
                         this.remove_prompts([prompt_id]);
                     },
                     autocomplete_input(event) {
@@ -912,7 +912,7 @@
                                 this.image_number = Math.max(0, this.image_number - 1);
                             }
                             else if (e.key == "ArrowRight") {
-                                this.image_number = Math.min(this.project_images.length - 1, this.image_number + 1);
+                                this.image_number = Math.min(this.workflow_images.length - 1, this.image_number + 1);
                             }
                         }
                     });
@@ -922,12 +922,12 @@
                         this.server_address = server_address;
                     }
 
-                    this.$watch(_ => [this.projects, this.active_project_name], _ => {
-                        if (!this.projects.find(project => project.name == this.active_project_name)) {
-                            if (this.projects.length > 0) {
-                                this.active_project_name = this.projects[0].name;
+                    this.$watch(_ => [this.workflows, this.active_workflow_name], _ => {
+                        if (!this.workflows.find(workflow => workflow.name == this.active_workflow_name)) {
+                            if (this.workflows.length > 0) {
+                                this.active_workflow_name = this.workflows[0].name;
                             }
-                            else this.active_project_name = null;
+                            else this.active_workflow_name = null;
                         }
                     }, { deep: true } );
                 },
