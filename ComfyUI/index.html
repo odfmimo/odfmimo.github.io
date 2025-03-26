@@ -306,7 +306,7 @@
                     is_valid_project_name() {
                         if (this.temp_project) {
                             if (this.temp_project.name.trim() == "") return false;
-                            if (!this.temp_project.name_ || this.temp_project.name != this.temp_project.name_) {
+                            if (!this.editing_project || this.temp_project.name != this.editing_project.name) {
                                 if (this.projects.find(project => project.name == this.temp_project.name)) return false;
                             }
                         }
@@ -518,7 +518,6 @@
                                 this.editing_project_name = project.name;
                                 this.temp_project = {
                                     name: project.name,
-                                    name_: project.name,
                                     project: structuredClone(toRaw(project.project)),
                                 };
                             }
@@ -531,7 +530,7 @@
                         let default_KSampler = this.get_default('KSampler');
                         let default_CLIPSetLastLayer = this.get_default('CLIPSetLastLayer');
                         
-                        this.editing_project_name = "";
+                        this.editing_project_name = null;
                         this.temp_project = {
                             name: "",
                             project: {
@@ -579,11 +578,11 @@
                     },
                     save_project() {
                         if (this.is_valid_project_name) {
-                            if (this.temp_project.name_) {
-                                let target = this.projects.find(project => project.name == this.temp_project.name_);
-                                target.name = this.temp_project.name;
-                                target.project = structuredClone(toRaw(this.temp_project.project));
-                                this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.project_name == this.temp_project.name_));
+                            if (this.editing_project_name) {
+                                let editing_project = this.projects.find(project => project.name == this.editing_project_name);
+                                editing_project.name = this.temp_project.name;
+                                editing_project.project = structuredClone(toRaw(this.temp_project.project));
+                                this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.project_name == this.editing_project.name));
                             }
                             else {
                                 this.projects.push({
