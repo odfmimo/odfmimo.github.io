@@ -229,7 +229,12 @@
                                     <div class="d-flex gap-2 align-items-center">
                                         <button type="button" class="btn btn-secondary" @click="clear_workflow_prompt_ids">Clear</button>
                                         <button type="button" class="btn btn-dark" @click="download_workflow_images">Download</button>
-                                        <div class="px-1">{{ workflow_images.length }} / {{ prompt_ids.filter(prompt_id => prompt_id.workflow_name == active_workflow_name).length }}</div>
+                                        <div class="input-group">
+                                            <span class="input-group-text">{{ workflow_images.length }} / {{ prompt_ids.filter(prompt_id => prompt_id.workflow_name == active_workflow_name).length }}</span>
+                                            <span class="input-group-text">
+                                                <input class="form-check-input mt-0" type="checkbox" v-model="is_fixed_queue_size">
+                                            </span>
+                                        </div>
                                     </div>
                                     <div class="container">
                                         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
@@ -298,6 +303,7 @@
                         images: [],
                         image_number: null,
                         prompt_ids: [],
+                        is_fixed_queue_size: false,
                     }
                 },
                 computed: {
@@ -864,6 +870,7 @@
                     delete_image(index) {
                         let prompt_id = this.prompt_ids.find(prompt_id => prompt_id.prompt_id == this.workflow_images[index]['prompt_id']);
                         this.remove_prompts([prompt_id]);
+                        if (this.is_fixed_queue_size) this.queue_prompt();
                     },
                     autocomplete_input(event) {
                         let target = event.target;
