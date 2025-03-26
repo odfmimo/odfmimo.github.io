@@ -306,7 +306,7 @@
                     is_valid_project_name() {
                         if (this.temp_project) {
                             if (this.temp_project.name.trim() == "") return false;
-                            if (!this.editing_project || this.temp_project.name != this.editing_project.name) {
+                            if (!this.editing_project_name || this.temp_project.name != this.editing_project_name) {
                                 if (this.projects.find(project => project.name == this.temp_project.name)) return false;
                             }
                         }
@@ -548,7 +548,7 @@
                         if (project_name) {
                             let project = this.projects.find(project => project.name == project_name);
                             if (project) {
-                                this.editing_project_name = "";
+                                this.editing_project_name = null;
                                 this.temp_project = {
                                     name: project.name,
                                     project: structuredClone(toRaw(project.project)),
@@ -580,9 +580,9 @@
                         if (this.is_valid_project_name) {
                             if (this.editing_project_name) {
                                 let editing_project = this.projects.find(project => project.name == this.editing_project_name);
+                                this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.project_name == this.editing_project_name));
                                 editing_project.name = this.temp_project.name;
                                 editing_project.project = structuredClone(toRaw(this.temp_project.project));
-                                this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.project_name == this.editing_project.name));
                             }
                             else {
                                 this.projects.push({
