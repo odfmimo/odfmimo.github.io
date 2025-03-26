@@ -42,153 +42,153 @@
                             </button>                    
                         </div>
                     </div>
-                    <div v-show="image_number == null">
-                        <div v-if="editing_project">
-                            <div class="d-flex flex-column p-3 gap-3">
-                                <div class="d-flex gap-2" style="max-width: 100%;">
-                                    <select class="form-select flex-shrink-1" style="width: 20em; min-width: 0;" @change="edit_project(editing_project_name)" v-model="editing_project_name">
-                                        <option v-for="project in projects" :value="project.name">{{ project.name }}</option>
-                                    </select>
-                                    <div class="btn-group">
-                                        <button type="button" class="btn btn-secondary" @click="editing_project=null">Close</button>
-                                        <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-reference="parent"></button>
-                                        <ul class="dropdown-menu">
-                                            <li><span class="dropdown-item" @click="add_project()">Add</span></li>
-                                            <li><span class="dropdown-item" @click="clone_project(editing_project_name)">Clone</span></li>
-                                            <li><span class="dropdown-item" @click="remove_project(editing_project_name)">Remove</span></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div class="d-flex gap-2" style="max-width: 100%;">
-                                    <input class="form-control flex-shrink-1" style="width: 20em; min-width: 0;" :class="{'is-invalid': !is_valid_project_name}" v-model="editing_project.name">
-                                    <button type="button" class="btn btn-success" @click="save_project()">Save</button>
+                    <div class="p-3" v-show="image_number == null">
+                        <div class="d-flex flex-column gap-3" v-if="temp_project">
+                            <div class="d-flex gap-2" style="max-width: 100%;">
+                                <select class="form-select flex-shrink-1" style="width: 20em; min-width: 0;" @change="edit_project(editing_project_name)" v-model="editing_project_name">
+                                    <option v-for="project in projects" :value="project.name">{{ project.name }}</option>
+                                </select>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-secondary" @click="temp_project=null">Close</button>
+                                    <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-reference="parent"></button>
+                                    <ul class="dropdown-menu">
+                                        <li><span class="dropdown-item" @click="add_project()">Add</span></li>
+                                        <li><span class="dropdown-item" @click="clone_project(editing_project_name)">Clone</span></li>
+                                        <li><span class="dropdown-item" @click="remove_project(editing_project_name)">Remove</span></li>
+                                    </ul>
                                 </div>
                             </div>
-                            <div class="d-flex flex-column p-3 gap-3" @input="autocomplete_input($event)" @focusout="filtered_autocomplete = null">
-                                <div class="d-flex flex-wrap gap-3">
-                                    <div>
-                                        Checkpoint
-                                        <select class="form-select" style="max-width: 30em;" v-model="editing_project.project.checkpoint">
-                                            <option v-for="checkpoint in object_info['CheckpointLoaderSimple']['input']['required']['ckpt_name'][0]" :value="checkpoint">{{ checkpoint }}</option>
-                                        </select>
+                            <div class="d-flex gap-2" style="max-width: 100%;">
+                                <input class="form-control flex-shrink-1" style="width: 20em; min-width: 0;" :class="{'is-invalid': !is_valid_project_name}" v-model="temp_project.name">
+                                <button type="button" class="btn btn-success" @click="save_project()">Save</button>
+                            </div>
+                            <div @input="autocomplete_input($event)" @focusout="filtered_autocomplete = null">
+                                <div class="d-flex flex-column gap-3">
+                                    <div class="d-flex flex-wrap gap-3">
+                                        <div>
+                                            Checkpoint
+                                            <select class="form-select" style="max-width: 30em;" v-model="temp_project.project.checkpoint">
+                                                <option v-for="checkpoint in object_info['CheckpointLoaderSimple']['input']['required']['ckpt_name'][0]" :value="checkpoint">{{ checkpoint }}</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            CLIP Set Last Layer
+                                            <div class="input-group">
+                                                <div class="input-group-text">
+                                                    <input class="form-check-input mt-0" type="checkbox" v-model="temp_project.project.clip_set_last_layer_bool">
+                                                </div>
+                                                <input type="number" class="form-control" :disabled="!temp_project.project.clip_set_last_layer_bool" v-bind="object_info['CLIPSetLastLayer']['input']['required']['stop_at_clip_layer'][1]" v-model="temp_project.project.stop_at_clip_layer" >   
+                                            </div>                             
+                                        </div>
+                                        <div>
+                                            Size Preset
+                                            <select class="form-select" v-model="temp_project.project.size_preset">
+                                                <option v-for="size_preset in object_info['EmptyLatentImageFromPresetsSDXL']['input']['required']['preset'][0]" :value="size_preset">{{ size_preset }}</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     <div>
-                                        CLIP Set Last Layer
-                                        <div class="input-group">
-                                            <div class="input-group-text">
-                                                <input class="form-check-input mt-0" type="checkbox" v-model="editing_project.project.clip_set_last_layer_bool">
-                                            </div>
-                                            <input type="number" class="form-control" :disabled="!editing_project.project.clip_set_last_layer_bool" v-bind="object_info['CLIPSetLastLayer']['input']['required']['stop_at_clip_layer'][1]" v-model="editing_project.project.stop_at_clip_layer" >   
-                                        </div>                             
-                                    </div>
-                                    <div>
-                                        Size Preset
-                                        <select class="form-select" v-model="editing_project.project.size_preset">
-                                            <option v-for="size_preset in object_info['EmptyLatentImageFromPresetsSDXL']['input']['required']['preset'][0]" :value="size_preset">{{ size_preset }}</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div>
-                                    Lora
-                                    <div class="d-flex flex-column align-items-start gap-1" v-if="editing_project.project.lora">
-                                        <div class="card" v-for="lora in editing_project.project.lora">
-                                            <div class="card-body">
-                                                <div class="d-flex flex-wrap gap-3">
-                                                    <div>
-                                                        Lora Name
-                                                        <select class="form-select" v-model="lora.lora_name">
-                                                            <option v-for="lora_name in object_info['LoraLoader']['input']['required']['lora_name'][0]" :value="lora_name">{{ lora_name }}</option>
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        Strength Model
-                                                        <input type="number" class="form-control" v-bind="object_info['LoraLoader']['input']['required']['strength_model'][1]" v-model="lora.strength_model">
-                                                    </div>
-                                                    <div>
-                                                        Strength Clip
-                                                        <input type="number" class="form-control" v-bind="object_info['LoraLoader']['input']['required']['strength_clip'][1]" v-model="lora.strength_clip">
+                                        Lora
+                                        <div class="d-flex flex-column align-items-start gap-1" v-if="temp_project.project.loras">
+                                            <div class="card" v-for="lora in temp_project.project.loras">
+                                                <div class="card-body">
+                                                    <div class="d-flex flex-wrap gap-3">
+                                                        <div>
+                                                            Lora Name
+                                                            <select class="form-select" v-model="lora.lora_name">
+                                                                <option v-for="lora_name in object_info['LoraLoader']['input']['required']['lora_name'][0]" :value="lora_name">{{ lora_name }}</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            Strength Model
+                                                            <input type="number" class="form-control" v-bind="object_info['LoraLoader']['input']['required']['strength_model'][1]" v-model="lora.strength_model">
+                                                        </div>
+                                                        <div>
+                                                            Strength Clip
+                                                            <input type="number" class="form-control" v-bind="object_info['LoraLoader']['input']['required']['strength_clip'][1]" v-model="lora.strength_clip">
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
+                                        <div class="pt-1">
+                                            <button type="button" class="btn btn-secondary" @click="add_lora">Add</button>
+                                        </div>
                                     </div>
-                                    <div class="pt-1">
-                                        <button type="button" class="btn btn-secondary" @click="add_lora">Add</button>
+                                    <div class="d-flex flex-wrap gap-3">
+                                        <div>
+                                            Steps
+                                            <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['steps'][1]" v-model="temp_project.project.steps">
+                                        </div>
+                                        <div>
+                                            CFG
+                                            <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['cfg'][1]" v-model="temp_project.project.cfg">
+                                        </div>
+                                        <div>
+                                            Sampler
+                                            <select class="form-select" v-model="temp_project.project.sampler_name">
+                                                <option v-for="sampler_name in object_info['KSampler']['input']['required']['sampler_name'][0]" :value="sampler_name">{{ sampler_name }}</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            Scheduler
+                                            <select class="form-select" v-model="temp_project.project.scheduler">
+                                                <option v-for="scheduler in object_info['KSampler']['input']['required']['scheduler'][0]" :value="scheduler">{{ scheduler }}</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="d-flex flex-wrap gap-3">
                                     <div>
-                                        Steps
-                                        <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['steps'][1]" v-model="editing_project.project.steps">
+                                        <div>
+                                            <input class="form-check-input" type="checkbox" v-model="temp_project.project.face_detailer_bool">
+                                            Face Detailer
+                                        </div>
                                     </div>
                                     <div>
-                                        CFG
-                                        <input type="number" class="form-control" v-bind="object_info['KSampler']['input']['required']['cfg'][1]" v-model="editing_project.project.cfg">
+                                        Positive Base
+                                        <textarea class="form-control" v-model="temp_project.project.positive_text"></textarea>
                                     </div>
                                     <div>
-                                        Sampler
-                                        <select class="form-select" v-model="editing_project.project.sampler_name">
-                                            <option v-for="sampler_name in object_info['KSampler']['input']['required']['sampler_name'][0]" :value="sampler_name">{{ sampler_name }}</option>
-                                        </select>
+                                        Negative Base
+                                        <textarea class="form-control" v-model="temp_project.project.negative_text"></textarea>
                                     </div>
                                     <div>
-                                        Scheduler
-                                        <select class="form-select" v-model="editing_project.project.scheduler">
-                                            <option v-for="scheduler in object_info['KSampler']['input']['required']['scheduler'][0]" :value="scheduler">{{ scheduler }}</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div>
-                                        <input class="form-check-input" type="checkbox" v-model="editing_project.project.face_detailer_bool">
-                                        Face Detailer
-                                    </div>
-                                </div>
-                                <div>
-                                    Positive Base
-                                    <textarea class="form-control" v-model="editing_project.project.positive_text"></textarea>
-                                </div>
-                                <div>
-                                    Negative Base
-                                    <textarea class="form-control" v-model="editing_project.project.negative_text"></textarea>
-                                </div>
-                                <div>
-                                    Regional Conditioning
-                                    <div class="d-flex flex-column gap-1" v-if="editing_project.project.condition">
-                                        <div class="card" v-for="condition in editing_project.project.condition">
-                                            <div class="card-body">
-                                                <div class="d-flex flex-column gap-3">
-                                                    <div>
-                                                        <button type="button" class="btn btn-secondary" @click="remove_condition(condition)">Remove</button>
-                                                    </div>
-                                                    <div class="d-flex gap-3">
+                                        Regional Conditioning
+                                        <div class="d-flex flex-column gap-1" v-if="temp_project.project.conditions">
+                                            <div class="card" v-for="condition in temp_project.project.conditions">
+                                                <div class="card-body">
+                                                    <div class="d-flex flex-column gap-3">
                                                         <div>
-                                                            Width
-                                                            <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['width'][1]" v-model="condition.width">
+                                                            <button type="button" class="btn btn-secondary" @click="remove_condition(condition)">Remove</button>
+                                                        </div>
+                                                        <div class="d-flex gap-3">
+                                                            <div>
+                                                                Width
+                                                                <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['width'][1]" v-model="condition.width">
+                                                            </div>
+                                                            <div>
+                                                                Height
+                                                                <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['height'][1]" v-model="condition.height">
+                                                            </div>
+                                                            <div>
+                                                                X
+                                                                <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['x'][1]" v-model="condition.x">
+                                                            </div>
+                                                            <div>
+                                                                Y
+                                                                <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['y'][1]" v-model="condition.y">
+                                                            </div>
                                                         </div>
                                                         <div>
-                                                            Height
-                                                            <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['height'][1]" v-model="condition.height">
+                                                            Text
+                                                            <textarea class="form-control" v-model="condition.text"></textarea>
                                                         </div>
-                                                        <div>
-                                                            X
-                                                            <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['x'][1]" v-model="condition.x">
-                                                        </div>
-                                                        <div>
-                                                            Y
-                                                            <input type="number" class="form-control" v-bind="object_info['ConditioningSetAreaPercentage']['input']['required']['y'][1]" v-model="condition.y">
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        Text
-                                                        <textarea class="form-control" v-model="condition.text"></textarea>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="pt-1">
-                                        <button type="button" class="btn btn-secondary" @click="add_condition">Add</button>
+                                        <div class="pt-1">
+                                            <button type="button" class="btn btn-secondary" @click="add_condition">Add</button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="position-absolute overflow-x-auto" ref="autocomplete">
@@ -200,8 +200,8 @@
                                 </div>
                             </div>
                         </div>
-                        <div v-else>
-                            <div class="d-flex flex-wrap p-3 gap-3">
+                        <div class="d-flex flex-column gap-3" v-else>
+                            <div class="d-flex flex-wrap gap-3">
                                 <div class="d-flex gap-2" style="max-width: 100%;">
                                     <select class="form-select flex-shrink-1" style="width: 20em; min-width: 0;" v-model="active_project_name">
                                         <option v-for="project in projects" :value="project.name">{{ project.name }}</option>
@@ -215,21 +215,23 @@
                                     </div>
                                 </div>
                                 <div class="d-flex gap-2">
-                                    <div class="input-group" style="flex-wrap: nowrap;">
-                                        <button type="button" class="btn btn-primary" @click="queue_prompt">Queue</button>
-                                        <input type="number" class="form-control" min="1" max="100" step="1" v-model="batch_count">
-                                    </div>
                                     <button type="button" class="btn btn-danger text-nowrap" @click="stop">
                                         Stop <span class="badge text-bg-secondary">{{ queue_remaining }}</span>
                                     </button>
                                 </div>
                             </div>
                             <div>
-                                <div class="d-flex flex-column p-3 gap-3">
+                                <div class="d-flex flex-column gap-3 align-items-start">
                                     <div class="d-flex gap-2 align-items-center">
+                                        <div>
+                                            <div class="input-group flex-nowrap">
+                                                <button type="button" class="btn btn-primary" @click="queue_prompt">Queue</button>
+                                                <input type="number" class="form-control" min="1" max="100" step="1" v-model="batch_count">
+                                            </div>
+                                        </div>
                                         <button type="button" class="btn btn-secondary" @click="clear_project_prompt_ids">Clear</button>
                                         <button type="button" class="btn btn-dark" @click="download_project_images">Download</button>
-                                        <span class="px-1">{{ project_images.length }} / {{ prompt_ids.filter(prompt_id => prompt_id.project_name == active_project_name).length }}</span>
+                                        <div class="px-1">{{ project_images.length }} / {{ prompt_ids.filter(prompt_id => prompt_id.project_name == active_project_name).length }}</div>
                                     </div>
                                     <div class="container">
                                         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
@@ -246,7 +248,7 @@
                         </div>
                     </div>
                 </template>
-                <div class="d-flex flex-column align-items-start p-3 gap-2" v-else>
+                <div class="d-flex flex-column align-items-start gap-2 p-3" v-else>
                     <div>
                         Server Address
                         <input class="form-control flex-shrink-1" style="width: 30em; min-width: 0;" :class="{'is-invalid': is_valid_server_address == false}" @input="is_valid_server_address = null" v-model="server_address">
@@ -291,7 +293,7 @@
                         projects: null,
                         active_project_name: null,
                         editing_project_name: null,
-                        editing_project: null,
+                        temp_project: null,
                         queue_remaining: 0,
                         filtered_autocomplete: null,
                         batch_count: 1,
@@ -302,10 +304,10 @@
                 },
                 computed: {
                     is_valid_project_name() {
-                        if (this.editing_project) {
-                            if (this.editing_project.name.trim() == "") return false;
-                            if (!this.editing_project.name_ || this.editing_project.name != this.editing_project.name_) {
-                                if (this.projects.find(project => project.name == this.editing_project.name)) return false;
+                        if (this.temp_project) {
+                            if (this.temp_project.name.trim() == "") return false;
+                            if (!this.temp_project.name_ || this.temp_project.name != this.temp_project.name_) {
+                                if (this.projects.find(project => project.name == this.temp_project.name)) return false;
                             }
                         }
                         return true;
@@ -334,10 +336,7 @@
                     },
                     async queue_prompt() {
                         let project = null;
-                        if (this.editing_project) {
-                            project = this.editing_project;
-                        }
-                        else if (this.active_project_name) {
+                        if (!this.temp_project && this.active_project_name) {
                             project = this.projects.find(project => project.name == this.active_project_name);
                         }
                         else return;
@@ -380,8 +379,8 @@
                             let clip_output = CheckpointLoaderSimple_node['CLIP'];
                             let vae_output = CheckpointLoaderSimple_node['VAE'];
     
-                            if (project.project.lora) {
-                                for (let lora of project.project.lora) {
+                            if (project.project.loras) {
+                                for (let lora of project.project.loras) {
                                     let LoraLoader_node = add_node('LoraLoader', {
                                         model: model_output, clip: clip_output,
                                         lora_name: lora.lora_name, strength_model: lora.strength_model, strength_clip: lora.strength_clip,
@@ -401,8 +400,8 @@
                             let CLIPTextEncode_negative_node = add_node('CLIPTextEncode', {text: project.project.negative_text, clip: clip_output});
                             let negative_output = CLIPTextEncode_negative_node['CONDITIONING'];
     
-                            if (project.project.condition) {
-                                for (let condition of project.project.condition) {
+                            if (project.project.conditions) {
+                                for (let condition of project.project.conditions) {
                                     let CLIPTextEncode_node = add_node('CLIPTextEncode', {text: condition.text, clip: clip_output});
                                     let ConditioningSetAreaPercentage_node = add_node('ConditioningSetAreaPercentage', {
                                         conditioning: CLIPTextEncode_node['CONDITIONING'],
@@ -517,7 +516,7 @@
                             if (project) {
                                 this.active_project_name = project.name;
                                 this.editing_project_name = project.name;
-                                this.editing_project = {
+                                this.temp_project = {
                                     name: project.name,
                                     name_: project.name,
                                     project: structuredClone(toRaw(project.project)),
@@ -533,7 +532,7 @@
                         let default_CLIPSetLastLayer = this.get_default('CLIPSetLastLayer');
                         
                         this.editing_project_name = "";
-                        this.editing_project = {
+                        this.temp_project = {
                             name: "",
                             project: {
                                 checkpoint: default_CheckpointLoaderSimple['ckpt_name'],
@@ -551,7 +550,7 @@
                             let project = this.projects.find(project => project.name == project_name);
                             if (project) {
                                 this.editing_project_name = "";
-                                this.editing_project = {
+                                this.temp_project = {
                                     name: project.name,
                                     project: structuredClone(toRaw(project.project)),
                                 };
@@ -580,20 +579,20 @@
                     },
                     save_project() {
                         if (this.is_valid_project_name) {
-                            if (this.editing_project.name_) {
-                                let target = this.projects.find(project => project.name == this.editing_project.name_);
-                                target.name = this.editing_project.name;
-                                target.project = structuredClone(toRaw(this.editing_project.project));
-                                this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.project_name == this.editing_project.name_));
+                            if (this.temp_project.name_) {
+                                let target = this.projects.find(project => project.name == this.temp_project.name_);
+                                target.name = this.temp_project.name;
+                                target.project = structuredClone(toRaw(this.temp_project.project));
+                                this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.project_name == this.temp_project.name_));
                             }
                             else {
                                 this.projects.push({
-                                    name: this.editing_project.name,
-                                    project: structuredClone(toRaw(this.editing_project.project))
+                                    name: this.temp_project.name,
+                                    project: structuredClone(toRaw(this.temp_project.project))
                                 });
                             }
                             
-                            this.edit_project(this.editing_project.name);
+                            this.edit_project(this.temp_project.name);
                         }
                     },
                     /*upload_project() {
@@ -605,7 +604,7 @@
                                 const reader = new FileReader();
                                 reader.addEventListener('load', _ => {
                                     let project = JSON.parse(reader.result);
-                                    this.editing_project = {
+                                    this.temp_project = {
                                         name: project.name,
                                         project: project.project,
                                     };
@@ -635,26 +634,26 @@
                         }
                     },*/
                     add_lora() {
-                        if (!this.editing_project.project.lora) {
-                            this.editing_project.project.lora = [];
+                        if (!this.temp_project.project.loras) {
+                            this.temp_project.project.loras = [];
                         }
                         let default_LoraLoader = this.get_default('LoraLoader');
-                        this.editing_project.project.lora.push({
+                        this.temp_project.project.loras.push({
                             lora_name: default_LoraLoader['lora_name'],
                             strength_model: default_LoraLoader['strength_model'],
                             strength_clip: default_LoraLoader['strength_clip'],
                         });
                     },
                     remove_lora(lora) {
-                        let idx = this.editing_project.project.lora.indexOf(lora);
-                        this.editing_project.project.lora.splice(idx, 1);
+                        let idx = this.temp_project.project.loras.indexOf(lora);
+                        this.temp_project.project.loras.splice(idx, 1);
                     },
                     add_condition() {
-                        if (!this.editing_project.project.condition) {
-                            this.editing_project.project.condition = [];
+                        if (!this.temp_project.project.conditions) {
+                            this.temp_project.project.conditions = [];
                         }
                         let default_ConditioningSetAreaPercentage = this.get_default('ConditioningSetAreaPercentage');
-                        this.editing_project.project.condition.push({
+                        this.temp_project.project.conditions.push({
                             width: default_ConditioningSetAreaPercentage['width'],
                             height: default_ConditioningSetAreaPercentage['height'],
                             x: default_ConditioningSetAreaPercentage['x'],
@@ -662,8 +661,8 @@
                         });
                     },
                     remove_condition(condition) {
-                        let idx = this.editing_project.project.condition.indexOf(condition);
-                        this.editing_project.project.condition.splice(idx, 1);
+                        let idx = this.temp_project.project.conditions.indexOf(condition);
+                        this.temp_project.project.conditions.splice(idx, 1);
                     },
                     connect_socket() {
                         try { this.socket.close(); } catch (e) {}
