@@ -345,7 +345,10 @@
                         }
                         else return;
 
-                        workflow = structuredClone(toRaw(workflow));
+                        let workflow_name = workflow.name;
+                        let workflow_ = structuredClone(toRaw(workflow.workflow));
+
+                        let prompts = [];
                         for (let _ of Array(batch_count)) {
                             let prompt = {};
                             const add_node = (class_type, inputs_ = {}) => {
@@ -383,13 +386,13 @@
                                 return Math.floor(Math.random() * (max - min) + min);
                             };
     
-                            let CheckpointLoaderSimple_node = add_node('CheckpointLoaderSimple', {ckpt_name: workflow.workflow.checkpoint});
+                            let CheckpointLoaderSimple_node = add_node('CheckpointLoaderSimple', {ckpt_name: workflow_.checkpoint});
                             let model_output = CheckpointLoaderSimple_node['MODEL'];
                             let clip_output = CheckpointLoaderSimple_node['CLIP'];
                             let vae_output = CheckpointLoaderSimple_node['VAE'];
     
-                            if (workflow.workflow.loras) {
-                                for (let lora of workflow.workflow.loras) {
+                            if (workflow_.loras) {
+                                for (let lora of workflow_.loras) {
                                     let LoraLoader_node = add_node('LoraLoader', {
                                         model: model_output, clip: clip_output,
                                         lora_name: lora.lora_name, strength_model: lora.strength_model, strength_clip: lora.strength_clip,
@@ -399,14 +402,14 @@
                                 }
                             }
     
-                            if (workflow.workflow.clip_set_last_layer_bool) {
-                                let CLIPSetLastLayer_node = add_node('CLIPSetLastLayer', {stop_at_clip_layer: workflow.workflow.stop_at_clip_layer, clip: clip_output});
+                            if (workflow_.clip_set_last_layer_bool) {
+                                let CLIPSetLastLayer_node = add_node('CLIPSetLastLayer', {stop_at_clip_layer: workflow_.stop_at_clip_layer, clip: clip_output});
                                 clip_output = CLIPSetLastLayer_node['CLIP'];
                             }
     
                             let CLIPTextEncode_positive_node = add_node('CLIPTextEncode', {
                                 text: add_node('DPRandomGenerator', {
-                                    text: workflow.workflow.positive_text,
+                                    text: workflow_.positive_text,
                                     seed: get_seed(this.object_info['DPRandomGenerator']['input']['required']['seed'][1]),
                                 })['STRING'],
                                 clip: clip_output
@@ -414,15 +417,15 @@
                             let positive_output = CLIPTextEncode_positive_node['CONDITIONING'];
                             let CLIPTextEncode_negative_node = add_node('CLIPTextEncode', {
                                 text: add_node('DPRandomGenerator', {
-                                    text: workflow.workflow.negative_text,
+                                    text: workflow_.negative_text,
                                     seed: get_seed(this.object_info['DPRandomGenerator']['input']['required']['seed'][1]),
                                 })['STRING'],
                                 clip: clip_output
                             });
                             let negative_output = CLIPTextEncode_negative_node['CONDITIONING'];
     
-                            if (workflow.workflow.conditions) {
-                                for (let condition of workflow.workflow.conditions) {
+                            if (workflow_.conditions) {
+                                for (let condition of workflow_.conditions) {
                                     let CLIPTextEncode_node = add_node('CLIPTextEncode', {
                                         text: add_node('DPRandomGenerator', {
                                             text: condition.text,
@@ -439,23 +442,23 @@
                                 }
                             }
     
-                            let EmptyLatentImageFromPresetsSDXL_node = add_node('EmptyLatentImageFromPresetsSDXL', {preset: workflow.workflow.size_preset});
+                            let EmptyLatentImageFromPresetsSDXL_node = add_node('EmptyLatentImageFromPresetsSDXL', {preset: workflow_.size_preset});
     
                             let KSampler_node = add_node('KSampler', {
                                 model: model_output,positive: positive_output, negative: negative_output, latent_image: EmptyLatentImageFromPresetsSDXL_node['latent'],
                                 seed: get_seed(this.object_info['KSampler']['input']['required']['seed'][1]),
-                                steps: workflow.workflow.steps, cfg: workflow.workflow.cfg, sampler_name: workflow.workflow.sampler_name, scheduler: workflow.workflow.scheduler,
+                                steps: workflow_.steps, cfg: workflow_.cfg, sampler_name: workflow_.sampler_name, scheduler: workflow_.scheduler,
                             });
                             
                             let VAEDecode_node = add_node('VAEDecode', {samples: KSampler_node['LATENT'], vae: vae_output});
                             let image_output = VAEDecode_node['IMAGE'];
     
-                            if (workflow.workflow.face_detailer_bool) {
+                            if (workflow_.face_detailer_bool) {
                                 let UltralyticsDetectorProvider_node = add_node('UltralyticsDetectorProvider');
                                 let FaceDetailer_node = add_node('FaceDetailer', {
                                     image: image_output, model: model_output, clip: clip_output, vae: vae_output, positive: positive_output, negative: negative_output,
                                     seed: get_seed(this.object_info['FaceDetailer']['input']['required']['seed'][1]),
-                                    steps: workflow.workflow.steps, cfg: workflow.workflow.cfg, sampler_name: workflow.workflow.sampler_name, scheduler: workflow.workflow.scheduler,
+                                    steps: workflow_.steps, cfg: workflow_.cfg, sampler_name: workflow_.sampler_name, scheduler: workflow_.scheduler,
                                     bbox_detector: UltralyticsDetectorProvider_node['BBOX_DETECTOR'],
                                 });
                                 image_output = FaceDetailer_node['image'];
@@ -463,6 +466,10 @@
     
                             add_node('PreviewImage', {images: image_output});
 
+                            prompts.push(prompt);
+                        }
+                        
+                        for (let prompt of prompts) {
                             let prompt_id = (await (await fetch(`${this.server_address}/prompt`, {
                                 method: "POST",
                                 headers: {
@@ -471,7 +478,7 @@
                                 body: JSON.stringify({"prompt": prompt, "client_id": this.client_id}),
                             })).json())['prompt_id'];
 
-                            this.prompt_ids.push({prompt_id: prompt_id, workflow_name: workflow.name});
+                            this.prompt_ids.push({prompt_id: prompt_id, workflow_name: workflow_name});
                         }
                     },
                     async remove_prompts(prompt_ids) {
