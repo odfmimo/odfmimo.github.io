@@ -377,6 +377,9 @@
                                 }
                                 return outputs;
                             };
+                            const get_seed = (seed_info) => {
+                                return Math.floor(Math.random() * (seed_info['max'] - seed_info['min']) + seed_info['min']);
+                            };
     
                             let CheckpointLoaderSimple_node = add_node('CheckpointLoaderSimple', {ckpt_name: workflow.workflow.checkpoint});
                             let model_output = CheckpointLoaderSimple_node['MODEL'];
@@ -418,11 +421,10 @@
     
                             let EmptyLatentImageFromPresetsSDXL_node = add_node('EmptyLatentImageFromPresetsSDXL', {preset: workflow.workflow.size_preset});
     
-                            let KSampler_seed_info = this.object_info['KSampler']['input']['required']['seed'][1];
-                            let KSampler_seed = Math.floor(Math.random() * (KSampler_seed_info['max'] - KSampler_seed_info['min']) + KSampler_seed_info['min']);
                             let KSampler_node = add_node('KSampler', {
                                 model: model_output,positive: positive_output, negative: negative_output, latent_image: EmptyLatentImageFromPresetsSDXL_node['latent'],
-                                seed: KSampler_seed, steps: workflow.workflow.steps, cfg: workflow.workflow.cfg, sampler_name: workflow.workflow.sampler_name, scheduler: workflow.workflow.scheduler,
+                                seed: get_seed(this.object_info['KSampler']['input']['required']['seed'][1]),
+                                steps: workflow.workflow.steps, cfg: workflow.workflow.cfg, sampler_name: workflow.workflow.sampler_name, scheduler: workflow.workflow.scheduler,
                             });
                             
                             let VAEDecode_node = add_node('VAEDecode', {samples: KSampler_node['LATENT'], vae: vae_output});
@@ -430,11 +432,10 @@
     
                             if (workflow.workflow.face_detailer_bool) {
                                 let UltralyticsDetectorProvider_node = add_node('UltralyticsDetectorProvider');
-                                let FaceDetailer_seed_info = this.object_info['FaceDetailer']['input']['required']['seed'][1];
-                                let FaceDetailer_seed = Math.floor(Math.random() * (FaceDetailer_seed_info['max'] - FaceDetailer_seed_info['min']) + FaceDetailer_seed_info['min']);
                                 let FaceDetailer_node = add_node('FaceDetailer', {
                                     image: image_output, model: model_output, clip: clip_output, vae: vae_output, positive: positive_output, negative: negative_output,
-                                    seed: FaceDetailer_seed, steps: workflow.workflow.steps, cfg: workflow.workflow.cfg, sampler_name: workflow.workflow.sampler_name, scheduler: workflow.workflow.scheduler,
+                                    seed: get_seed(this.object_info['FaceDetailer']['input']['required']['seed'][1]),
+                                    steps: workflow.workflow.steps, cfg: workflow.workflow.cfg, sampler_name: workflow.workflow.sampler_name, scheduler: workflow.workflow.scheduler,
                                     bbox_detector: UltralyticsDetectorProvider_node['BBOX_DETECTOR'],
                                 });
                                 image_output = FaceDetailer_node['image'];
