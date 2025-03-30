@@ -512,28 +512,33 @@
                         this.remove_prompts(prompt_ids);
                     },
                     async retrieve() {
-                        let images = [];
-                        Object.values((await (await fetch(`${this.server_address}/history`)).json()))
-                            .sort((a, b) => (a['prompt']?.[0] > b['prompt']?.[0]))
-                            .forEach(history => {
-                                for (let node_id of Object.keys(history['outputs'])) {
-                                    let node_output = history['outputs'][node_id];
-                                    if ('images' in node_output) {
-                                        for (let image of node_output['images']) {
-                                            let data = {"filename": image['filename'], "subfolder": image['subfolder'], "type": image['type']};
-                                            let params = new URLSearchParams(data);
-                                            let url_values = params.toString();
-                                            data['src'] = `${this.server_address}/view?${url_values}`;
-                                            data['prompt_id'] = history['prompt']?.[1];
-                                            images.push(data);
+                        await Promise.all([
+                            (async _ => {
+                                let images = [];
+                                Object.values((await (await fetch(`${this.server_address}/history`)).json()))
+                                    .sort((a, b) => (a['prompt']?.[0] > b['prompt']?.[0]))
+                                    .forEach(history => {
+                                        for (let node_id of Object.keys(history['outputs'])) {
+                                            let node_output = history['outputs'][node_id];
+                                            if ('images' in node_output) {
+                                                for (let image of node_output['images']) {
+                                                    let data = {"filename": image['filename'], "subfolder": image['subfolder'], "type": image['type']};
+                                                    let params = new URLSearchParams(data);
+                                                    let url_values = params.toString();
+                                                    data['src'] = `${this.server_address}/view?${url_values}`;
+                                                    data['prompt_id'] = history['prompt']?.[1];
+                                                    images.push(data);
+                                                }
+                                            }
                                         }
-                                    }
-                                }
-                            });
-                        this.images = images;
-                        
-                        let queue = await (await fetch(`${this.server_address}/queue`)).json();
-                        this.queue_remaining = queue['queue_running'].length + queue['queue_pending'].length;
+                                    });
+                                this.images = images;
+                            })(),
+                            (async _ => {
+                                let queue = await (await fetch(`${this.server_address}/queue`)).json();
+                                this.queue_remaining = queue['queue_running'].length + queue['queue_pending'].length;
+                            })(),
+                        ]);
                     },
                     edit_workflow(workflow_name) {
                         if (workflow_name) {
