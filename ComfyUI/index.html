@@ -378,7 +378,9 @@
                                 return outputs;
                             };
                             const get_seed = (seed_info) => {
-                                return Math.floor(Math.random() * (seed_info['max'] - seed_info['min']) + seed_info['min']);
+                                let max = seed_info['max'] ?? (Math.pow(2, 64) - 1);
+                                let min = seed_info['min'] ?? 0;
+                                return Math.floor(Math.random() * (max - min) + min);
                             };
     
                             let CheckpointLoaderSimple_node = add_node('CheckpointLoaderSimple', {ckpt_name: workflow.workflow.checkpoint});
