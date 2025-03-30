@@ -402,14 +402,32 @@
                                 clip_output = CLIPSetLastLayer_node['CLIP'];
                             }
     
-                            let CLIPTextEncode_positive_node = add_node('CLIPTextEncode', {text: workflow.workflow.positive_text, clip: clip_output});
+                            let CLIPTextEncode_positive_node = add_node('CLIPTextEncode', {
+                                text: add_node('DPRandomGenerator', {
+                                    text: workflow.workflow.positive_text,
+                                    seed: get_seed(this.object_info['CLIPTextEncode']['input']['required']['seed'][1]),
+                                }),
+                                clip: clip_output
+                            });
                             let positive_output = CLIPTextEncode_positive_node['CONDITIONING'];
-                            let CLIPTextEncode_negative_node = add_node('CLIPTextEncode', {text: workflow.workflow.negative_text, clip: clip_output});
+                            let CLIPTextEncode_negative_node = add_node('CLIPTextEncode', {
+                                text: add_node('DPRandomGenerator', {
+                                    text: workflow.workflow.negative_text,
+                                    seed: get_seed(this.object_info['CLIPTextEncode']['input']['required']['seed'][1]),
+                                }),
+                                clip: clip_output
+                            });
                             let negative_output = CLIPTextEncode_negative_node['CONDITIONING'];
     
                             if (workflow.workflow.conditions) {
                                 for (let condition of workflow.workflow.conditions) {
-                                    let CLIPTextEncode_node = add_node('CLIPTextEncode', {text: condition.text, clip: clip_output});
+                                    let CLIPTextEncode_node = add_node('CLIPTextEncode', {
+                                        text: add_node('DPRandomGenerator', {
+                                            text: condition.text,
+                                            seed: get_seed(this.object_info['CLIPTextEncode']['input']['required']['seed'][1]),
+                                        }),
+                                        clip: clip_output
+                                    });
                                     let ConditioningSetAreaPercentage_node = add_node('ConditioningSetAreaPercentage', {
                                         conditioning: CLIPTextEncode_node['CONDITIONING'],
                                         width: condition.width, height: condition.height, x: condition.x, y: condition.y
