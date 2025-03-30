@@ -406,7 +406,7 @@
                                 text: add_node('DPRandomGenerator', {
                                     text: workflow.workflow.positive_text,
                                     seed: get_seed(this.object_info['CLIPTextEncode']['input']['required']['seed'][1]),
-                                }),
+                                })['STRING'],
                                 clip: clip_output
                             });
                             let positive_output = CLIPTextEncode_positive_node['CONDITIONING'];
@@ -414,7 +414,7 @@
                                 text: add_node('DPRandomGenerator', {
                                     text: workflow.workflow.negative_text,
                                     seed: get_seed(this.object_info['CLIPTextEncode']['input']['required']['seed'][1]),
-                                }),
+                                })['STRING'],
                                 clip: clip_output
                             });
                             let negative_output = CLIPTextEncode_negative_node['CONDITIONING'];
@@ -425,7 +425,7 @@
                                         text: add_node('DPRandomGenerator', {
                                             text: condition.text,
                                             seed: get_seed(this.object_info['CLIPTextEncode']['input']['required']['seed'][1]),
-                                        }),
+                                        })['STRING'],
                                         clip: clip_output
                                     });
                                     let ConditioningSetAreaPercentage_node = add_node('ConditioningSetAreaPercentage', {
