@@ -304,6 +304,7 @@
                         image_number: null,
                         prompt_ids: [],
                         is_fixed_queue_size: false,
+                        queue_promise: Promise.resolve(),
                     }
                 },
                 computed: {
@@ -348,138 +349,143 @@
                         let workflow_name = workflow.name;
                         let workflow_ = structuredClone(toRaw(workflow.workflow));
 
-                        let prompts = [];
-                        for (let _ of Array(batch_count)) {
-                            let prompt = {};
-                            const add_node = (class_type, inputs_ = {}) => {
-                                let inputs = structuredClone(inputs_);
-                                let object_info = this.object_info[class_type];
-                                for (let [key, value] of Object.entries(object_info['input']['required'])) {
-                                    if (!(key in inputs)) {
-                                        if (value[1] instanceof Object && 'default' in value[1]) {
-                                            inputs[key] = value[1]?.['default'];
-                                        }
-                                        else if (Array.isArray(value[0])) {
-                                            inputs[key] = value[0][0];
-                                        }
-                                        else {
-                                            if (value[0] == "STRING") {
-                                                inputs[key] = "";
+                        await this.queue_promise;
+                        this.queue_promise = new Promise(async resolve => {
+                            let prompts = [];
+                            for (let _ of Array(batch_count)) {
+                                let prompt = {};
+                                const add_node = (class_type, inputs_ = {}) => {
+                                    let inputs = structuredClone(inputs_);
+                                    let object_info = this.object_info[class_type];
+                                    for (let [key, value] of Object.entries(object_info['input']['required'])) {
+                                        if (!(key in inputs)) {
+                                            if (value[1] instanceof Object && 'default' in value[1]) {
+                                                inputs[key] = value[1]?.['default'];
+                                            }
+                                            else if (Array.isArray(value[0])) {
+                                                inputs[key] = value[0][0];
+                                            }
+                                            else {
+                                                if (value[0] == "STRING") {
+                                                    inputs[key] = "";
+                                                }
                                             }
                                         }
                                     }
+                                    let node = {class_type, inputs};
+        
+                                    let key = String(Math.max(0, ...Object.keys(prompt).map(key => Number(key))) + 1);
+                                    prompt[key] = node;
+                                    
+                                    let outputs = {};
+                                    for (let [index, output_name] of object_info['output_name'].entries()) {
+                                        outputs[output_name] = [key, index];
+                                    }
+                                    return outputs;
+                                };
+                                const get_seed = (seed_info) => {
+                                    let max = seed_info['max'] ?? (Math.pow(2, 64) - 1);
+                                    let min = seed_info['min'] ?? 0;
+                                    return Math.floor(Math.random() * (max - min) + min);
+                                };
+        
+                                let CheckpointLoaderSimple_node = add_node('CheckpointLoaderSimple', {ckpt_name: workflow_.checkpoint});
+                                let model_output = CheckpointLoaderSimple_node['MODEL'];
+                                let clip_output = CheckpointLoaderSimple_node['CLIP'];
+                                let vae_output = CheckpointLoaderSimple_node['VAE'];
+        
+                                if (workflow_.loras) {
+                                    for (let lora of workflow_.loras) {
+                                        let LoraLoader_node = add_node('LoraLoader', {
+                                            model: model_output, clip: clip_output,
+                                            lora_name: lora.lora_name, strength_model: lora.strength_model, strength_clip: lora.strength_clip,
+                                        });
+                                        model_output = LoraLoader_node['MODEL'];
+                                        clip_output = LoraLoader_node['CLIP'];
+                                    }
                                 }
-                                let node = {class_type, inputs};
-    
-                                let key = String(Math.max(0, ...Object.keys(prompt).map(key => Number(key))) + 1);
-                                prompt[key] = node;
-                                
-                                let outputs = {};
-                                for (let [index, output_name] of object_info['output_name'].entries()) {
-                                    outputs[output_name] = [key, index];
+        
+                                if (workflow_.clip_set_last_layer_bool) {
+                                    let CLIPSetLastLayer_node = add_node('CLIPSetLastLayer', {stop_at_clip_layer: workflow_.stop_at_clip_layer, clip: clip_output});
+                                    clip_output = CLIPSetLastLayer_node['CLIP'];
                                 }
-                                return outputs;
-                            };
-                            const get_seed = (seed_info) => {
-                                let max = seed_info['max'] ?? (Math.pow(2, 64) - 1);
-                                let min = seed_info['min'] ?? 0;
-                                return Math.floor(Math.random() * (max - min) + min);
-                            };
-    
-                            let CheckpointLoaderSimple_node = add_node('CheckpointLoaderSimple', {ckpt_name: workflow_.checkpoint});
-                            let model_output = CheckpointLoaderSimple_node['MODEL'];
-                            let clip_output = CheckpointLoaderSimple_node['CLIP'];
-                            let vae_output = CheckpointLoaderSimple_node['VAE'];
-    
-                            if (workflow_.loras) {
-                                for (let lora of workflow_.loras) {
-                                    let LoraLoader_node = add_node('LoraLoader', {
-                                        model: model_output, clip: clip_output,
-                                        lora_name: lora.lora_name, strength_model: lora.strength_model, strength_clip: lora.strength_clip,
-                                    });
-                                    model_output = LoraLoader_node['MODEL'];
-                                    clip_output = LoraLoader_node['CLIP'];
-                                }
-                            }
-    
-                            if (workflow_.clip_set_last_layer_bool) {
-                                let CLIPSetLastLayer_node = add_node('CLIPSetLastLayer', {stop_at_clip_layer: workflow_.stop_at_clip_layer, clip: clip_output});
-                                clip_output = CLIPSetLastLayer_node['CLIP'];
-                            }
-    
-                            let CLIPTextEncode_positive_node = add_node('CLIPTextEncode', {
-                                text: add_node('DPRandomGenerator', {
-                                    text: workflow_.positive_text,
-                                    seed: get_seed(this.object_info['DPRandomGenerator']['input']['required']['seed'][1]),
-                                })['STRING'],
-                                clip: clip_output
-                            });
-                            let positive_output = CLIPTextEncode_positive_node['CONDITIONING'];
-                            let CLIPTextEncode_negative_node = add_node('CLIPTextEncode', {
-                                text: add_node('DPRandomGenerator', {
-                                    text: workflow_.negative_text,
-                                    seed: get_seed(this.object_info['DPRandomGenerator']['input']['required']['seed'][1]),
-                                })['STRING'],
-                                clip: clip_output
-                            });
-                            let negative_output = CLIPTextEncode_negative_node['CONDITIONING'];
-    
-                            if (workflow_.conditions) {
-                                for (let condition of workflow_.conditions) {
-                                    let CLIPTextEncode_node = add_node('CLIPTextEncode', {
-                                        text: add_node('DPRandomGenerator', {
-                                            text: condition.text,
-                                            seed: get_seed(this.object_info['DPRandomGenerator']['input']['required']['seed'][1]),
-                                        })['STRING'],
-                                        clip: clip_output
-                                    });
-                                    let ConditioningSetAreaPercentage_node = add_node('ConditioningSetAreaPercentage', {
-                                        conditioning: CLIPTextEncode_node['CONDITIONING'],
-                                        width: condition.width, height: condition.height, x: condition.x, y: condition.y
-                                    });
-                                    let ConditioningConcat_node = add_node('ConditioningConcat', {conditioning_to: positive_output, conditioning_from: ConditioningSetAreaPercentage_node['CONDITIONING']});
-                                    positive_output = ConditioningConcat_node['CONDITIONING'];
-                                }
-                            }
-    
-                            let EmptyLatentImageFromPresetsSDXL_node = add_node('EmptyLatentImageFromPresetsSDXL', {preset: workflow_.size_preset});
-    
-                            let KSampler_node = add_node('KSampler', {
-                                model: model_output,positive: positive_output, negative: negative_output, latent_image: EmptyLatentImageFromPresetsSDXL_node['latent'],
-                                seed: get_seed(this.object_info['KSampler']['input']['required']['seed'][1]),
-                                steps: workflow_.steps, cfg: workflow_.cfg, sampler_name: workflow_.sampler_name, scheduler: workflow_.scheduler,
-                            });
-                            
-                            let VAEDecode_node = add_node('VAEDecode', {samples: KSampler_node['LATENT'], vae: vae_output});
-                            let image_output = VAEDecode_node['IMAGE'];
-    
-                            if (workflow_.face_detailer_bool) {
-                                let UltralyticsDetectorProvider_node = add_node('UltralyticsDetectorProvider');
-                                let FaceDetailer_node = add_node('FaceDetailer', {
-                                    image: image_output, model: model_output, clip: clip_output, vae: vae_output, positive: positive_output, negative: negative_output,
-                                    seed: get_seed(this.object_info['FaceDetailer']['input']['required']['seed'][1]),
-                                    steps: workflow_.steps, cfg: workflow_.cfg, sampler_name: workflow_.sampler_name, scheduler: workflow_.scheduler,
-                                    bbox_detector: UltralyticsDetectorProvider_node['BBOX_DETECTOR'],
+        
+                                let CLIPTextEncode_positive_node = add_node('CLIPTextEncode', {
+                                    text: add_node('DPRandomGenerator', {
+                                        text: workflow_.positive_text,
+                                        seed: get_seed(this.object_info['DPRandomGenerator']['input']['required']['seed'][1]),
+                                    })['STRING'],
+                                    clip: clip_output
                                 });
-                                image_output = FaceDetailer_node['image'];
-                            }
+                                let positive_output = CLIPTextEncode_positive_node['CONDITIONING'];
+                                let CLIPTextEncode_negative_node = add_node('CLIPTextEncode', {
+                                    text: add_node('DPRandomGenerator', {
+                                        text: workflow_.negative_text,
+                                        seed: get_seed(this.object_info['DPRandomGenerator']['input']['required']['seed'][1]),
+                                    })['STRING'],
+                                    clip: clip_output
+                                });
+                                let negative_output = CLIPTextEncode_negative_node['CONDITIONING'];
+        
+                                if (workflow_.conditions) {
+                                    for (let condition of workflow_.conditions) {
+                                        let CLIPTextEncode_node = add_node('CLIPTextEncode', {
+                                            text: add_node('DPRandomGenerator', {
+                                                text: condition.text,
+                                                seed: get_seed(this.object_info['DPRandomGenerator']['input']['required']['seed'][1]),
+                                            })['STRING'],
+                                            clip: clip_output
+                                        });
+                                        let ConditioningSetAreaPercentage_node = add_node('ConditioningSetAreaPercentage', {
+                                            conditioning: CLIPTextEncode_node['CONDITIONING'],
+                                            width: condition.width, height: condition.height, x: condition.x, y: condition.y
+                                        });
+                                        let ConditioningConcat_node = add_node('ConditioningConcat', {conditioning_to: positive_output, conditioning_from: ConditioningSetAreaPercentage_node['CONDITIONING']});
+                                        positive_output = ConditioningConcat_node['CONDITIONING'];
+                                    }
+                                }
+        
+                                let EmptyLatentImageFromPresetsSDXL_node = add_node('EmptyLatentImageFromPresetsSDXL', {preset: workflow_.size_preset});
+        
+                                let KSampler_node = add_node('KSampler', {
+                                    model: model_output,positive: positive_output, negative: negative_output, latent_image: EmptyLatentImageFromPresetsSDXL_node['latent'],
+                                    seed: get_seed(this.object_info['KSampler']['input']['required']['seed'][1]),
+                                    steps: workflow_.steps, cfg: workflow_.cfg, sampler_name: workflow_.sampler_name, scheduler: workflow_.scheduler,
+                                });
+                                
+                                let VAEDecode_node = add_node('VAEDecode', {samples: KSampler_node['LATENT'], vae: vae_output});
+                                let image_output = VAEDecode_node['IMAGE'];
+        
+                                if (workflow_.face_detailer_bool) {
+                                    let UltralyticsDetectorProvider_node = add_node('UltralyticsDetectorProvider');
+                                    let FaceDetailer_node = add_node('FaceDetailer', {
+                                        image: image_output, model: model_output, clip: clip_output, vae: vae_output, positive: positive_output, negative: negative_output,
+                                        seed: get_seed(this.object_info['FaceDetailer']['input']['required']['seed'][1]),
+                                        steps: workflow_.steps, cfg: workflow_.cfg, sampler_name: workflow_.sampler_name, scheduler: workflow_.scheduler,
+                                        bbox_detector: UltralyticsDetectorProvider_node['BBOX_DETECTOR'],
+                                    });
+                                    image_output = FaceDetailer_node['image'];
+                                }
+        
+                                add_node('PreviewImage', {images: image_output});
     
-                            add_node('PreviewImage', {images: image_output});
+                                prompts.push(prompt);
+                            }
 
-                            prompts.push(prompt);
-                        }
-                        
-                        for (let prompt of prompts) {
-                            let prompt_id = (await (await fetch(`${this.server_address}/prompt`, {
-                                method: "POST",
-                                headers: {
-                                    "Content-Type": "application/json",
-                                },
-                                body: JSON.stringify({"prompt": prompt, "client_id": this.client_id}),
-                            })).json())['prompt_id'];
+                            for (let prompt of prompts) {
+                                let prompt_id = (await (await fetch(`${this.server_address}/prompt`, {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({"prompt": prompt, "client_id": this.client_id}),
+                                })).json())['prompt_id'];
+    
+                                this.prompt_ids.push({prompt_id: prompt_id, workflow_name: workflow_name});
+                            }
 
-                            this.prompt_ids.push({prompt_id: prompt_id, workflow_name: workflow_name});
-                        }
+                            resolve();
+                        });
                     },
                     async remove_prompts(prompt_ids) {
                         for (let prompt_id of prompt_ids) {
