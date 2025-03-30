@@ -405,7 +405,7 @@
                             let CLIPTextEncode_positive_node = add_node('CLIPTextEncode', {
                                 text: add_node('DPRandomGenerator', {
                                     text: workflow.workflow.positive_text,
-                                    seed: get_seed(this.object_info['CLIPTextEncode']['input']['required']['seed'][1]),
+                                    seed: get_seed(this.object_info['DPRandomGenerator']['input']['required']['seed'][1]),
                                 })['STRING'],
                                 clip: clip_output
                             });
@@ -413,7 +413,7 @@
                             let CLIPTextEncode_negative_node = add_node('CLIPTextEncode', {
                                 text: add_node('DPRandomGenerator', {
                                     text: workflow.workflow.negative_text,
-                                    seed: get_seed(this.object_info['CLIPTextEncode']['input']['required']['seed'][1]),
+                                    seed: get_seed(this.object_info['DPRandomGenerator']['input']['required']['seed'][1]),
                                 })['STRING'],
                                 clip: clip_output
                             });
@@ -424,7 +424,7 @@
                                     let CLIPTextEncode_node = add_node('CLIPTextEncode', {
                                         text: add_node('DPRandomGenerator', {
                                             text: condition.text,
-                                            seed: get_seed(this.object_info['CLIPTextEncode']['input']['required']['seed'][1]),
+                                            seed: get_seed(this.object_info['DPRandomGenerator']['input']['required']['seed'][1]),
                                         })['STRING'],
                                         clip: clip_output
                                     });
