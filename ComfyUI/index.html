@@ -92,20 +92,25 @@
                                         <div class="d-flex flex-column align-items-start gap-1" v-if="temp_workflow.workflow.loras">
                                             <div class="card" v-for="lora in temp_workflow.workflow.loras">
                                                 <div class="card-body">
-                                                    <div class="d-flex flex-wrap gap-3">
+                                                    <div class="d-flex flex-column gap-3">
                                                         <div>
-                                                            Lora Name
-                                                            <select class="form-select" v-model="lora.lora_name">
-                                                                <option v-for="lora_name in object_info['LoraLoader']['input']['required']['lora_name'][0]" :value="lora_name">{{ lora_name }}</option>
-                                                            </select>
+                                                            <button type="button" class="btn btn-secondary" @click="remove_lora(lora)">Remove</button>
                                                         </div>
-                                                        <div>
-                                                            Strength Model
-                                                            <input type="number" class="form-control" v-bind="object_info['LoraLoader']['input']['required']['strength_model'][1]" v-model="lora.strength_model">
-                                                        </div>
-                                                        <div>
-                                                            Strength Clip
-                                                            <input type="number" class="form-control" v-bind="object_info['LoraLoader']['input']['required']['strength_clip'][1]" v-model="lora.strength_clip">
+                                                        <div class="d-flex flex-wrap gap-3">
+                                                            <div>
+                                                                Lora Name
+                                                                <select class="form-select" v-model="lora.lora_name">
+                                                                    <option v-for="lora_name in object_info['LoraLoader']['input']['required']['lora_name'][0]" :value="lora_name">{{ lora_name }}</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                Strength Model
+                                                                <input type="number" class="form-control" v-bind="object_info['LoraLoader']['input']['required']['strength_model'][1]" v-model="lora.strength_model">
+                                                            </div>
+                                                            <div>
+                                                                Strength Clip
+                                                                <input type="number" class="form-control" v-bind="object_info['LoraLoader']['input']['required']['strength_clip'][1]" v-model="lora.strength_clip">
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
