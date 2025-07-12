@@ -77,6 +77,7 @@
                     <input id="translate_button" type="button" value="번역">
                     <input id="open_button" type="button" value="열기">
                     <input id="save_button" type="button" value="저장">
+                    <input id="temp_button" type="button" value="임시">
                 </span>
                 <span id="status_span"></span>
             </div>
@@ -369,6 +370,21 @@ document.getElementById("save_button").addEventListener("click", _ => {
             return { xyxy: textbox["xyxy"], xywh: textbox["xywh"], lines: textbox["lines"], back_color: textbox["back_color"], font_color: textbox["font_color"], font_size: textbox["font_size"], text: textbox["text"], result: textbox["result"] }
         });
         return { name: imageDesc.title, textboxes: textboxes }
+    })
+
+    let file = new Blob([JSON.stringify(overlayList)], { type: 'text/plain' });
+    let url = URL.createObjectURL(file);
+    let link = document.createElement("a");
+    link.href = url;
+
+    link.download = document.getElementById("imagefile_input").files[0].name.replace(/(?:\.([^.]+))?$/, ".txt");
+    link.click();
+    URL.revokeObjectURL(url);
+});
+
+document.getElementById("temp_button").addEventListener("click", _ => {
+    let overlayList = imageList.map(imageDesc => {
+        return { name: imageDesc.title, textboxes: imageDesc.textboxes }
     })
 
     let file = new Blob([JSON.stringify(overlayList)], { type: 'text/plain' });
