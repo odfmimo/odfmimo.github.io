@@ -416,18 +416,12 @@
                                 }
         
                                 let CLIPTextEncode_positive_node = add_node('CLIPTextEncode', {
-                                    text: add_node('DPRandomGenerator', {
-                                        text: workflow_.positive_text,
-                                        seed: get_seed(this.object_info['DPRandomGenerator']['input']['required']['seed'][1]),
-                                    })['STRING'],
+                                    text: workflow_.positive_text,
                                     clip: clip_output
                                 });
                                 let positive_output = CLIPTextEncode_positive_node['CONDITIONING'];
                                 let CLIPTextEncode_negative_node = add_node('CLIPTextEncode', {
-                                    text: add_node('DPRandomGenerator', {
-                                        text: workflow_.negative_text,
-                                        seed: get_seed(this.object_info['DPRandomGenerator']['input']['required']['seed'][1]),
-                                    })['STRING'],
+                                    text: workflow_.negative_text,
                                     clip: clip_output
                                 });
                                 let negative_output = CLIPTextEncode_negative_node['CONDITIONING'];
@@ -435,10 +429,7 @@
                                 if (workflow_.conditions) {
                                     for (let condition of workflow_.conditions) {
                                         let CLIPTextEncode_node = add_node('CLIPTextEncode', {
-                                            text: add_node('DPRandomGenerator', {
-                                                text: condition.text,
-                                                seed: get_seed(this.object_info['DPRandomGenerator']['input']['required']['seed'][1]),
-                                            })['STRING'],
+                                            text: condition.text,
                                             clip: clip_output
                                         });
                                         let ConditioningSetAreaPercentage_node = add_node('ConditioningSetAreaPercentage', {
