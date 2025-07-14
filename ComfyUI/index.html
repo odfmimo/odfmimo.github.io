@@ -478,7 +478,7 @@
                             }
 
                             for (let prompt of prompts) {
-                                let prompt_id = (await (await fetch(`${this.server_address}/prompt`, {
+                                let prompt_id = (await (await fetch(`${this.server_address}/api/prompt`, {
                                     method: "POST",
                                     headers: {
                                         "Content-Type": "application/json",
@@ -501,14 +501,14 @@
                         }
                         
                         let prompt_ids_ = prompt_ids.map(prompt_id => prompt_id.prompt_id);
-                        await fetch(`${this.server_address}/queue`, {
+                        await fetch(`${this.server_address}/api/queue`, {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
                             },
                             body: JSON.stringify({"delete": prompt_ids_}),
                         });
-                        await fetch(`${this.server_address}/history`, {
+                        await fetch(`${this.server_address}/api/history`, {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
@@ -516,15 +516,15 @@
                             body: JSON.stringify({"delete": prompt_ids_}),
                         });
 
-                        let running_prompt_id = (await (await fetch(`${this.server_address}/queue`)).json())['queue_running'][0]?.[1];
+                        let running_prompt_id = (await (await fetch(`${this.server_address}/api/queue`)).json())['queue_running'][0]?.[1];
                         if (running_prompt_id && prompt_ids_.includes(running_prompt_id)) {
-                            await fetch(`${this.server_address}/interrupt`, {
+                            await fetch(`${this.server_address}/api/interrupt`, {
                                 method: "POST",
                             });
                         }
                     },
                     async stop() {
-                        let queue = await (await fetch(`${this.server_address}/queue`)).json();
+                        let queue = await (await fetch(`${this.server_address}/api/queue`)).json();
                         let queue_prompt_ids_ = [...queue['queue_running'], ...queue['queue_pending']].map(queue => queue[1]);
                         let prompt_ids = this.prompt_ids.filter(prompt_id => queue_prompt_ids_.includes(prompt_id.prompt_id));
                         this.remove_prompts(prompt_ids);
@@ -533,7 +533,7 @@
                         await Promise.all([
                             (async _ => {
                                 let images = [];
-                                Object.values((await (await fetch(`${this.server_address}/history`)).json()))
+                                Object.values((await (await fetch(`${this.server_address}/api/history`)).json()))
                                     .sort((a, b) => (a['prompt']?.[0] > b['prompt']?.[0]))
                                     .forEach(history => {
                                         for (let node_id of Object.keys(history['outputs'])) {
@@ -543,7 +543,7 @@
                                                     let data = {"filename": image['filename'], "subfolder": image['subfolder'], "type": image['type']};
                                                     let params = new URLSearchParams(data);
                                                     let url_values = params.toString();
-                                                    data['src'] = `${this.server_address}/view?${url_values}`;
+                                                    data['src'] = `${this.server_address}/api/view?${url_values}`;
                                                     data['prompt_id'] = history['prompt']?.[1];
                                                     images.push(data);
                                                 }
@@ -553,7 +553,7 @@
                                 this.images = images;
                             })(),
                             (async _ => {
-                                let queue = await (await fetch(`${this.server_address}/queue`)).json();
+                                let queue = await (await fetch(`${this.server_address}/api/queue`)).json();
                                 this.queue_remaining = queue['queue_running'].length + queue['queue_pending'].length;
                             })(),
                         ]);
@@ -728,7 +728,7 @@
                         try {
                             this.connect_socket();
 
-                            this.object_info = await (await fetch(`${this.server_address}/object_info`)).json();
+                            this.object_info = await (await fetch(`${this.server_address}/api/object_info`)).json();
 
                             try {
                                 this.autocomplete = (await (await fetch(`${this.server_address}/pysssss/autocomplete`)).text())
@@ -873,7 +873,7 @@
                         }
                     },
                     async clear_history() {
-                        await fetch(`${this.server_address}/history`, {
+                        await fetch(`${this.server_address}/api/history`, {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
