@@ -284,17 +284,17 @@
 
             createApp({
                 data() {
-                    let access_token = null;
+                    let settings = {};
                     try {
-                        access_token = JSON.parse(localStorage.getItem("ComfyUI"))?.access_token;
+                        settings = JSON.parse(localStorage.getItem("ComfyUI")) ?? {};
                     }
                     catch (e) {}
 
                     return {
                         client_id: uuid41(),
-                        server_address: "http://127.0.0.1:8188",
+                        server_address: settings.server_address ?? "http://127.0.0.1:8188",
                         is_valid_server_address: null,
-                        access_token: access_token,
+                        access_token: settings.access_token,
                         is_valid_access_token: null,
                         is_connecting: false,
                         object_info: null,
@@ -729,7 +729,7 @@
                             this.connect_socket();
 
                             this.object_info = await (await fetch(`${this.server_address}/api/object_info`)).json();
-
+                            
                             try {
                                 this.autocomplete = (await (await fetch(`${this.server_address}/pysssss/autocomplete`)).text())
                                     .split('\n').map(item => item.split(','))
@@ -739,6 +739,14 @@
                                     }));
                             }
                             catch (e) {}
+
+                            let settings = {};
+                            try {
+                                settings = JSON.parse(localStorage.getItem("ComfyUI")) ?? {};
+                            }
+                            catch (e) {}
+                            settings.server_address = this.server_address;
+                            localStorage.setItem("ComfyUI", JSON.stringify(settings));
                         }
                         catch (e) {
                             console.error(e);
