@@ -729,6 +729,7 @@
                             this.connect_socket();
 
                             this.object_info = await (await fetch(`${this.server_address}/api/object_info`)).json();
+                            console.log(this.object_info);
                             
                             try {
                                 this.autocomplete = (await (await fetch(`${this.server_address}/pysssss/autocomplete`)).text())
