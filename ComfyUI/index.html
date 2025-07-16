@@ -220,10 +220,6 @@
                                     </div>
                                 </div>
                                 <div class="d-flex gap-2">
-                                    <div class="input-group flex-nowrap">
-                                        <button type="button" class="btn btn-primary" @click="queue_prompt(batch_count)">Queue</button>
-                                        <input type="number" class="form-control" min="1" max="100" step="1" v-model="batch_count">
-                                    </div>
                                     <button type="button" class="btn btn-danger text-nowrap" @click="stop">
                                         Stop <span class="badge text-bg-secondary">{{ queue_remaining }}</span>
                                     </button>
@@ -232,14 +228,21 @@
                             <div>
                                 <div class="d-flex flex-column gap-3 align-items-start">
                                     <div class="d-flex gap-2 align-items-center">
-                                        <button type="button" class="btn btn-secondary" @click="clear_workflow_prompt_ids">Clear</button>
-                                        <button type="button" class="btn btn-dark" @click="download_workflow_images">Download</button>
-                                        <div class="input-group">
-                                            <span class="input-group-text">{{ workflow_images.length }} / {{ prompt_ids.filter(prompt_id => prompt_id.workflow_name == active_workflow_name).length }}</span>
+                                        <div class="input-group flex-nowrap">
+                                            <button type="button" class="btn btn-primary" @click="enqueue_workflow(batch_count)">Enqueue</button>
+                                            <input type="number" class="form-control" min="1" max="100" step="1" v-model="batch_count">
+                                        </div>
+                                        <button type="button" class="btn btn-warning" @click="dequeue_workflow_prompts">Dequeue</button>
+                                        <div class="input-group flex-nowrap">
+                                            <span class="input-group-text">{{ workflow_images.length }} / {{ prompts.filter(prompt => prompt.workflow_name == active_workflow_name).length }}</span>
                                             <span class="input-group-text">
                                                 <input class="form-check-input mt-0" type="checkbox" v-model="is_fixed_queue_size">
                                             </span>
                                         </div>
+                                    </div>
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <button type="button" class="btn btn-secondary" @click="clear_workflow_prompts">Clear</button>
+                                        <button type="button" class="btn btn-dark" @click="download_workflow_images">Download</button>
                                     </div>
                                     <div class="container">
                                         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
@@ -307,7 +310,7 @@
                         batch_count: 1,
                         images: [],
                         image_number: null,
-                        prompt_ids: [],
+                        prompts: [],
                         is_fixed_queue_size: false,
                         queue_promise: Promise.resolve(),
                     }
@@ -323,7 +326,7 @@
                         return true;
                     },
                     workflow_images() {
-                        let prompt_ids = this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.active_workflow_name).map(prompt_id => prompt_id.prompt_id);
+                        let prompt_ids = this.prompts.filter(prompt => prompt.workflow_name == this.active_workflow_name).map(prompt => prompt.prompt_id);
                         return this.images.filter(image => prompt_ids.includes(image['prompt_id']));
                     },
                 },
@@ -344,7 +347,7 @@
                         }
                         return inputs;
                     },
-                    async queue_prompt(batch_count = 1) {
+                    async enqueue_workflow(batch_count = 1) {
                         let workflow = null;
                         if (!this.temp_workflow && this.active_workflow_name) {
                             workflow = this.workflows.find(workflow => workflow.name == this.active_workflow_name);
@@ -477,21 +480,21 @@
                                     body: JSON.stringify({"prompt": prompt, "client_id": this.client_id}),
                                 })).json())['prompt_id'];
     
-                                this.prompt_ids.push({prompt_id: prompt_id, workflow_name: workflow_name});
+                                this.prompts.push({prompt_id: prompt_id, workflow_name: workflow_name});
                             }
 
                             resolve();
                         });
                     },
-                    async remove_prompts(prompt_ids) {
-                        for (let prompt_id of prompt_ids) {
-                            let idx = this.prompt_ids.indexOf(prompt_id);
+                    async remove_prompts(prompts) {
+                        for (let prompt of prompts) {
+                            let idx = this.prompts.indexOf(prompt);
                             if (idx >= 0) {
-                                this.prompt_ids.splice(idx, 1);
+                                this.prompts.splice(idx, 1);
                             }
                         }
                         
-                        let prompt_ids_ = prompt_ids.map(prompt_id => prompt_id.prompt_id);
+                        let prompt_ids_ = prompts.map(prompt => prompt.prompt_id);
                         await fetch(`${this.server_address}/api/queue`, {
                             method: "POST",
                             headers: {
@@ -516,9 +519,9 @@
                     },
                     async stop() {
                         let queue = await (await fetch(`${this.server_address}/api/queue`)).json();
-                        let queue_prompt_ids_ = [...queue['queue_running'], ...queue['queue_pending']].map(queue => queue[1]);
-                        let prompt_ids = this.prompt_ids.filter(prompt_id => queue_prompt_ids_.includes(prompt_id.prompt_id));
-                        this.remove_prompts(prompt_ids);
+                        let queue_prompt_ids = [...queue['queue_running'], ...queue['queue_pending']].map(queue => queue[1]);
+                        let prompts = this.prompts.filter(prompt => queue_prompt_ids.includes(prompt.prompt_id));
+                        this.remove_prompts(prompts);
                     },
                     async retrieve() {
                         await Promise.all([
@@ -600,7 +603,7 @@
                             let idx = this.workflows.findIndex(workflow => workflow.name == workflow_name);
                             if (idx >= 0) {
                                 this.workflows.splice(idx, 1);
-                                this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == workflow_name));
+                                this.remove_prompts(this.prompts.filter(prompt => prompt.workflow_name == workflow_name));
                                 if (workflow_name == this.active_workflow_name) {
                                     if (this.workflows.length == 0) {
                                         this.active_workflow_name = null;
@@ -619,7 +622,7 @@
                         if (this.is_valid_workflow_name) {
                             if (this.editing_workflow_name) {
                                 let editing_workflow = this.workflows.find(workflow => workflow.name == this.editing_workflow_name);
-                                this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.editing_workflow_name));
+                                this.remove_prompts(this.prompts.filter(prompt => prompt.workflow_name == this.editing_workflow_name));
                                 editing_workflow.name = this.temp_workflow.name;
                                 editing_workflow.workflow = structuredClone(toRaw(this.temp_workflow.workflow));
                             }
@@ -884,8 +887,11 @@
                         });
                         this.images = [];
                     },
-                    clear_workflow_prompt_ids() {
-                        this.remove_prompts(this.prompt_ids.filter(prompt_id => prompt_id.workflow_name == this.active_workflow_name));
+                    async dequeue_workflow_prompts() {
+                        this.remove_prompts(this.prompts.filter(prompt => prompt.workflow_name == this.active_workflow_name && !this.images.find(image => image['prompt_id'] == prompt_id));
+                    },
+                    clear_workflow_prompts() {
+                        this.remove_prompts(this.prompts.filter(prompt => prompt.workflow_name == this.active_workflow_name));
                     },
                     async download_workflow_images() {
                         var zip = new JSZip();
@@ -914,9 +920,9 @@
                         this.image_number = index;
                     },
                     delete_image(index) {
-                        let prompt_id = this.prompt_ids.find(prompt_id => prompt_id.prompt_id == this.workflow_images[index]['prompt_id']);
-                        this.remove_prompts([prompt_id]);
-                        if (this.is_fixed_queue_size) this.queue_prompt();
+                        let prompt = this.prompts.find(prompt => prompt.prompt_id == this.workflow_images[index]['prompt_id']);
+                        this.remove_prompts([prompt]);
+                        if (this.is_fixed_queue_size) this.enqueue_workflow();
                     },
                     autocomplete_input(event) {
                         let target = event.target;
