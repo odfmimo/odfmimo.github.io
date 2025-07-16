@@ -227,22 +227,24 @@
                             </div>
                             <div>
                                 <div class="d-flex flex-column gap-3 align-items-start">
-                                    <div class="d-flex gap-2 align-items-center">
-                                        <div class="input-group flex-nowrap">
-                                            <button type="button" class="btn btn-primary" @click="enqueue_workflow(batch_count)">Enqueue</button>
-                                            <input type="number" class="form-control" min="1" max="100" step="1" v-model="batch_count">
+                                    <div class="d-flex flex-wrap gap-3">
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <div class="input-group flex-nowrap">
+                                                <button type="button" class="btn btn-primary" @click="enqueue_workflow(batch_count)">Enqueue</button>
+                                                <input type="number" class="form-control" min="1" max="100" step="1" v-model="batch_count">
+                                            </div>
+                                            <button type="button" class="btn btn-warning" @click="dequeue_workflow_prompts">Dequeue</button>
+                                            <div class="input-group flex-nowrap">
+                                                <span class="input-group-text">{{ workflow_images.length }} / {{ prompts.filter(prompt => prompt.workflow_name == active_workflow_name).length }}</span>
+                                                <span class="input-group-text">
+                                                    <input class="form-check-input mt-0" type="checkbox" v-model="is_fixed_queue_size">
+                                                </span>
+                                            </div>
                                         </div>
-                                        <button type="button" class="btn btn-warning" @click="dequeue_workflow_prompts">Dequeue</button>
-                                        <div class="input-group flex-nowrap">
-                                            <span class="input-group-text">{{ workflow_images.length }} / {{ prompts.filter(prompt => prompt.workflow_name == active_workflow_name).length }}</span>
-                                            <span class="input-group-text">
-                                                <input class="form-check-input mt-0" type="checkbox" v-model="is_fixed_queue_size">
-                                            </span>
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <button type="button" class="btn btn-secondary" @click="clear_workflow_prompts">Clear</button>
+                                            <button type="button" class="btn btn-dark" @click="download_workflow_images">Download</button>
                                         </div>
-                                    </div>
-                                    <div class="d-flex gap-2 align-items-center">
-                                        <button type="button" class="btn btn-secondary" @click="clear_workflow_prompts">Clear</button>
-                                        <button type="button" class="btn btn-dark" @click="download_workflow_images">Download</button>
                                     </div>
                                     <div class="container">
                                         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
