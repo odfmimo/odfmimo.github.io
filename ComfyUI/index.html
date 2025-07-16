@@ -732,13 +732,15 @@
                             }
                             catch (e) {}
 
-                            let settings = {};
-                            try {
-                                settings = JSON.parse(localStorage.getItem("ComfyUI")) ?? {};
+                            if ((new URLSearchParams(location.search)).get('server_address') != this.server_address) {
+                                let settings = {};
+                                try {
+                                    settings = JSON.parse(localStorage.getItem("ComfyUI")) ?? {};
+                                }
+                                catch (e) {}
+                                settings.server_address = this.server_address;
+                                localStorage.setItem("ComfyUI", JSON.stringify(settings));
                             }
-                            catch (e) {}
-                            settings.server_address = this.server_address;
-                            localStorage.setItem("ComfyUI", JSON.stringify(settings));
                         }
                         catch (e) {
                             console.error(e);
