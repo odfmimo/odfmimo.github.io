@@ -524,7 +524,8 @@
                     async stop() {
                         let queue = await (await fetch(`${this.server_address}/api/queue`)).json();
                         let queue_prompt_ids = [...queue['queue_running'], ...queue['queue_pending']].map(queue => queue[1]);
-                        let prompts = this.prompts.filter(prompt => queue_prompt_ids.includes(prompt.prompt_id));
+                        // let prompts = this.prompts.filter(prompt => queue_prompt_ids.includes(prompt.prompt_id));
+                        let prompts = queue_prompt_ids.map(queue_prompt_id => ({prompt_id: queue_prompt_id}));
                         this.remove_prompts(prompts);
                     },
                     async retrieve() {
@@ -891,7 +892,7 @@
                         });
                         this.images = [];
                     },
-                    async dequeue_workflow_prompts() {
+                    dequeue_workflow_prompts() {
                         this.remove_prompts(this.prompts.filter(prompt => prompt.workflow_name == this.active_workflow_name && !this.images.find(image => image['prompt_id'] == prompt.prompt_id)));
                     },
                     clear_workflow_prompts() {
