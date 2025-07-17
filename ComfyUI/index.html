@@ -462,7 +462,7 @@
                                 if (workflow_.face_detailer_bool) {
                                     let UltralyticsDetectorProvider_node = add_node('UltralyticsDetectorProvider');
                                     let FaceDetailer_node = add_node('FaceDetailer', {
-                                        image: image_output, model: model_output, clip: clip_output, vae: vae_output, positive: positive_output, negative: negative_output,
+                                        image: image_output, model: CheckpointLoaderSimple_node['MODEL'], clip: CheckpointLoaderSimple_node['CLIP'], vae: CheckpointLoaderSimple_node['VAE'], positive: positive_output, negative: negative_output,
                                         seed: get_seed(this.object_info['FaceDetailer']['input']['required']['seed'][1]),
                                         steps: workflow_.steps, cfg: workflow_.cfg, sampler_name: workflow_.sampler_name, scheduler: workflow_.scheduler,
                                         bbox_detector: UltralyticsDetectorProvider_node['BBOX_DETECTOR'],
