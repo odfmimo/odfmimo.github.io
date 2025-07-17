@@ -111,6 +111,10 @@
                                                                 Strength Clip
                                                                 <input type="number" class="form-control" v-bind="object_info['LoraLoader']['input']['required']['strength_clip'][1]" v-model="lora.strength_clip">
                                                             </div>
+                                                            <div>
+                                                                Face Detailer
+                                                                <input class="form-check-input" type="checkbox" v-model="lora.face_detailer_bool">
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -460,9 +464,24 @@
                                 let image_output = VAEDecode_node['IMAGE'];
         
                                 if (workflow_.face_detailer_bool) {
+                                    let face_detailer_model_output = CheckpointLoaderSimple_node['MODEL'];
+                                    let face_detailer_clip_output = CheckpointLoaderSimple_node['CLIP'];
+                                    if (workflow_.loras) {
+                                        for (let lora of workflow_.loras) {
+                                            if (lora.face_detailer_bool) {
+                                                let LoraLoader_node = add_node('LoraLoader', {
+                                                    model: face_detailer_model_output, clip: face_detailer_clip_output,
+                                                    lora_name: lora.lora_name, strength_model: lora.strength_model, strength_clip: lora.strength_clip,
+                                                });
+                                                face_detailer_model_output = LoraLoader_node['MODEL'];
+                                                face_detailer_clip_output = LoraLoader_node['CLIP'];
+                                            }
+                                        }
+                                    }
+                                    
                                     let UltralyticsDetectorProvider_node = add_node('UltralyticsDetectorProvider');
                                     let FaceDetailer_node = add_node('FaceDetailer', {
-                                        image: image_output, model: CheckpointLoaderSimple_node['MODEL'], clip: CheckpointLoaderSimple_node['CLIP'], vae: CheckpointLoaderSimple_node['VAE'], positive: positive_output, negative: negative_output,
+                                        image: image_output, model: face_detailer_model_output, clip: face_detailer_clip_output, vae: vae_output, positive: positive_output, negative: negative_output,
                                         seed: get_seed(this.object_info['FaceDetailer']['input']['required']['seed'][1]),
                                         steps: workflow_.steps, cfg: workflow_.cfg, sampler_name: workflow_.sampler_name, scheduler: workflow_.scheduler,
                                         bbox_detector: UltralyticsDetectorProvider_node['BBOX_DETECTOR'],
