@@ -139,21 +139,30 @@ def home():
 
 @app.route('/detect', methods=['POST'])
 async def detect():
-    args = [f"{key}={value}" if value else f"{key}" for key, value in request.args.items()]
-    img = Image.open(request.files['file'])
-    return await _detect(img, args)
+    try:
+        args = [f"{key}={value}" if value else f"{key}" for key, value in request.args.items()]
+        img = Image.open(request.files['file'])
+        return await _detect(img, args)
+    except:
+        return ""
 
 @app.route('/recognize', methods=['POST'])
 async def recognize():
-    args = [f"{key}={value}" if value else f"{key}" for key, value in request.args.items()]
-    img = Image.open(request.files['file'])
-    return await _recognize(img, args)
+    try:
+        args = [f"{key}={value}" if value else f"{key}" for key, value in request.args.items()]
+        img = Image.open(request.files['file'])
+        return await _recognize(img, args)
+    except:
+        return ""
 
 @app.route('/translate', methods=['POST'])
 async def translate():
-    args = [f"{key}={value}" if value else f"{key}" for key, value in request.args.items()]
-    texts = json.loads(request.values['texts'])
-    return await _translate(texts, args)
+    try:
+        args = [f"{key}={value}" if value else f"{key}" for key, value in request.args.items()]
+        texts = json.loads(request.values['texts'])
+        return await _translate(texts, args)
+    except:
+        return ""
 
 if __name__ == '__main__':
     app.run('0.0.0.0', port=5000)
