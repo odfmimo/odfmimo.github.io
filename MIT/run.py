@@ -6,6 +6,7 @@ import json
 import numpy as np
 import shutil
 from PIL import Image
+import traceback
 
 from manga_translator.args import parser
 from manga_translator.manga_translator import MangaTranslator
@@ -144,7 +145,8 @@ async def detect():
         img = Image.open(request.files['file'])
         return await _detect(img, args)
     except:
-        return ""
+        traceback.print_exc()
+        return {}
 
 @app.route('/recognize', methods=['POST'])
 async def recognize():
@@ -153,7 +155,8 @@ async def recognize():
         img = Image.open(request.files['file'])
         return await _recognize(img, args)
     except:
-        return ""
+        traceback.print_exc()
+        return {}
 
 @app.route('/translate', methods=['POST'])
 async def translate():
@@ -162,7 +165,8 @@ async def translate():
         texts = json.loads(request.values['texts'])
         return await _translate(texts, args)
     except:
-        return ""
+        traceback.print_exc()
+        return {}
 
 if __name__ == '__main__':
     app.run('0.0.0.0', port=5000)
