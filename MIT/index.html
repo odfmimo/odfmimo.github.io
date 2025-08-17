@@ -53,7 +53,10 @@
         <div id="main_div">
             <div id="fileSelect_div">
                 <span>
-                    <input id="viewer_button" type="button" value="뷰어">
+                    <label>
+                        <input id="viewer_checkbox" type="checkbox" checked>
+                        뷰어
+                    </label>
                 </span>
                 <span class="fileSelect_span">
                     <input id="imagefile_input" type="file" multiple>
@@ -165,12 +168,14 @@ var imageViewer = new ImageViewer(imageViewer_div);
     };
 })();
 
-document.getElementById('viewer_button').addEventListener("click", e => {
-    if (imageViewer_div.style.visibility == "hidden") {
+document.getElementById('viewer_checkbox').addEventListener("change", e => {
+    if (document.getElementById('viewer_checkbox').checked) {
         imageViewer_div.style.visibility = "";
+        imageViewer_div.style.opacity = "";
     }
     else {
         imageViewer_div.style.visibility = "hidden";
+        imageViewer_div.style.opacity = 0;
     }
 });
 
