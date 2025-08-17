@@ -6,9 +6,9 @@ import zipfile
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 if not os.path.exists('manga-image-translator'):
-    # urlretrieve('https://github.com/zyddnys/manga-image-translator/archive/refs/heads/main.zip', 'manga-image-translator.zip')
     if not os.path.exists('manga-image-translator.zip'):
-        urlretrieve('https://github.com/zyddnys/manga-image-translator/archive/e88115a302e69b6a1692b01a8f8d5dd9f2f00da8.zip', 'manga-image-translator.zip')
+        urlretrieve('https://github.com/zyddnys/manga-image-translator/archive/refs/heads/main.zip', 'manga-image-translator.zip')
+        # urlretrieve('https://github.com/zyddnys/manga-image-translator/archive/e88115a302e69b6a1692b01a8f8d5dd9f2f00da8.zip', 'manga-image-translator.zip')
     with zipfile.ZipFile('manga-image-translator.zip', 'r') as file:
         with zipfile.ZipFile('manga-image-translator.zip', 'r') as file:
             for info in file.infolist():

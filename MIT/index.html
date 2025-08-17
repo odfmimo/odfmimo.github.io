@@ -121,15 +121,27 @@ for (let TRANSLATOR of TRANSLATORS) {
 }
 
 function get_args() {
+    let detector = document.getElementById('detector_select').value;
+    let recognizer = document.getElementById('recognizer_select').value;
+    let translator = document.getElementById('translator_select').value;
+
+    let args = [];
+    if (detector != "") args.push(encodeURIComponent("--detector") + "=" + encodeURIComponent(detector));
+    if (recognizer != "") args.push(encodeURIComponent("--ocr") + "=" + encodeURIComponent(recognizer));
+    if (translator != "") args.push(encodeURIComponent("--translator") + "=" + encodeURIComponent(translator));
+    return args.join("&");
+}
+
+function get_config() {
     let recognizer = document.getElementById('recognizer_select').value;
     let detector = document.getElementById('detector_select').value;
     let translator = document.getElementById('translator_select').value;
 
-    let args = [];
-    if (recognizer != "") args.push(encodeURIComponent("--ocr") + "=" + encodeURIComponent(recognizer));
-    if (detector != "") args.push(encodeURIComponent("--detector") + "=" + encodeURIComponent(detector));
-    if (translator != "") args.push(encodeURIComponent("--translator") + "=" + encodeURIComponent(translator));
-    return args.join("&");
+    let config = {};
+    if (detector != "") Object.assign(config, {"detector": {"detector": detector}});
+    if (recognizer != "") Object.assign(config, {"ocr": {"ocr": recognizer}});
+    if (translator != "") Object.assign(config, {"translator": {"translator": translator}});
+    return JSON.stringify(config);
 }
 
 var imageViewer_div = document.getElementById("imageViewer_div");
@@ -234,9 +246,10 @@ document.getElementById("detect_button").addEventListener("click", async _ => {
         let file = imageList[i].file;
         let data = new FormData();
         data.append('file', file);
-        let response = await fetch('/detect?' + get_args(), {
+        data.append('config', get_config());
+        let response = await fetch('/detect', {
             method: 'POST',
-            body: data
+            body: data,
         });
         let textboxes = await response.json();
         textboxes.forEach(textbox => {
@@ -287,7 +300,8 @@ document.getElementById("recognize_button").addEventListener("click", async _ =>
                                 let file = new File([blob], "temp.png")
                                 let data = new FormData();
                                 data.append('file', file);
-                                let response = await fetch('/recognize?' + get_args(), {
+                                data.append('config', get_config());
+                                let response = await fetch('/recognize', {
                                     method: 'POST',
                                     body: data
                                 });
@@ -329,7 +343,8 @@ document.getElementById("translate_button").addEventListener("click", async _ =>
         let texts = textboxes.map(textbox => textbox.text);
         let data = new FormData();
         data.append('texts', JSON.stringify(texts));
-        let response = await fetch('/translate?' + get_args(), {
+        data.append('config', get_config());
+        let response = await fetch('/translate', {
             method: 'POST',
             body: data
         });
