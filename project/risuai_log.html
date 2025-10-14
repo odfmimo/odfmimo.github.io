@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            textarea { width: 100%; height: 10em; }
+            #output_div textarea { width: 100%; height: 20em; }
+        </style>
+    </head>
+    <body>
+        <textarea id="input_textarea"></textarea>
+        <div id="output_div"></div>
+    </body>
+    <script>
+        document.querySelector("#input_textarea").addEventListener("change", _ => {
+            document.querySelector("#output_div").innerHTML = "";
+            let input_data = JSON.parse(document.querySelector("#input_textarea").value);
+            for (let content of input_data?.["contents"] ?? []) {
+                for (let part of content?.["parts"] ?? []) {
+                    let text = part?.["text"];
+                    let output_textarea = document.createElement("textarea");
+                    output_textarea.value = text;
+                    document.querySelector("#output_div").appendChild(output_textarea);
+                }
+            }
+            for (let candidate of input_data?.["candidates"] ?? []) {
+                for (let part of candidate?.["content"]?.["parts"] ?? []) {
+                    let text = part?.["text"];
+                    let output_textarea = document.createElement("textarea");
+                    output_textarea.value = text;
+                    document.querySelector("#output_div").appendChild(output_textarea);
+                }
+            }
+        });
+    </script>
+</html>
