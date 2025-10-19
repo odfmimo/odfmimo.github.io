@@ -23,7 +23,7 @@
                 }
             }
             for (let message of input_data?.["messages"] ?? []) {
-                let content = part?.["content"];
+                let content = message?.["content"];
                 let output_textarea = document.createElement("textarea");
                 output_textarea.value = content;
                 document.querySelector("#output_div").appendChild(output_textarea);
