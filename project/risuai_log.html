@@ -37,7 +37,7 @@
                 }
             }
             for (let choice of input_data?.["choices"] ?? []) {
-                let content = choice.?["message"]?.["content"];
+                let content = choice?.["message"]?.["content"];
                 let output_textarea = document.createElement("textarea");
                 output_textarea.value = content;
                 document.querySelector("#output_div").appendChild(output_textarea);
