@@ -13,7 +13,12 @@
     <script>
         document.querySelector("#input_textarea").addEventListener("change", _ => {
             document.querySelector("#output_div").innerHTML = "";
-            let input_data = JSON.parse(document.querySelector("#input_textarea").value);
+            try {
+                let input_data = JSON.parse(document.querySelector("#input_textarea").value);
+            }
+            catch (e) {
+                let input_data = JSON.parse(document.querySelector("#input_textarea").value.replaceAll('""', '\\"'));
+            }
             for (let content of input_data?.["contents"] ?? []) {
                 for (let part of content?.["parts"] ?? []) {
                     let text = part?.["text"];
