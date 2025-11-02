@@ -9,44 +9,39 @@
     <body>
         <textarea id="input_textarea"></textarea>
         <div id="output_div"></div>
-    </body>
-    <script>
-        document.querySelector("#input_textarea").addEventListener("change", _ => {
-            document.querySelector("#output_div").innerHTML = "";
-            try {
+        <script>
+            document.querySelector("#input_textarea").addEventListener("change", _ => {
+                document.querySelector("#output_div").innerHTML = "";
                 let input_data = JSON.parse(document.querySelector("#input_textarea").value);
-            }
-            catch (e) {
-                let input_data = JSON.parse(document.querySelector("#input_textarea").value.replaceAll('""', '\\"'));
-            }
-            for (let content of input_data?.["contents"] ?? []) {
-                for (let part of content?.["parts"] ?? []) {
-                    let text = part?.["text"];
+                for (let content of input_data?.["contents"] ?? []) {
+                    for (let part of content?.["parts"] ?? []) {
+                        let text = part?.["text"];
+                        let output_textarea = document.createElement("textarea");
+                        output_textarea.value = text;
+                        document.querySelector("#output_div").appendChild(output_textarea);
+                    }
+                }
+                for (let message of input_data?.["messages"] ?? []) {
+                    let content = message?.["content"];
                     let output_textarea = document.createElement("textarea");
-                    output_textarea.value = text;
+                    output_textarea.value = content;
                     document.querySelector("#output_div").appendChild(output_textarea);
                 }
-            }
-            for (let message of input_data?.["messages"] ?? []) {
-                let content = message?.["content"];
-                let output_textarea = document.createElement("textarea");
-                output_textarea.value = content;
-                document.querySelector("#output_div").appendChild(output_textarea);
-            }
-            for (let candidate of input_data?.["candidates"] ?? []) {
-                for (let part of candidate?.["content"]?.["parts"] ?? []) {
-                    let text = part?.["text"];
+                for (let candidate of input_data?.["candidates"] ?? []) {
+                    for (let part of candidate?.["content"]?.["parts"] ?? []) {
+                        let text = part?.["text"];
+                        let output_textarea = document.createElement("textarea");
+                        output_textarea.value = text;
+                        document.querySelector("#output_div").appendChild(output_textarea);
+                    }
+                }
+                for (let choice of input_data?.["choices"] ?? []) {
+                    let content = choice?.["message"]?.["content"];
                     let output_textarea = document.createElement("textarea");
-                    output_textarea.value = text;
+                    output_textarea.value = content;
                     document.querySelector("#output_div").appendChild(output_textarea);
                 }
-            }
-            for (let choice of input_data?.["choices"] ?? []) {
-                let content = choice?.["message"]?.["content"];
-                let output_textarea = document.createElement("textarea");
-                output_textarea.value = content;
-                document.querySelector("#output_div").appendChild(output_textarea);
-            }
-        });
-    </script>
+            });
+        </script>
+    </body>
 </html>
