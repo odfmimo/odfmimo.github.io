@@ -5,6 +5,7 @@ from flask import Flask, request, Response, jsonify, render_template, session, s
 import json
 import numpy as np
 import shutil
+import PIL
 from PIL import Image
 import traceback
 
@@ -164,5 +165,7 @@ async def translate():
         traceback.print_exc()
         return {}
 
+PIL.Image.MAX_IMAGE_PIXELS = None
 if __name__ == '__main__':
     app.run('0.0.0.0', port=5000)
+
