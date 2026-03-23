@@ -11,10 +11,7 @@
         <div id="output_div"></div>
         <script>
             document.querySelector("#input_textarea").addEventListener("change", _ => {
-                document.querySelector("#output_div").innerHTML = "";
-                let input_data = document.querySelector("#input_textarea").value;
-
-                document.querySelector("#output_div").innerHTML = input_data.split("\n").map(data => {
+                document.querySelector("#output_div").innerHTML = document.querySelector("#input_textarea").value.split("\n").map(data => {
                     try {
                         data = JSON.parse(data.replace(/^data:\s*/, ''));
                         return data?.choices?.map(choice => choice?.delta?.content).join("");
