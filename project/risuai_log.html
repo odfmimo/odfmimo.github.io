@@ -2,16 +2,15 @@
 <html>
     <head>
         <style>
-            textarea { width: 100%; height: 10em; }
-            #output_div textarea { width: 100%; height: 20em; }
+            textarea { width: 100%; height: 20em; }
         </style>
     </head>
     <body>
         <textarea id="input_textarea"></textarea>
-        <div id="output_div"></div>
+        <textarea id="output_textarea"></textarea>
         <script>
             document.querySelector("#input_textarea").addEventListener("change", _ => {
-                document.querySelector("#output_div").innerHTML = document.querySelector("#input_textarea").value.split("\n").map(data => {
+                document.querySelector("#output_textarea").value = document.querySelector("#input_textarea").value.split("\n").map(data => {
                     try {
                         data = JSON.parse(data.replace(/^data:\s*/, ''));
                         return data?.choices?.map(choice => choice?.delta?.content).join("");
