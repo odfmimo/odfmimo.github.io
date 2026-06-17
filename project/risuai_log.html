@@ -7,15 +7,18 @@
     </head>
     <body>
         <textarea id="input_textarea"></textarea>
-        <textarea id="output_textarea"></textarea>
+        <div id="output_div"></div>
         <script>
             document.querySelector("#input_textarea").addEventListener("change", _ => {
-                document.querySelector("#output_textarea").value = document.querySelector("#input_textarea").value.split("\n").map(data => {
-                    try {
-                        data = JSON.parse(data.replace(/^data:\s*/, ''));
-                        return data?.choices?.map(choice => choice?.delta?.content).join("");
-                    } catch (e) { }
-                }).filter(content => content).join("");
+                document.querySelector("#output_div").innerHTML = "";
+                JSON.parse(document.querySelector("#input_textarea").value).messages?.forEach(message => {
+                    const content = message.content;
+                    if (content) {
+                        const contentTextarea = document.createElement("textarea");
+                        contentTextarea.value = content;
+                        document.querySelector("#output_div").appendChild(contentTextarea);
+                    }
+                });
             });
         </script>
     </body>
