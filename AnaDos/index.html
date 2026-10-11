@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anados Gacha Banner Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+  <style>
+    :root {
+      --bg-main: #0d1117;
+      --bg-card: #161b22;
+      --bg-card-hover: #1c2128;
+      --bg-panel: #161b22;
+      --border-color: #30363d;
+      --border-accent: #388bfd;
+      --text-main: #e6edf3;
+      --text-sub: #8b949e;
+      --text-muted: #6e7681;
+      --accent-blue: #58a6ff;
+      --accent-gold: #f0883e;
+      --badge-revival: #d29922;
+      --badge-new: #3fb950;
+      --badge-limited: #f85149;
+      --rarity-6: #f778ba;
+      --rarity-5: #e3b341;
+      --rarity-4: #a371f7;
+      --rarity-3: #58a6ff;
+      --rarity-2: #8b949e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(180deg, #161b22 0%, rgba(22, 27, 34, 0.85) 100%);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 1rem 1.5rem;
+    }
+
+    .header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-badge {
+      background: linear-gradient(135deg, #1f6feb, #8957e5);
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      font-family: 'Rajdhani', sans-serif;
+    }
+
+    .site-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.3px;
+    }
+
+    .site-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+    }
+
+    /* Navigation & View Toggle */
+    .view-toggle {
+      display: flex;
+      background: #0d1117;
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      gap: 4px;
+    }
+
+    .view-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-sub);
+      padding: 0.5rem 1rem;
+      border-radius: 7px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .view-btn.active {
+      background: var(--bg-card);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .view-btn:hover:not(.active) {
+      color: var(--text-main);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.5rem;
+      flex: 1;
+    }
+
+    /* Filter & Search Bar */
+    .filter-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .filter-top-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .search-wrapper {
+      position: relative;
+      flex: 1;
+      min-width: 280px;
+      max-width: 500px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.65rem 1rem 0.65rem 2.4rem;
+      background: #0d1117;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--border-accent);
+      box-shadow: 0 0 0 3px rgba(56, 139, 253, 0.2);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.8rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .search-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+    }
+
+    .filter-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .filter-btn-subtle {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-sub);
+      padding: 0.45rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn-subtle:hover {
+      background: #21262d;
+      color: var(--text-main);
+    }
+
+    .filter-btn-subtle.active {
+      background: rgba(88, 166, 255, 0.15);
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    /* Character Selector Drawer/Grid */
+    .char-selector-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+      gap: 0.6rem;
+      max-height: 260px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 0.75rem 0.25rem 0.25rem;
+      margin-top: 0.5rem;
+    }
+
+    /* Results Header */
+    .results-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      padding: 0 0.25rem;
+    }
+
+    .results-count {
+      font-size: 0.92rem;
+      color: var(--text-sub);
+    }
+
+    .results-count strong {
+      color: var(--accent-blue);
+    }
+
+    /* Views */
+    /* View 1: Date Timeline */
+    .timeline-view {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .date-group {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .date-group-header {
+      background: linear-gradient(90deg, #21262d 0%, #161b22 100%);
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .date-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      font-family: 'Rajdhani', sans-serif;
+      letter-spacing: 0.5px;
+    }
+
+    .date-badge svg {
+      color: var(--accent-blue);
+    }
+
+    .date-group-count {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      background: #0d1117;
+      padding: 0.2rem 0.6rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    .banners-in-date {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.25rem;
+      padding: 1.25rem;
+    }
+
+    /* View 2: Grouped by Unique Banner */
+    .banner-grouped-view {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* Banner Card Design */
+    .banner-card {
+      background: #0d1117;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .banner-card:hover {
+      border-color: rgba(88, 166, 255, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .banner-image-container {
+      width: 100%;
+      /* height: 150px; */
+      position: relative;
+      background: #1f242c;
+      overflow: hidden;
+    }
+
+    .banner-image-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s;
+    }
+
+    .banner-card:hover .banner-image-container img {
+      transform: scale(1.03);
+    }
+
+    .banner-badges {
+      position: absolute;
+      top: 0.6rem;
+      left: 0.6rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      z-index: 2;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      backdrop-filter: blur(4px);
+    }
+
+    .badge-revival {
+      background: rgba(210, 153, 34, 0.9);
+      color: #fff;
+    }
+
+    .badge-new {
+      background: rgba(63, 185, 80, 0.9);
+      color: #fff;
+    }
+
+    .badge-count {
+      background: rgba(33, 38, 45, 0.85);
+      color: var(--accent-blue);
+      border: 1px solid rgba(88, 166, 255, 0.3);
+    }
+
+    .banner-id-tag {
+      position: absolute;
+      right: 0.6rem;
+      bottom: 0.6rem;
+      background: rgba(13, 17, 23, 0.85);
+      color: var(--text-sub);
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-family: 'Rajdhani', monospace;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .banner-content {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      gap: 0.85rem;
+    }
+
+    .banner-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .banner-title-en {
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.35;
+    }
+
+    .banner-title-ja {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* Dates List in Card */
+    .banner-dates {
+      background: rgba(22, 27, 34, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.8rem;
+      color: var(--text-sub);
+    }
+
+    .banner-dates-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .banner-dates-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .banner-date-single {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .date-revival-indicator {
+      font-size: 0.68rem;
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+      background: rgba(210, 153, 34, 0.25);
+      color: var(--badge-revival);
+      border: 1px solid rgba(210, 153, 34, 0.4);
+    }
+
+    .date-first-indicator {
+      font-size: 0.68rem;
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+      background: rgba(63, 185, 80, 0.2);
+      color: var(--badge-new);
+      border: 1px solid rgba(63, 185, 80, 0.4);
+    }
+
+    /* Pickup Characters Section */
+    .pickup-section {
+      margin-top: auto;
+    }
+
+    .pickup-header {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pickup-char-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+    }
+
+    /* Character Icon with Badges */
+    .char-badge-icon {
+      position: relative;
+      width: 54px;
+      height: 54px;
+      border-radius: 8px;
+      background: #1c2128;
+      border: 2px solid var(--rarity-3);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .char-badge-icon:hover {
+      transform: scale(1.08);
+      z-index: 10;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
+
+    .char-badge-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 6px;
+      display: block;
+    }
+
+    /* Rarity Ring Colors */
+    .char-badge-icon.rarity-6 {
+      border-color: var(--rarity-6);
+      box-shadow: 0 0 6px rgba(247, 120, 186, 0.4);
+    }
+
+    .char-badge-icon.rarity-5 {
+      border-color: var(--rarity-5);
+      box-shadow: 0 0 6px rgba(227, 179, 65, 0.4);
+    }
+
+    .char-badge-icon.rarity-4 {
+      border-color: var(--rarity-4);
+    }
+
+    .char-badge-icon.rarity-3 {
+      border-color: var(--rarity-3);
+    }
+
+    .char-badge-icon.rarity-2 {
+      border-color: var(--rarity-2);
+    }
+
+    .char-badge-icon.rarity-1 {
+      border-color: #484f58;
+    }
+
+    /* Rarity Badge Overlay */
+    .char-rarity-pill {
+      position: absolute;
+      top: -6px;
+      left: -6px;
+      background: #0d1117;
+      font-size: 0.65rem;
+      font-weight: 800;
+      font-family: 'Rajdhani', sans-serif;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      border: 1px solid currentColor;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      gap: 1px;
+    }
+
+    .char-rarity-pill.r-6 {
+      color: var(--rarity-6);
+      border-color: var(--rarity-6);
+    }
+
+    .char-rarity-pill.r-5 {
+      color: var(--rarity-5);
+      border-color: var(--rarity-5);
+    }
+
+    .char-rarity-pill.r-4 {
+      color: var(--rarity-4);
+      border-color: var(--rarity-4);
+    }
+
+    .char-rarity-pill.r-3 {
+      color: var(--rarity-3);
+      border-color: var(--rarity-3);
+    }
+
+    .char-rarity-pill.r-2 {
+      color: var(--rarity-2);
+      border-color: var(--rarity-2);
+    }
+
+    .char-rarity-pill.r-1 {
+      color: #8b949e;
+      border-color: #8b949e;
+    }
+
+    .char-rarity-pill.r-0 {
+      color: #8b949e;
+      border-color: #8b949e;
+    }
+
+    /* Limited Badge Overlay */
+    .char-limited-flag {
+      position: absolute;
+      bottom: -5px;
+      right: -5px;
+      background: var(--badge-limited);
+      color: #fff;
+      /* font-size: 0.58rem; */
+      font-size: 0.45rem;
+      font-weight: 800;
+      /* padding: 0.1rem 0.3rem; */
+      padding: 0rem 0.15rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Tooltip */
+    .char-badge-icon .char-tooltip {
+      visibility: hidden;
+      position: absolute;
+      bottom: 115%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #161b22;
+      color: #fff;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      z-index: 50;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s, visibility 0.2s;
+      text-align: center;
+    }
+
+    .char-badge-icon .char-tooltip::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: #161b22 transparent transparent transparent;
+    }
+
+    .char-badge-icon:hover .char-tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* Fallback image style */
+    .char-img-fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      background: #21262d;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-align: center;
+      padding: 2px;
+    }
+
+    /* Loading & Empty States */
+    .status-box {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--text-sub);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(88, 166, 255, 0.2);
+      border-top-color: var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header-inner {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .view-toggle {
+        width: 100%;
+      }
+
+      .view-btn {
+        flex: 1;
+        justify-content: center;
+      }
+
+      .banners-in-date,
+      .banner-grouped-view {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <div class="logo-group">
+        <span class="logo-badge">ANADOS</span>
+        <div>
+          <h1 class="site-title">Gacha Banner Tracker</h1>
+          <p class="site-subtitle">픽업 배너 및 복각 일정 트래커</p>
+        </div>
+      </div>
+
+      <!-- View Switcher -->
+      <div class="view-toggle">
+        <button id="btnViewDate" class="view-btn active" onclick="switchView('date')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          날짜별 묶어보기
+        </button>
+        <button id="btnViewBanner" class="view-btn" onclick="switchView('banner')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          배너별 묶어보기
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Filter & Search Section -->
+    <section class="filter-section">
+      <div class="filter-top-row">
+        <!-- Search bar -->
+        <div class="search-wrapper">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="searchInput" class="search-input" placeholder="캐릭터 이름 검색"
+            oninput="handleSearchInput(this.value)" />
+        </div>
+
+        <div class="filter-actions">
+          <button id="btnFilterRevival" class="filter-btn-subtle" onclick="toggleRevivalFilter()">
+            🔄 복각 배너만
+          </button>
+          <button id="btnFilterNew" class="filter-btn-subtle" onclick="toggleNewFilter()">
+            ✨ 신규 배너만
+          </button>
+          <button class="filter-btn-subtle" onclick="resetFilters()">
+            초기화
+          </button>
+        </div>
+      </div>
+
+      <!-- Character Quick Picker Drawer -->
+      <div id="charSelectorGrid" class="char-selector-grid">
+        <!-- Filled dynamically -->
+      </div>
+    </section>
+
+    <!-- Meta Info / Count -->
+    <div class="results-meta">
+      <div id="resultsCount" class="results-count">데이터를 불러오는 중입니다...</div>
+    </div>
+
+    <!-- Content Views -->
+    <div id="contentArea">
+      <div class="status-box">
+        <div class="spinner"></div>
+        <p>GitHub 저장소에서 배너 및 캐릭터 데이터를 가져오고 있습니다...</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // GitHub Raw Assets URLs
+    const GACHA_URL = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/assets/gacha.yaml';
+    const CHAR_URL = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/assets/charactor.yaml';
+
+    // Image base paths
+    const BANNER_IMG_DIR_MAIN = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/public/static/image/banner/en/main/';
+    const BANNER_IMG_DIR_HEADER = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/public/static/image/banner/en/header/';
+    const CHAR_IMG_DIR = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/public/static/image/char/';
+
+    // State
+    let gachaData = [];
+    let characters = [];
+    let charMapJa = new Map(); // nameJa -> character obj
+    let charMapEn = new Map(); // nameEn -> character obj
+    let charById = new Map();  // id -> character obj
+
+    let currentView = 'date'; // 'date' | 'banner'
+    let selectedCharIds = new Set();
+    let searchQuery = '';
+    let filterRevivalOnly = false;
+    let filterNewOnly = false;
+    let charSelectorOpen = true;
+
+    // App Initialization
+    async function init() {
+      try {
+        const [gachaYamlText, charYamlText] = await Promise.all([
+          fetch(GACHA_URL).then(r => {
+            if (!r.ok) throw new Error('gacha.yaml fetch failed');
+            return r.text();
+          }),
+          fetch(CHAR_URL).then(r => {
+            if (!r.ok) throw new Error('charactor.yaml fetch failed');
+            return r.text();
+          })
+        ]);
+
+        gachaData = jsyaml.load(gachaYamlText) || [];
+        characters = jsyaml.load(charYamlText) || [];
+
+        buildCharacterIndices();
+        renderCharSelector();
+        renderCurrentView();
+      } catch (err) {
+        console.error('Initialization error:', err);
+        document.getElementById('contentArea').innerHTML = `
+          <div class="status-box">
+            <p style="color: #f85149; font-weight: 700; margin-bottom: 0.5rem;">데이터를 불러오는 중 오류가 발생했습니다.</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">${err.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    // Build Fast Index Maps for Characters
+    function buildCharacterIndices() {
+      characters.forEach(char => {
+        if (!char) return;
+        charById.set(char.id, char);
+
+        if (char.nameJa) {
+          const cleanJa = char.nameJa.trim();
+          charMapJa.set(cleanJa, char);
+          // Also map short core names (e.g. "海風香る艇長 バルト" -> "バルト")
+          const parts = cleanJa.split(/\s+/);
+          if (parts.length > 1) {
+            const lastPart = parts[parts.length - 1];
+            if (!charMapJa.has(lastPart)) {
+              charMapJa.set(lastPart, char);
+            }
+          }
+        }
+
+        if (char.nameEn) {
+          const cleanEn = char.nameEn.trim();
+          charMapEn.set(cleanEn.toLowerCase(), char);
+          const parts = cleanEn.split(/\s+/);
+          if (parts.length > 1) {
+            const lastPart = parts[parts.length - 1].toLowerCase();
+            if (!charMapEn.has(lastPart)) {
+              charMapEn.set(lastPart, char);
+            }
+          }
+        }
+      });
+    }
+
+    // Resolve Pickup Character Object from Name in gacha.yaml
+    function findCharacterByName(name) {
+      if (!name) return null;
+      const clean = name.trim();
+
+      // 1. Direct Japanese exact match
+      if (charMapJa.has(clean)) return charMapJa.get(clean);
+
+      // 2. Direct English exact match
+      const cleanLower = clean.toLowerCase();
+      if (charMapEn.has(cleanLower)) return charMapEn.get(cleanLower);
+
+      // 3. Substring match Japanese
+      for (const char of characters) {
+        if (char.nameJa && (char.nameJa === clean || char.nameJa.includes(clean) || clean.includes(char.nameJa))) {
+          return char;
+        }
+      }
+
+      // 4. Substring match English
+      for (const char of characters) {
+        if (char.nameEn) {
+          const charEnLower = char.nameEn.toLowerCase();
+          if (charEnLower === cleanLower || charEnLower.includes(cleanLower) || cleanLower.includes(charEnLower)) {
+            return char;
+          }
+        }
+      }
+
+      // Fallback object if not in charactor.yaml
+      return {
+        id: 'unknown_' + clean,
+        nameJa: clean,
+        nameEn: clean,
+        rarity: 5,
+        limited: false,
+        image: null
+      };
+    }
+
+    // Render Character Quick Picker Grid
+    function renderCharSelector() {
+      const grid = document.getElementById('charSelectorGrid');
+
+      // Sort characters: Rarity desc, then Name
+      // const sorted = [...characters].filter(c => c && c.image).sort((a, b) => {
+      //   if (b.rarity !== a.rarity) return b.rarity - a.rarity;
+      //   return (a.nameEn || '').localeCompare(b.nameEn || '');
+      // });
+
+      // grid.innerHTML = sorted.map(char => {
+      //   const isSelected = selectedCharIds.has(char.id);
+      //   const imgUrl = `${CHAR_IMG_DIR}${char.image}`;
+      //   const nameDisp = char.nameEn || char.nameJa;
+
+      //   return `
+      //     <div class="char-pick-item ${isSelected ? 'selected' : ''}" 
+      //          onclick="toggleSelectChar(${char.id})" 
+      //          title="${char.nameEn} / ${char.nameJa} (★${char.rarity})">
+      //       <div class="char-avatar-box">
+      //         <img src="${imgUrl}" alt="${nameDisp}" loading="lazy" onerror="this.onerror=null; this.src=''; this.parentElement.innerHTML='<div class=\\'char-img-fallback\\'>${char.nameEn ? char.nameEn.slice(0,3) : '?'}</div>';" />
+      //         ${char.limited ? '<span class="char-limited-flag" style="font-size:0.5rem; bottom:1px; right:1px;">LTD</span>' : ''}
+      //       </div>
+      //       <div class="char-name-label">${nameDisp}</div>
+      //     </div>
+      //   `;
+      // }).join('');
+
+      let list = [...characters].filter(c => c && c.image);
+
+      if (searchQuery) {
+        list = list.filter(c => {
+          const en = (c.nameEn || '').toLowerCase();
+          const ja = (c.nameJa || '').toLowerCase();
+          return en.includes(searchQuery) || ja.includes(searchQuery);
+        });
+      }
+
+      // Sort characters: Rarity desc, then Name
+      list.sort((a, b) => {
+        if (b.rarity !== a.rarity) return b.rarity - a.rarity;
+        return (a.nameEn || '').localeCompare(b.nameEn || '');
+      });
+
+      if (list.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 1.5rem; font-size: 0.85rem;">
+            '${searchQuery}' 검색 결과에 해당하는 캐릭터가 없습니다.
+          </div>
+        `;
+        return;
+      }
+      grid.innerHTML = list.map(char => renderCharIcon(char)).join('');
+    }
+
+    // Toggle Selection of Character
+    function toggleSelectChar(id) {
+      if (selectedCharIds.has(id)) {
+        selectedCharIds.delete(id);
+      } else {
+        selectedCharIds.add(id);
+      }
+      renderCharSelector();
+      renderCurrentView();
+    }
+
+    function removeSelectedChar(id) {
+      selectedCharIds.delete(id);
+      renderCharSelector();
+      renderCurrentView();
+    }
+
+    // Search Input Handler (supports ja and en)
+    function handleSearchInput(val) {
+      searchQuery = val.trim().toLowerCase();
+      renderCharSelector();
+    }
+
+    function toggleRevivalFilter() {
+      filterRevivalOnly = !filterRevivalOnly;
+      if (filterRevivalOnly) filterNewOnly = false;
+      document.getElementById('btnFilterRevival').classList.toggle('active', filterRevivalOnly);
+      document.getElementById('btnFilterNew').classList.toggle('active', filterNewOnly);
+      renderCurrentView();
+    }
+
+    function toggleNewFilter() {
+      filterNewOnly = !filterNewOnly;
+      if (filterNewOnly) filterRevivalOnly = false;
+      document.getElementById('btnFilterNew').classList.toggle('active', filterNewOnly);
+      document.getElementById('btnFilterRevival').classList.toggle('active', filterRevivalOnly);
+      renderCurrentView();
+    }
+
+    function resetFilters() {
+      selectedCharIds.clear();
+      searchQuery = '';
+      filterRevivalOnly = false;
+      filterNewOnly = false;
+      document.getElementById('searchInput').value = '';
+      document.getElementById('btnFilterRevival').classList.remove('active');
+      document.getElementById('btnFilterNew').classList.remove('active');
+      renderCharSelector();
+      renderCurrentView();
+    }
+
+    // View Switching
+    function switchView(view) {
+      currentView = view;
+      document.getElementById('btnViewDate').classList.toggle('active', view === 'date');
+      document.getElementById('btnViewBanner').classList.toggle('active', view === 'banner');
+      renderCurrentView();
+    }
+
+    // Banner Matching Logic with Filters
+    function isBannerMatch(banner) {
+      // Revival filter
+      if (filterRevivalOnly && !banner.revival) return false;
+      if (filterNewOnly && banner.revival) return false;
+
+      // Pickup characters
+      const pickups = (banner.pickUp || []).map(p => findCharacterByName(p.name)).filter(Boolean);
+
+      // Character filter (OR condition)
+      if (selectedCharIds.size > 0) {
+        const hasSelected = pickups.some(c => selectedCharIds.has(c.id));
+        if (!hasSelected) return false;
+      }
+
+      return true;
+    }
+
+    // Render Active View
+    function renderCurrentView() {
+      const container = document.getElementById('contentArea');
+      const countEl = document.getElementById('resultsCount');
+
+      if (currentView === 'date') {
+        renderDateView(container, countEl);
+      } else {
+        renderGroupedBannerView(container, countEl);
+      }
+    }
+
+    // VIEW 1: Date-Based View (Group banners by same start date)
+    function renderDateView(container, countEl) {
+      // Filter matching banners
+      const matched = gachaData.filter(isBannerMatch);
+
+      // Group by start date
+      const dateMap = new Map();
+      matched.forEach(banner => {
+        const dateKey = banner.start || 'Unknown Date';
+        if (!dateMap.has(dateKey)) {
+          dateMap.set(dateKey, []);
+        }
+        dateMap.get(dateKey).push(banner);
+      });
+
+      // Sort dates chronologically desc (newest first)
+      const sortedDates = Array.from(dateMap.keys()).sort((a, b) => {
+        const timeA = new Date(a).getTime() || 0;
+        const timeB = new Date(b).getTime() || 0;
+        return timeB - timeA;
+      });
+
+      countEl.innerHTML = `총 <strong>${matched.length}</strong>개의 배너 (${sortedDates.length}개 날짜 그룹)`;
+
+      if (sortedDates.length === 0) {
+        container.innerHTML = `
+          <div class="status-box">
+            <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0.5rem;">조건에 맞는 배너가 없습니다.</p>
+            <p style="font-size: 0.85rem;">필터 조건을 변경하거나 검색어를 비워보세요.</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '<div class="timeline-view">';
+      sortedDates.forEach(dateStr => {
+        const banners = dateMap.get(dateStr);
+        html += `
+          <div class="date-group">
+            <div class="date-group-header">
+              <div class="date-badge">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                시작일: ${dateStr}
+              </div>
+              <span class="date-group-count">동시 진행 배너 ${banners.length}개</span>
+            </div>
+            <div class="banners-in-date">
+              ${banners.map(b => renderBannerCard(b, false)).join('')}
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+
+      container.innerHTML = html;
+    }
+
+    // VIEW 2: Unique Banner-Based View (Group same banner ID / name across re-runs)
+    function renderGroupedBannerView(container, countEl) {
+      // Group all gachaData by banner identity (id or normalized nameEn)
+      // Note: In anados-checker, revival banners often have a new id or same name.
+      // We will group by English Name (normalized), or banner ID if names differ.
+      const groups = new Map();
+
+      gachaData.forEach(banner => {
+        const key = (banner.nameEn || banner.nameJa || String(banner.id)).trim().toLowerCase();
+        if (!groups.has(key)) {
+          groups.set(key, {
+            primaryBanner: banner,
+            allRuns: []
+          });
+        }
+        groups.get(key).allRuns.push(banner);
+      });
+
+      // Filter groups where at least one run matches filter
+      const matchedGroups = [];
+      groups.forEach((groupVal) => {
+        // check if any run matches filter
+        const matchingRuns = groupVal.allRuns.filter(isBannerMatch);
+        if (matchingRuns.length > 0) {
+          matchedGroups.push(groupVal);
+        }
+      });
+
+      // Sort by newest run start date
+      matchedGroups.sort((a, b) => {
+        const latestA = Math.max(...a.allRuns.map(r => new Date(r.start).getTime() || 0));
+        const latestB = Math.max(...b.allRuns.map(r => new Date(r.start).getTime() || 0));
+        return latestB - latestA;
+      });
+
+      countEl.innerHTML = `총 <strong>${matchedGroups.length}</strong>개의 고유 배너`;
+
+      if (matchedGroups.length === 0) {
+        container.innerHTML = `
+          <div class="status-box">
+            <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0.5rem;">조건에 맞는 배너가 없습니다.</p>
+            <p style="font-size: 0.85rem;">필터 조건을 변경하거나 검색어를 비워보세요.</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '<div class="banner-grouped-view">';
+      matchedGroups.forEach(grp => {
+        html += renderGroupedBannerCard(grp);
+      });
+      html += '</div>';
+
+      container.innerHTML = html;
+    }
+
+    // Render Banner Card for Single Occurrence (Date View)
+    function renderBannerCard(banner, showAllDates = false) {
+      const bannerImg = `${BANNER_IMG_DIR_MAIN}${banner.id}.webp`;
+      const fallbackImg = `${BANNER_IMG_DIR_HEADER}${banner.id}.webp`;
+      const pickups = (banner.pickUp || []).map(p => findCharacterByName(p.name)).filter(Boolean);
+
+      return `
+        <div class="banner-card">
+          <div class="banner-image-container">
+            <img 
+              src="${bannerImg}" 
+              alt="${banner.nameEn || banner.nameJa}" 
+              loading="lazy"
+              onerror="if(!this.dataset.triedHeader){this.dataset.triedHeader=true; this.src='${fallbackImg}';} else {this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'400\\' height=\\'150\\' fill=\\'%23161b22\\'><rect width=\\'100%\\' height=\\'100%\\'/><text x=\\'50%\\' y=\\'50%\\' fill=\\'%236e7681\\' font-family=\\'sans-serif\\' font-size=\\'14\\' text-anchor=\\'middle\\' dominant-baseline=\\'middle\\'>No Banner Image</text></svg>';}"
+            />
+            <div class="banner-badges">
+              ${banner.revival
+          ? '<span class="badge badge-revival">복각 (Revival)</span>'
+          : '<span class="badge badge-new">신규 (New)</span>'}
+            </div>
+            <span class="banner-id-tag">#${banner.id}</span>
+          </div>
+
+          <div class="banner-content">
+            <div class="banner-title-group">
+              <div class="banner-title-en">${banner.nameEn || banner.nameJa}</div>
+              <div class="banner-title-ja">${banner.nameJa || ''}</div>
+            </div>
+
+            <div class="banner-dates">
+              <div class="banner-dates-title">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                진행 기간
+              </div>
+              <div class="banner-date-single">
+                ${banner.start} ~ ${banner.end}
+              </div>
+            </div>
+
+            <div class="pickup-section">
+              <div class="pickup-header">Pick Up 캐릭터 (${pickups.length})</div>
+              <div class="pickup-char-list">
+                ${pickups.map(char => renderCharIcon(char)).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Render Card for Grouped Banner (Banner View)
+    function renderGroupedBannerCard(grp) {
+      const banner = grp.primaryBanner;
+      // Use the latest run's ID for image
+      const latestRun = grp.allRuns[grp.allRuns.length - 1] || banner;
+      const bannerImg = `${BANNER_IMG_DIR_MAIN}${latestRun.id}.webp`;
+      const fallbackImg = `${BANNER_IMG_DIR_HEADER}${latestRun.id}.webp`;
+
+      // Combined list of pickups across all runs of this banner
+      const pickupMap = new Map();
+      grp.allRuns.forEach(r => {
+        (r.pickUp || []).forEach(p => {
+          const c = findCharacterByName(p.name);
+          if (c && !pickupMap.has(c.id)) {
+            pickupMap.set(c.id, c);
+          }
+        });
+      });
+      const pickups = Array.from(pickupMap.values());
+
+      return `
+        <div class="banner-card">
+          <div class="banner-image-container">
+            <img 
+              src="${bannerImg}" 
+              alt="${banner.nameEn || banner.nameJa}" 
+              loading="lazy"
+              onerror="if(!this.dataset.triedHeader){this.dataset.triedHeader=true; this.src='${fallbackImg}';} else {this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'400\\' height=\\'150\\' fill=\\'%23161b22\\'><rect width=\\'100%\\' height=\\'100%\\'/><text x=\\'50%\\' y=\\'50%\\' fill=\\'%236e7681\\' font-family=\\'sans-serif\\' font-size=\\'14\\' text-anchor=\\'middle\\' dominant-baseline=\\'middle\\'>No Banner Image</text></svg>';}"
+            />
+            <div class="banner-badges">
+              <span class="badge badge-count">진행 ${grp.allRuns.length}회</span>
+            </div>
+            <span class="banner-id-tag">#${latestRun.id}</span>
+          </div>
+
+          <div class="banner-content">
+            <div class="banner-title-group">
+              <div class="banner-title-en">${banner.nameEn || banner.nameJa}</div>
+              <div class="banner-title-ja">${banner.nameJa || ''}</div>
+            </div>
+
+            <!-- List of All Dates This Banner Appeared -->
+            <div class="banner-dates">
+              <div class="banner-dates-title">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                배너 진행 이력 (${grp.allRuns.length}회)
+              </div>
+              <div class="banner-dates-list">
+                ${grp.allRuns.map(run => `
+                  <div class="banner-date-single">
+                    ${run.revival
+          ? '<span class="date-revival-indicator">복각</span>'
+          : '<span class="date-first-indicator">초회</span>'}
+                    <span>${run.start} ~ ${run.end}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="pickup-section">
+              <div class="pickup-header">Pick Up 캐릭터 (${pickups.length})</div>
+              <div class="pickup-char-list">
+                ${pickups.map(char => renderCharIcon(char)).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Render Character Icon with Rarity & Limited Badges
+    function renderCharIcon(char) {
+      if (!char) return '';
+      const imgUrl = char.image ? `${CHAR_IMG_DIR}${char.image}` : '';
+      const rarity = char.rarity || 0;
+      const isLimited = !!char.limited;
+      const nameEn = char.nameEn || 'Unknown';
+      const nameJa = char.nameJa || '';
+
+      return `
+        <div class="char-badge-icon rarity-${rarity}" ${(selectedCharIds.size > 0 && !selectedCharIds.has(char.id)) ? " style=\"opacity: 0.5\" " : ""}
+             onclick="toggleSelectChar(${typeof char.id === 'number' ? char.id : `'${char.id}'`})">
+          <img 
+            src="${imgUrl}" 
+            alt="${nameEn}" 
+            loading="lazy" 
+            onerror="this.onerror=null; this.src=''; this.parentElement.innerHTML='<div class=\\'char-img-fallback\\'>${nameEn.slice(0, 3)}</div>';"
+          />
+          <span class="char-rarity-pill r-${rarity}">★${rarity}</span>
+          ${isLimited ? '<span class="char-limited-flag">Limited</span>' : ''}
+          <div class="char-tooltip">
+            <strong>${nameEn}</strong><br>
+            <span style="color:var(--text-sub);font-size:0.7rem;">${nameJa}</span><br>
+            <span style="color:var(--rarity-${rarity});font-size:0.7rem;font-weight:700;">★${rarity}</span>
+            ${isLimited ? '<span style="color:var(--badge-limited);font-weight:700;font-size:0.7rem;"> · 한정</span>' : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // Start App
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+
+</html>
