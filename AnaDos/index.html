@@ -7,30 +7,73 @@
 </head>
 <body>
     <div id="app" class="container">
-        <div>
-            <div class="d-flex flex-row gap-5">
+        <div class="d-flex flex-column gap-1 overflow-x-hidden">
+            <div class="d-flex flex-row flex-wrap gap-3" style="row-gap: 0.25rem !important;">
                 <div>
                     <input type="search" class="form-control" style="width: 15em;" v-model="searchInput">
                 </div>
-                <div class="d-flex flex-row gap-1">
-                    <label v-for="availability in availabilites" class="btn btn-outline-primary" :class="{ active: checkedAvailability == availability }"> 
-                        <input type="checkbox" class="btn-check" :true-value="availability" :false-value="undefined" v-model="checkedAvailability">{{availability}} 
-                    </label>
-                </div>
-                <div class="ms-auto">
-                    <button class="btn btn-primary" @click="clearSelectedChars">Clear</button>
+                <div class="flex-grow-1 d-flex flex-row">
+                    <div class="d-flex flex-row gap-1">
+                        <label v-for="availability in availabilites" class="btn btn-outline-primary" :class="{ active: checkedAvailability == availability }"> 
+                            <input type="checkbox" class="btn-check" :true-value="availability" :false-value="undefined" v-model="checkedAvailability">{{availability}} 
+                        </label>
+                    </div>
+                    <div class="ms-auto">
+                        <button class="btn btn-primary" @click="clearSelectedChars">Clear</button>
+                    </div>
                 </div>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); align-content: start; place-items: center center; height: 260px; overflow-y: auto; overflow-x: hidden; gap: 10px; padding: 10px;">
-                <div v-for="char in filteredCharData.toReversed()" style="display:flex; justify-content: center; align-items: center;">
+            <div class="d-grid overflow-x-hidden overflow-y-scroll p-2 gap-2" style="grid-template-columns: repeat(auto-fill, 75px); place-content: start space-between; place-items: center; height: 260px;">
+                <div v-for="char in filteredCharData.toReversed()">
                     <char-icon :char="char"></char-icon>
                 </div>
             </div>
         </div>
-        <div>
-            <div class="list-group list-group-flush">
-                <div v-for="gacha in filteredMappedFormattedGachaData.toReversed()" class="list-group-item">
-                    <gacha :gacha="gacha"></gacha>
+        <div class="overflow-x-hidden">
+            <div :style="isCardView ? { visibility: 'hidden', height: 0, overflow: 'hidden' } : { }" ref="listDiv">
+                <div class="list-group list-group-flush">
+                    <div v-for="[key, gachas] in filteredMappedGachaData.toReversed()" class="list-group-item">
+                        <div>
+                            <div><h5>{{key.nameEn}}</h5></div>
+                            <div class="d-flex flex-row gap-1">
+                                <div class="flex-shrink-0" style="width: 350px; max-width: 100%;">
+                                    <img class="object-fit-contain w-100 h-100" :src="key.imgSrc">
+                                </div>
+                                <div class="flex-shrink-0 d-flex flex-column justify-content-center" style="width: 20em;">
+                                    <div v-for="gacha in gachas">
+                                        <span class="badge" :class="[gacha.revival ? 'text-bg-secondary' : 'text-bg-primary']" style="width: 5em;">{{gacha.revival ? "Revival" : "New"}}</span> {{gacha.start}} - {{gacha.end}}
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-row align-items-center flex-wrap align-content-center gap-1">
+                                    <div v-for="char in key.pickUp" class="flex-shrink-0">
+                                        <char-icon :char="char"></char-icon>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div v-if="isCardView">
+                <div class="d-grid overflow-x-hidden p-2 gap-2" style="grid-template-columns: repeat(auto-fill, minmax(max(400px, 20em), 1fr)); place-content: start space-between; place-items: stretch center;">
+                    <div v-for="[key, gachas] in filteredMappedGachaData.toReversed()" class="card" style="width: max(400px, 20em);">
+                        <img class="card-img-top" :src="key.imgSrc">
+                        <div class="card-body">
+                            <div class="d-flex flex-column gap-1">
+                                <h5 class="card-title">{{key.nameEn}}</h5>
+                                <div class="flex-shrink-0 d-flex flex-column justify-content-center" style="width: 20em;">
+                                    <div v-for="gacha in gachas">
+                                        <span class="badge" :class="[gacha.revival ? 'text-bg-secondary' : 'text-bg-primary']" style="width: 5em;">{{gacha.revival ? "Revival" : "New"}}</span> {{gacha.start}} - {{gacha.end}}
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-row align-items-center flex-wrap align-content-center gap-1">
+                                    <div v-for="char in key.pickUp" class="flex-shrink-0">
+                                        <char-icon :char="char"></char-icon>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -45,29 +88,9 @@
             </div>
         </div>
     </template>
-    <template id="gacha-template">
-        <div>
-            <div><h5>{{key.nameEn}}</h5></div>
-            <div class="d-flex flex-row gap-1">
-                <div class="flex-shrink-0" style="width: 350px; max-width: 100%;">
-                    <img class="object-fit-contain w-100 h-100" :src="imgSrc">
-                </div>
-                <div class="flex-shrink-0 d-flex flex-column justify-content-center" style="width: 20em;">
-                    <div v-for="gacha in gachas">
-                        <span class="badge" :class="[gacha.revival ? 'text-bg-secondary' : 'text-bg-primary']" style="width: 5em;">{{gacha.revival ? "Revival" : "New"}}</span> {{gacha.start}} - {{gacha.end}}
-                    </div>
-                </div>
-                <div class="d-flex flex-row align-items-center flex-wrap align-content-center gap-1">
-                    <div v-for="char in key.pickUp" class="flex-shrink-0">
-                        <char-icon :char="char"></char-icon>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </template>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/js/bootstrap.bundle.min.js"></script>
 <script type="module">
-    import { createApp, ref, toRef, toRefs, onMounted, onUpdated, computed, watch, provide, inject } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+    import { createApp, ref, useTemplateRef, onMounted, onUpdated, computed, watch, provide, inject } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
     import * as yaml from 'https://cdn.jsdelivr.net/npm/js-yaml@5/+esm'
 
     const GACHA_URL = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/assets/gacha.yaml';
@@ -86,6 +109,8 @@
             const searchInput = ref()
             const availabilites = ["Limited", "Standard"]
             const checkedAvailability = ref()
+
+            const isCardView = ref()
             
             provide('selectedChars', selectedChars)
 
@@ -94,32 +119,27 @@
                 gachaData.value = yaml.load(await (await fetch(GACHA_URL)).text())
             })
 
-            const formattedGachaData = computed(() => {
-                let formattedGachaData = gachaData.value
-                formattedGachaData = formattedGachaData.map(gacha => {
+            const mappedGachaData = computed(() => {
+                let mappedGachaData = gachaData.value
+                mappedGachaData = mappedGachaData.reduce((mappedGachaData, gacha) => {
+                    const { nameEn, nameJa } = gacha
                     const pickUp = gacha.pickUp.map(pickUp => charData.value.find(char => char.nameJa == pickUp.name) ?? { nameJa: pickUp.name })
-                    return { gacha, pickUp }
-                })
-                return formattedGachaData
-            })
-            const mappedFormattedGachaData = computed(() => {
-                let mappedFormattedGachaData = formattedGachaData.value
-                mappedFormattedGachaData = mappedFormattedGachaData.reduce((mappedFormattedGachaData, gacha) => {
-                    const { nameEn, nameJa } = gacha.gacha
-                    const { pickUp } = gacha
-                    const found = mappedFormattedGachaData.find(([key, _]) => {
+                    const imgSrc = new URL(gacha.id + '.webp', BANNER_IMG_DIR)
+
+                    const found = mappedGachaData.find(([key, _]) => {
                         return key.nameEn == nameEn && key.nameJa == nameJa && 
                             key.pickUp.every(char => pickUp.map(char => char.nameJa).includes(char.nameJa)) &&
                             pickUp.every(char => key.pickUp.map(char => char.nameJa).includes(char.nameJa)) 
                     })
                     if (found) {
-                        const [_, gachas] = found
+                        const [key, gachas] = found
+                        key.imgSrc = imgSrc
                         gachas.push(gacha)
                     }
-                    else mappedFormattedGachaData.push([{ nameEn, nameJa, pickUp }, [gacha]])
-                    return mappedFormattedGachaData
+                    else mappedGachaData.push([{ nameEn, nameJa, pickUp, imgSrc }, [gacha]])
+                    return mappedGachaData
                 }, [])
-                return mappedFormattedGachaData
+                return mappedGachaData
             })
 
             const filteredCharData = computed(() => {
@@ -138,21 +158,34 @@
                 }
                 return filteredCharData
             })
-            const filteredMappedFormattedGachaData = computed(() => {
-                let filteredMappedFormattedGachaData = mappedFormattedGachaData.value
+            const filteredMappedGachaData = computed(() => {
+                let filteredMappedGachaData = mappedGachaData.value
                 
                 if (selectedChars.value.size > 0) {
-                    filteredMappedFormattedGachaData = filteredMappedFormattedGachaData.filter(([key, _]) => key.pickUp.some(char => [...selectedChars.value].find(char_ => char.nameJa == char_.nameJa)))
+                    filteredMappedGachaData = filteredMappedGachaData.filter(([key, _]) => key.pickUp.some(char => [...selectedChars.value].find(char_ => char.nameJa == char_.nameJa)))
                 }
-                return filteredMappedFormattedGachaData
+                return filteredMappedGachaData
             })
 
             function clearSelectedChars() {
                 selectedChars.value.clear()
             }
 
+            const listDiv = useTemplateRef('listDiv')
+            onMounted(() => {
+                const resizeObserver = new ResizeObserver(([entry, _]) => {
+                    console.log(entry.target.scrollWidth, entry.target.offsetWidth)
+                    if (entry.target.scrollWidth > entry.target.offsetWidth) {
+                        isCardView.value = true
+                    }
+                    else  isCardView.value = false
+                    isCardView.value = true
+                })
+                resizeObserver.observe(listDiv.value);
+            })
+
             return {
-                gachaData, charData, filteredCharData, filteredMappedFormattedGachaData, searchInput, availabilites, checkedAvailability,
+                gachaData, charData, filteredCharData, filteredMappedGachaData, searchInput, availabilites, checkedAvailability, isCardView,
                 clearSelectedChars
             }
         }
@@ -175,18 +208,6 @@
             }
         },
         template: document.getElementById("char-icon-template")
-    }).component('Gacha', {
-        props: ['gacha'],
-        setup(props) {
-            const key = computed(() => props.gacha[0])
-            const gachas = computed(() => props.gacha[1].map(gacha => gacha.gacha))
-
-            const imgSrc = computed(() => new URL(gachas.value[gachas.value.length - 1].id + '.webp', BANNER_IMG_DIR))
-            return {
-                key, gachas, imgSrc
-            }
-        },
-        template: document.getElementById("gacha-template")
     }).mount('#app')
 </script>
 </body>
