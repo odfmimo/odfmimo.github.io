@@ -66,10 +66,12 @@
                                         <span class="badge" :class="[gacha.revival ? 'text-bg-secondary' : 'text-bg-primary']" style="width: 5em;">{{gacha.revival ? "Revival" : "New"}}</span> {{gacha.start}} - {{gacha.end}}
                                     </div>
                                 </div>
-                                <div class="d-flex flex-row align-items-center flex-wrap align-content-center gap-1">
-                                    <div v-for="char in key.pickUp" class="flex-shrink-0">
-                                        <char-icon :char="char"></char-icon>
-                                    </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex flex-row align-items-center flex-wrap align-content-center gap-1">
+                                <div v-for="char in key.pickUp" class="flex-shrink-0">
+                                    <char-icon :char="char"></char-icon>
                                 </div>
                             </div>
                         </div>
