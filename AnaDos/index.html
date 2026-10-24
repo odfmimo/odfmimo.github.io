@@ -55,9 +55,9 @@
                 </div>
             </div>
             <div v-if="isCardView">
-                <div class="d-grid overflow-x-hidden p-2 gap-2" style="grid-template-columns: repeat(auto-fill, minmax(max(400px, 20em), 1fr)); place-content: start space-between; place-items: stretch center;">
-                    <div v-for="[key, gachas] in filteredMappedGachaData.toReversed()" class="card" style="width: max(400px, 20em);">
-                        <img class="card-img-top" :src="key.imgSrc">
+                <div class="d-grid overflow-x-hidden p-2 gap-2" style="grid-template-columns: repeat(auto-fill, minmax(min(100%, max(400px, 20em)), 1fr)); place-content: start space-between; place-items: stretch center;">
+                    <div v-for="[key, gachas] in filteredMappedGachaData.toReversed()" class="card" style="width: min(100%, max(400px, 20em));">
+                        <img class="card-img-top" :src="key.imgSrc" style="max-width: 100%;">
                         <div class="card-body">
                             <div class="d-flex flex-column gap-1">
                                 <h5 class="card-title">{{key.nameEn}}</h5>
@@ -174,7 +174,6 @@
             const listDiv = useTemplateRef('listDiv')
             onMounted(() => {
                 const resizeObserver = new ResizeObserver(([entry, _]) => {
-                    console.log(entry.target.scrollWidth, entry.target.offsetWidth)
                     if (entry.target.scrollWidth > entry.target.offsetWidth) {
                         isCardView.value = true
                     }
