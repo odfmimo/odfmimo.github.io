@@ -113,20 +113,19 @@
             const availabilites = ["Limited", "Standard"]
             const checkedAvailability = ref()
 
-            const isCardView = ref()
-
             const tokenizer = shallowRef()
             
             provide('selectedChars', selectedChars)
 
-            onMounted(async () => {
-                charData.value = yaml.load(await (await fetch(CHAR_URL)).text())
-                gachaData.value = yaml.load(await (await fetch(GACHA_URL)).text())
-                tokenizer.value = await kuromoji.createTokenizer()
+            onMounted(() => {
+                fetch(CHAR_URL).then(response => response.text()).then(text => charData.value = yaml.load(text))
+                fetch(GACHA_URL).then(response => response.text()).then(text => gachaData.value = yaml.load(text))
+                kuromoji.createTokenizer().then(tokenizer_ => tokenizer.value = tokenizer_)
             })
 
             const mappedGachaData = computed(() => {
                 let mappedGachaData = gachaData.value
+
                 mappedGachaData = mappedGachaData.reduce((mappedGachaData, gacha) => {
                     const { nameEn } = gacha
                     const nameJa = tokenizer.value ? tokenizer.value.tokenize(gacha.nameJa).map(token => token.reading || token.surface_form).join("") : gacha.nameJa
@@ -178,15 +177,17 @@
                 selectedChars.value.clear()
             }
 
+            const isCardView = ref()
             const listDiv = useTemplateRef('listDiv')
             onMounted(() => {
-                const resizeObserver = new ResizeObserver(([entry, _]) => {
-                    if (entry.target.scrollWidth > entry.target.offsetWidth) {
-                        isCardView.value = true
+                (new ResizeObserver(entries => {
+                    for(const entry of entries) {
+                        if (entry.target.scrollWidth > entry.target.offsetWidth) {
+                            isCardView.value = true
+                        }
+                        else  isCardView.value = false
                     }
-                    else  isCardView.value = false
-                })
-                resizeObserver.observe(listDiv.value);
+                })).observe(listDiv.value);
             })
 
             return {
