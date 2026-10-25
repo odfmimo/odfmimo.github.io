@@ -36,7 +36,7 @@
                         <div>
                             <div><h5>{{key.nameEn}}</h5></div>
                             <div class="d-flex flex-row gap-1">
-                                <div class="flex-shrink-0" style="width: 350px; max-width: 100%;">
+                                <div class="flex-shrink-0" style="width: 400px; max-width: 100%;">
                                     <img class="object-fit-contain w-100 h-100" :src="key.imgSrc">
                                 </div>
                                 <div class="flex-shrink-0 d-flex flex-column justify-content-center" style="width: 20em;">
@@ -92,8 +92,9 @@
     </template>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/js/bootstrap.bundle.min.js"></script>
 <script type="module">
-    import { createApp, ref, useTemplateRef, onMounted, onUpdated, computed, watch, provide, inject } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+    import { createApp, ref, shallowRef, useTemplateRef, onMounted, onUpdated, computed, watch, provide, inject } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
     import * as yaml from 'https://cdn.jsdelivr.net/npm/js-yaml@5/+esm'
+    import { kuromoji } from "https://code4fukui.github.io/kuromoji-es/kuromoji.js";
 
     const GACHA_URL = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/assets/gacha.yaml';
     const CHAR_URL = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/assets/charactor.yaml';
@@ -113,18 +114,22 @@
             const checkedAvailability = ref()
 
             const isCardView = ref()
+
+            const tokenizer = shallowRef()
             
             provide('selectedChars', selectedChars)
 
             onMounted(async () => {
                 charData.value = yaml.load(await (await fetch(CHAR_URL)).text())
                 gachaData.value = yaml.load(await (await fetch(GACHA_URL)).text())
+                tokenizer.value = await kuromoji.createTokenizer()
             })
 
             const mappedGachaData = computed(() => {
                 let mappedGachaData = gachaData.value
                 mappedGachaData = mappedGachaData.reduce((mappedGachaData, gacha) => {
-                    const { nameEn, nameJa } = gacha
+                    const { nameEn } = gacha
+                    const nameJa = tokenizer.value ? tokenizer.value.tokenize(gacha.nameJa).map(token => token.reading || token.surface_form).join("") : gacha.nameJa
                     const pickUp = gacha.pickUp.map(pickUp => charData.value.find(char => char.nameJa == pickUp.name) ?? { nameJa: pickUp.name })
                     const imgSrc = new URL(gacha.id + '.webp', BANNER_IMG_DIR)
 
