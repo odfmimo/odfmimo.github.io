@@ -84,7 +84,7 @@
     <template id="char-icon-template">
         <div class="d-flex align-items-center">
             <div class="position-relative" :class="{ 'opacity-50': !isSelected }" style="padding: 5px;" @click="toggleSelectedChars" :title="char.nameEn">
-                <img class="object-fit-contain w-100 h-100" :src="imgSrc">
+                <img class="object-fit-contain w-100 h-100" :src="imgSrc" :alt="char.nameEn">
                 <span class="position-absolute top-0 start-0 badge" style="font-size: 8px;" :style="`background-color: ${backgroundColor};`">☆{{char.rarity}}</span>
                 <span v-if="char.limited" class="position-absolute bottom-0 end-0 badge text-bg-danger" style="font-size: 8px;">Limited</span>
             </div>
