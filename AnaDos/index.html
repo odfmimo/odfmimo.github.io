@@ -19,7 +19,7 @@
                         </label>
                     </div>
                     <div class="ms-auto">
-                        <button class="btn btn-primary" @click="clearSelectedChars">Clear</button>
+                        <button class="btn btn-primary" @click="clearSelectedCharNames">Clear</button>
                     </div>
                 </div>
             </div>
@@ -83,7 +83,7 @@
 
     <template id="char-icon-template">
         <div class="d-flex align-items-center">
-            <div class="position-relative" :class="{ 'opacity-50': !isSelected }" style="padding: 5px;" @click="toggleSelectedChars" :title="char.nameEn">
+            <div class="position-relative" :class="{ 'opacity-50': !isSelected }" style="padding: 5px;" @click="toggleSelectedCharName" :title="char.nameEn">
                 <img class="object-fit-contain w-100 h-100" :src="imgSrc" :alt="char.nameEn">
                 <span class="position-absolute top-0 start-0 badge" style="font-size: 8px;" :style="`background-color: ${backgroundColor};`">☆{{char.rarity}}</span>
                 <span v-if="char.limited" class="position-absolute bottom-0 end-0 badge text-bg-danger" style="font-size: 8px;">Limited</span>
@@ -92,28 +92,25 @@
     </template>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/js/bootstrap.bundle.min.js"></script>
 <script type="module">
-    import { createApp, ref, shallowRef, useTemplateRef, onMounted, onUpdated, computed, watch, provide, inject } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+    import { createApp, ref, shallowRef, useTemplateRef, onMounted, onUpdated, computed, watch, watchEffect, provide, inject } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
     import * as yaml from 'https://cdn.jsdelivr.net/npm/js-yaml@5/+esm'
     import { kuromoji } from "https://code4fukui.github.io/kuromoji-es/kuromoji.js";
 
-    // Import the functions you need from the SDKs you need
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-    // TODO: Add SDKs for Firebase products that you want to use
-    // https://firebase.google.com/docs/web/setup#available-libraries
+    import * as FirebaseApp from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+    import * as FirebaseDatabase from "https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js";
 
     // Your web app's Firebase configuration
     const firebaseConfig = {
         apiKey: "AIzaSyAKi1sdKptU9JoFxB2YxtCq8M5cSDIh9vQ",
         authDomain: "databasetest-80cef.firebaseapp.com",
-        databaseURL: "https://databasetest-80cef-default-rtdb.firebaseio.com",
+        databaseURL: "https://databasetest-80cef-default-rtdb.firebaseio.com/",
         projectId: "databasetest-80cef",
         storageBucket: "databasetest-80cef.firebasestorage.app",
         messagingSenderId: "621862992116",
         appId: "1:621862992116:web:5a263c9f4cca5741e486a1"
     };
 
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
+    const db = FirebaseDatabase.getDatabase(FirebaseApp.initializeApp(firebaseConfig));
 
     const GACHA_URL = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/assets/gacha.yaml';
     const CHAR_URL = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/assets/charactor.yaml';
@@ -126,7 +123,7 @@
             const gachaData = ref([])
             const charData = ref([])
 
-            const selectedChars = ref(new Set())
+            const selectedCharNames = ref(new Set())
 
             const searchInput = ref()
             const availabilites = ["Limited", "Standard"]
@@ -134,12 +131,27 @@
 
             const tokenizer = shallowRef()
             
-            provide('selectedChars', selectedChars)
+            provide('selectedCharNames', selectedCharNames)
 
             onMounted(() => {
                 fetch(CHAR_URL).then(response => response.text()).then(text => charData.value = yaml.load(text))
                 fetch(GACHA_URL).then(response => response.text()).then(text => gachaData.value = yaml.load(text))
                 kuromoji.createTokenizer().then(tokenizer_ => tokenizer.value = tokenizer_)
+            })
+            
+            const dbRef = FirebaseDatabase.ref(db, "AnaDos")
+            watchEffect(() => {
+                FirebaseDatabase.set(dbRef, {
+                    selectedCharNames: [...selectedCharNames.value],
+                    searchInput: searchInput.value ?? "",
+                    checkedAvailability: checkedAvailability.value ?? ""
+                })
+            })
+            FirebaseDatabase.onValue(dbRef, (snapshot) => {
+                const data = snapshot.val()
+                selectedCharNames.value = new Set(data.selectedCharNames)
+                searchInput.value = data.searchInput
+                checkedAvailability.value = data.checkedAvailability
             })
 
             const mappedGachaData = computed(() => {
@@ -186,14 +198,14 @@
             const filteredMappedGachaData = computed(() => {
                 let filteredMappedGachaData = mappedGachaData.value
                 
-                if (selectedChars.value.size > 0) {
-                    filteredMappedGachaData = filteredMappedGachaData.filter(([key, _]) => key.pickUp.some(char => [...selectedChars.value].find(char_ => char.nameJa == char_.nameJa)))
+                if (selectedCharNames.value.size > 0) {
+                    filteredMappedGachaData = filteredMappedGachaData.filter(([key, _]) => key.pickUp.some(char => [...selectedCharNames.value].find(name => char.nameJa == name)))
                 }
                 return filteredMappedGachaData
             })
 
-            function clearSelectedChars() {
-                selectedChars.value.clear()
+            function clearSelectedCharNames() {
+                selectedCharNames.value.clear()
             }
 
             const isCardView = ref()
@@ -211,7 +223,7 @@
 
             return {
                 gachaData, charData, filteredCharData, filteredMappedGachaData, searchInput, availabilites, checkedAvailability, isCardView,
-                clearSelectedChars
+                clearSelectedCharNames
             }
         }
     }).component('CharIcon', {
@@ -219,17 +231,17 @@
         setup(props) {
             const char = computed(() => props.char)
 
-            const selectedChars = inject('selectedChars')
+            const selectedCharNames = inject('selectedCharNames')
             const imgSrc = computed(() => new URL(char.value.image, CHAR_IMG_DIR))
             const backgroundColor = computed(() => char.value.rarity == 6 ? "#fd7e14" : char.value.rarity == 5 ? "#ffc107" : char.value.rarity == 4 ? "#0d6efd" : char.value.rarity == 3 ? "#0dcaf0" : "#adb5bd")
-            const isSelected = computed(() => selectedChars.value.size == 0 || selectedChars.value.has(char.value))
-            function toggleSelectedChars(event) {
-                if (selectedChars.value.has(char.value)) selectedChars.value.delete(char.value)
-                else selectedChars.value.add(char.value)
+            const isSelected = computed(() => selectedCharNames.value.size == 0 || selectedCharNames.value.has(char.value.nameJa))
+            function toggleSelectedCharName(event) {
+                if (selectedCharNames.value.has(char.value.nameJa)) selectedCharNames.value.delete(char.value.nameJa)
+                else selectedCharNames.value.add(char.value.nameJa)
             }
             return {
                 imgSrc, isSelected, backgroundColor,
-                toggleSelectedChars
+                toggleSelectedCharName
             }
         },
         template: document.getElementById("char-icon-template")
