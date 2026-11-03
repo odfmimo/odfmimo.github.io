@@ -140,19 +140,24 @@
             })
             
             const dbRef = FirebaseDatabase.ref(db, "AnaDos")
-            watchEffect(() => {
-                FirebaseDatabase.set(dbRef, {
-                    selectedCharNames: [...selectedCharNames.value],
-                    searchInput: searchInput.value ?? "",
-                    checkedAvailability: checkedAvailability.value ?? ""
-                })
-            })
+            const isDbLoaded = ref(false)
             FirebaseDatabase.onValue(dbRef, (snapshot) => {
                 const data = snapshot.val()
                 selectedCharNames.value = new Set(data.selectedCharNames)
                 searchInput.value = data.searchInput
                 checkedAvailability.value = data.checkedAvailability
+
+                isDbLoaded.value = true
             })
+            watch([() => [...selectedCharNames.value], searchInput, checkedAvailability], () => {
+                if (isDbLoaded.value) {
+                    FirebaseDatabase.set(dbRef, {
+                        selectedCharNames: [...selectedCharNames.value],
+                        searchInput: searchInput.value ?? "",
+                        checkedAvailability: checkedAvailability.value ?? ""
+                    })
+                }
+            }, { flush: 'post' })
 
             const mappedGachaData = computed(() => {
                 let mappedGachaData = gachaData.value
