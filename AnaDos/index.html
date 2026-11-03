@@ -45,7 +45,7 @@
                                     </div>
                                 </div>
                                 <div class="d-flex flex-row align-items-center flex-wrap align-content-center gap-1">
-                                    <div v-for="char in key.pickUp" class="flex-shrink-0">
+                                    <div v-for="char in key.pickUp" class="flex-shrink-0" style="width: 100px;">
                                         <char-icon :char="char"></char-icon>
                                     </div>
                                 </div>
@@ -70,7 +70,7 @@
                         </div>
                         <div class="card-footer bg-transparent">
                             <div class="d-flex flex-row align-items-center flex-wrap align-content-center gap-1">
-                                <div v-for="char in key.pickUp" class="flex-shrink-0">
+                                <div v-for="char in key.pickUp" class="flex-shrink-0" style="width: 100px;">
                                     <char-icon :char="char"></char-icon>
                                 </div>
                             </div>
@@ -95,6 +95,25 @@
     import { createApp, ref, shallowRef, useTemplateRef, onMounted, onUpdated, computed, watch, provide, inject } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
     import * as yaml from 'https://cdn.jsdelivr.net/npm/js-yaml@5/+esm'
     import { kuromoji } from "https://code4fukui.github.io/kuromoji-es/kuromoji.js";
+
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyAKi1sdKptU9JoFxB2YxtCq8M5cSDIh9vQ",
+        authDomain: "databasetest-80cef.firebaseapp.com",
+        databaseURL: "https://databasetest-80cef-default-rtdb.firebaseio.com",
+        projectId: "databasetest-80cef",
+        storageBucket: "databasetest-80cef.firebasestorage.app",
+        messagingSenderId: "621862992116",
+        appId: "1:621862992116:web:5a263c9f4cca5741e486a1"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
 
     const GACHA_URL = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/assets/gacha.yaml';
     const CHAR_URL = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/assets/charactor.yaml';
