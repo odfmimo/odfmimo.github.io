@@ -12,94 +12,105 @@
                 <div>
                     <input type="search" class="form-control" style="width: 15em;" v-model="searchInput">
                 </div>
-                <div class="flex-grow-1 d-flex flex-row">
-                    <div class="d-flex flex-row gap-1">
-                        <label v-for="availability in availabilites" class="btn btn-outline-primary" :class="{ active: checkedAvailability == availability }"> 
-                            <input type="checkbox" class="btn-check" :true-value="availability" :false-value="undefined" v-model="checkedAvailability">{{availability}} 
-                        </label>
-                    </div>
-                    <div class="ms-auto">
-                        <button class="btn btn-primary" @click="clearSelectedCharNames">Clear</button>
-                    </div>
+                <div class="d-flex flex-row gap-1">
+                    <label v-for="availability in availabilites" class="btn btn-outline-primary" :class="{ active: checkedAvailability == availability }"> 
+                        <input type="checkbox" class="btn-check" :true-value="availability" :false-value="undefined" v-model="checkedAvailability">{{availability}} 
+                    </label>
+                </div>
+                <div class="d-flex flex-row gap-1">
+                    <label v-for="order in orders" class="btn btn-outline-success" :class="{ active: checkedOrder == order }"> 
+                        <input type="checkbox" class="btn-check" :true-value="order" :false-value="undefined" v-model="checkedOrder">{{order}} 
+                    </label>
+                </div>
+                <div class="ms-auto">
+                    <button class="btn btn-secondary" @click="clearSelectedCharNames">Clear</button>
                 </div>
             </div>
-            <div class="d-grid overflow-x-hidden overflow-y-scroll p-2 gap-2" style="grid-template-columns: repeat(auto-fill, 75px); place-content: start space-between; place-items: center; height: 260px;">
-                <div v-for="char in filteredCharData.toReversed()">
-                    <char-icon :char="char"></char-icon>
-                </div>
-            </div>
-        </div>
-        <div class="overflow-x-hidden">
-            <div :style="isCardView ? { visibility: 'hidden', height: 0, overflow: 'hidden' } : { }" ref="listDiv">
+            <div class="p-2 overflow-x-hidden overflow-y-scroll" style="height: 260px;">
                 <div class="list-group list-group-flush">
-                    <div v-for="[key, gachas] in filteredMappedGachaData.toReversed()" class="list-group-item">
-                        <div>
-                            <div><h5>{{key.nameEn}}</h5></div>
-                            <div class="d-flex flex-row gap-1">
-                                <div class="flex-shrink-0" style="width: 400px; max-width: 100%;">
-                                    <img class="object-fit-contain w-100 h-100" :src="key.imgSrc">
-                                </div>
-                                <div class="flex-shrink-0 d-flex flex-column justify-content-center" style="width: 20em;">
-                                    <div v-for="gacha in gachas">
-                                        <span class="badge" :class="[gacha.revival ? 'text-bg-secondary' : 'text-bg-primary']" style="width: 5em;">{{gacha.revival ? "Revival" : "New"}}</span> {{gacha.start}} - {{gacha.end}}
-                                    </div>
-                                </div>
-                                <div class="d-flex flex-row align-items-center flex-wrap align-content-center gap-1">
-                                    <div v-for="char in key.pickUp" class="flex-shrink-0" style="width: 100px;">
-                                        <char-icon :char="char"></char-icon>
-                                    </div>
-                                </div>
+                    <div v-for="{title, charData} in sortedFilteredCharData" class="list-group-item">
+                        <div v-if="title || title == 0"><h6>{{title}}</h6></div>
+                        <div class="d-grid gap-2" style="grid-template-columns: repeat(auto-fill, 75px); place-content: start space-between; place-items: center;">
+                            <div v-for="char in charData">
+                                <char-icon :char="char"></char-icon>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div v-if="isCardView">
-                <div class="d-grid overflow-x-hidden p-2 gap-2" style="grid-template-columns: repeat(auto-fill, minmax(min(100%, max(400px, 20em)), 1fr)); place-content: start space-between; place-items: stretch center;">
-                    <div v-for="[key, gachas] in filteredMappedGachaData.toReversed()" class="card" style="width: min(100%, max(400px, 20em));">
+        </div>
+        <div class="overflow-x-hidden" id="gachas-div" ref="gachas-div" style="--gacha-image-width: 400px; --gacha-period-width: 20em; --char-width: 100px;">
+            <div v-if="isCardView" style="--gacha-card-width: min(100%, max(var(--gacha-image-width), var(--gacha-period-width)));">
+                <div class="d-grid overflow-x-hidden p-2 gap-2" style="grid-template-columns: repeat(auto-fill, minmax(var(--gacha-card-width), 1fr)); place-content: start space-between; place-items: stretch center;">
+                    <div v-for="{key, gachas} in filteredMappedGachaData" class="card" style="width: var(--gacha-card-width);">
                         <img class="card-img-top" :src="key.imgSrc" style="max-width: 100%;">
                         <div class="card-body">
                             <div class="d-flex flex-column gap-1">
                                 <h5 class="card-title">{{key.nameEn}}</h5>
-                                <div class="flex-shrink-0 d-flex flex-column justify-content-center" style="width: 20em;">
-                                    <div v-for="gacha in gachas">
-                                        <span class="badge" :class="[gacha.revival ? 'text-bg-secondary' : 'text-bg-primary']" style="width: 5em;">{{gacha.revival ? "Revival" : "New"}}</span> {{gacha.start}} - {{gacha.end}}
-                                    </div>
-                                </div>
+                                <gacha-periods :gachas="gachas"></gacha-periods>
                             </div>
                         </div>
                         <div class="card-footer bg-transparent">
-                            <div class="d-flex flex-row align-items-center flex-wrap align-content-center gap-1">
-                                <div v-for="char in key.pickUp" class="flex-shrink-0" style="width: 100px;">
-                                    <char-icon :char="char"></char-icon>
-                                </div>
+                            <gacha-pickUps :pickUps="key.pickUps"></gacha-pickUps>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div v-else>
+                <div class="list-group list-group-flush">
+                    <div v-for="{key, gachas} in filteredMappedGachaData" class="list-group-item">
+                        <div>
+                            <div><h5>{{key.nameEn}}</h5></div>
+                            <div class="d-flex flex-row gap-1">
+                                <img class="object-fit-contain h-100 flex-shrink-0" :src="key.imgSrc" style="width: var(--gacha-image-width);">
+                                <gacha-periods :gachas="gachas" class="flex-shrink-0" style="width: var(--gacha-period-width);"></gacha-periods>
+                                <gacha-pickUps :pickUps="key.pickUps"></gacha-pickUps>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            
         </div>
     </div>
 
     <template id="char-icon-template">
         <div class="d-flex align-items-center">
-            <div class="position-relative" :class="{ 'opacity-50': !isSelected }" style="padding: 5px;" @click="toggleSelectedCharName" :title="char.nameEn">
-                <img class="object-fit-contain w-100 h-100" :src="imgSrc" :alt="char.nameEn">
-                <span class="position-absolute top-0 start-0 badge" style="font-size: 8px;" :style="`background-color: ${backgroundColor};`">☆{{char.rarity}}</span>
+            <div class="position-relative" :class="{ 'opacity-50': !isSelected }" style="padding: 5px;" @click="clickHandler" :title="char.nameEn">
+                <img class="object-fit-contain w-100 h-100" :src="charImgSrc" :alt="char.nameEn">
+                <span class="position-absolute top-0 start-0 badge" style="font-size: 8px;" :style="`background-color: ${rarityColor};`">☆{{char.rarity}}</span>
+                <span class="position-absolute top-0 end-0 badge rounded-pill text-bg-secondary" style="font-size: 8px;">
+                    <div style="width: 1em; height: 1em;">
+                        <img class="position-absolute top-50 start-50 translate-middle object-fit-contain" :src="classImgSrc" style="width: 1.2em; height: 1.2em;">
+                    </div>
+                </span>
                 <span v-if="char.limited" class="position-absolute bottom-0 end-0 badge text-bg-danger" style="font-size: 8px;">Limited</span>
+            </div>
+        </div>
+    </template>
+    <template id="gacha-periods-template">
+        <div class="d-flex flex-column justify-content-center">
+            <div v-for="gacha in gachas">
+                <span class="badge" :class="[gacha.revival ? 'text-bg-secondary' : 'text-bg-primary']" style="width: 5em;">{{gacha.revival ? "Revival" : "New"}}</span> {{gacha.start}} - {{gacha.end}}
+            </div>
+        </div>
+    </template>
+    <template id="gacha-pickUps-template">
+        <div class="d-flex flex-row align-items-center flex-wrap align-content-center gap-1">
+            <div v-for="char in pickUps" class="flex-shrink-0" style="width: var(--char-width);">
+                <char-icon :char="char"></char-icon>
             </div>
         </div>
     </template>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/js/bootstrap.bundle.min.js"></script>
 <script type="module">
-    import { createApp, ref, shallowRef, useTemplateRef, onMounted, onUpdated, computed, watch, watchEffect, provide, inject } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+    import { createApp, ref, shallowRef, useTemplateRef, onMounted, onUnmounted, onUpdated, computed, watch, watchEffect, provide, inject } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
     import * as yaml from 'https://cdn.jsdelivr.net/npm/js-yaml@5/+esm'
     import { kuromoji } from "https://code4fukui.github.io/kuromoji-es/kuromoji.js";
 
     import * as FirebaseApp from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
     import * as FirebaseDatabase from "https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js";
 
-    // Your web app's Firebase configuration
     const firebaseConfig = {
         apiKey: "AIzaSyAKi1sdKptU9JoFxB2YxtCq8M5cSDIh9vQ",
         authDomain: "databasetest-80cef.firebaseapp.com",
@@ -110,124 +121,258 @@
         appId: "1:621862992116:web:5a263c9f4cca5741e486a1"
     };
 
-    const db = FirebaseDatabase.getDatabase(FirebaseApp.initializeApp(firebaseConfig));
-
     const GACHA_URL = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/assets/gacha.yaml';
     const CHAR_URL = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/assets/charactor.yaml';
 
     const BANNER_IMG_DIR = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/public/static/image/banner/en/main/';
     const CHAR_IMG_DIR = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/public/static/image/char/';
+    const CLASS_IMG_DIR = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/public/static/image/class/';
 
     createApp({
         setup() {
             const gachaData = ref([])
             const charData = ref([])
 
-            const selectedCharNames = ref(new Set())
+            const tierData = ref([])
+            const nameMapData = ref([])
+
+            const selectedCharNames = ref([])
 
             const searchInput = ref()
+
             const availabilites = ["Limited", "Standard"]
             const checkedAvailability = ref()
 
+            const orders = ["Rarity", "Tier"]
+            const checkedOrder = ref()
+
             const tokenizer = shallowRef()
-            
-            provide('selectedCharNames', selectedCharNames)
 
-            onMounted(() => {
-                fetch(CHAR_URL).then(response => response.text()).then(text => charData.value = yaml.load(text))
-                fetch(GACHA_URL).then(response => response.text()).then(text => gachaData.value = yaml.load(text))
-                kuromoji.createTokenizer().then(tokenizer_ => tokenizer.value = tokenizer_)
-            })
-            
-            const dbRef = FirebaseDatabase.ref(db, "AnaDos")
-            const isDbLoaded = ref(false)
-            FirebaseDatabase.onValue(dbRef, (snapshot) => {
-                const data = snapshot.val()
-                selectedCharNames.value = new Set(data.selectedCharNames)
-                searchInput.value = data.searchInput
-                checkedAvailability.value = data.checkedAvailability
+            fetch(CHAR_URL).then(response => response.text()).then(text => charData.value = yaml.load(text))
+            fetch(GACHA_URL).then(response => response.text()).then(text => gachaData.value = yaml.load(text))
+            kuromoji.createTokenizer().then(tokenizer_ => tokenizer.value = tokenizer_)
 
-                isDbLoaded.value = true
+            const db = FirebaseDatabase.getDatabase(FirebaseApp.initializeApp(firebaseConfig))
+
+            const userDataDbRef = FirebaseDatabase.ref(db, "AnaDos/UserData")
+            const userDataPromise = new Promise(resolve => {
+                FirebaseDatabase.onValue(userDataDbRef, (snapshot) => {
+                    const data = snapshot.val()
+                    if (data) {
+                        selectedCharNames.value = data.selectedCharNames ?? []
+                    }
+                    resolve()
+                })
             })
-            watch([() => [...selectedCharNames.value], searchInput, checkedAvailability], () => {
-                if (isDbLoaded.value) {
-                    FirebaseDatabase.set(dbRef, {
-                        selectedCharNames: [...selectedCharNames.value],
-                        searchInput: searchInput.value ?? "",
-                        checkedAvailability: checkedAvailability.value ?? ""
-                    })
+            function getCharSelected(char) {
+                return selectedCharNames.value.length == 0 || selectedCharNames.value.includes(char.nameJa)
+            }
+            function toggleCharSelected(char) {
+                if (selectedCharNames.value.includes(char.nameJa)) selectedCharNames.value = selectedCharNames.value.filter(name => name != char.nameJa)
+                else selectedCharNames.value.push(char.nameJa)
+                FirebaseDatabase.update(userDataDbRef, {
+                    selectedCharNames: [...selectedCharNames.value]
+                })
+            }
+            provide('getCharSelected', getCharSelected)
+            provide('toggleCharSelected', toggleCharSelected)
+            
+            async function getWikiOasisDocPromise(title) {
+                while (true) {
+                    const response = await fetch("https://anothereidos.wikioasis.org/w/api.php?" + new URLSearchParams({
+                        action: "query",
+                        titles: title,
+                        redirects: 1,
+                        format: "json",
+                        origin: "*"
+                    }))
+                    const data = await response.json()
+                    const to = data.query.redirects?.[0]?.to
+                    if (to) title = to
+                    else break
                 }
-            }, { flush: 'post' })
+                const response = await fetch("https://anothereidos.wikioasis.org/w/api.php?" + new URLSearchParams({
+                    action: "parse",
+                    page: title,
+                    prop: "parsetree",
+                    format: "json",
+                    origin: "*"
+                }))
+                const data = await response.json()
 
+                const parser = new DOMParser()
+                const parsetree = data?.parse?.parsetree?.["*"]
+                if (parsetree) return { title, doc: parser.parseFromString(parsetree, 'application/xml') }
+            }
+
+            const nameMapDataDbRef = FirebaseDatabase.ref(db, "AnaDos/NameMapData")
+            const tierDataPromise = getWikiOasisDocPromise("Character Power Tier List").then(({ doc }) => {
+                tierData.value = [...doc.querySelector("root").children].reduce((tierData, item) => {
+                    if (item.tagName.toLowerCase() == "h" && item.getAttribute("level") == 2) {
+                        const title = item.textContent.replace(/^=+|=+$/g, '').trim()
+                        tierData.push({ title, chars: [] })
+                    }
+                    else if(item.tagName.toLowerCase() == "template") {
+                        const match = item.textContent.match(/^:(.*?)\/fs$/)
+                        if (match) {
+                            const char = match[1]
+                            const { chars } = tierData[tierData.length - 1]
+                            chars.push(char)
+                        }
+                    }
+                    return tierData
+                }, [])
+            })
+            const nameMapDataPromise = FirebaseDatabase.get(nameMapDataDbRef).then(snapshot => {
+                const data = snapshot.val()
+                if (data) {
+                    nameMapData.value = data ?? []
+                }
+            })
+
+            Promise.all([tierDataPromise, nameMapDataPromise]).then(async () => {
+                let modified = false
+                for (const tier of tierData.value) {
+                    const { chars } = tier
+                    for (const char of chars) {
+                        if (!nameMapData.value.find(data => data.char == char)) {
+                            try {
+                                const char_ = await getWikiOasisDocPromise(`${char}/fs`).then(({ doc }) => {
+                                    const part = [...doc.querySelectorAll('part')].find(part => part.querySelector('name')?.textContent.trim() == 'char')
+                                    const char = part?.querySelector('value')?.textContent.trim()
+                                    return char
+                                })
+                                const { charName, charTitle } = await getWikiOasisDocPromise(char_).then(({ title,  doc }) => {
+                                    const part = [...doc.querySelectorAll('part')].find(part => part.querySelector('name')?.textContent.trim() == 'character-title')
+                                    const charTitle = part?.querySelector('value')?.textContent.trim() ?? ""
+                                    const charName = title.split("(")[0].trim()
+                                    return { charName, charTitle }
+                                })
+
+                                nameMapData.value.push({ char, name: charName, title: charTitle })
+                                modified = true
+                            }
+                            catch(error) {
+                                console.error(char)
+                                console.error(error)
+                            }
+                        }
+                    }
+                }
+                if (modified) FirebaseDatabase.set(nameMapDataDbRef, [...nameMapData.value])
+            })
+            
             const mappedGachaData = computed(() => {
-                let mappedGachaData = gachaData.value
-
-                mappedGachaData = mappedGachaData.reduce((mappedGachaData, gacha) => {
+                let mappedGachaData = gachaData.value.reduce((mappedGachaData, gacha) => {
                     const { nameEn } = gacha
                     const nameJa = tokenizer.value ? tokenizer.value.tokenize(gacha.nameJa).map(token => token.reading || token.surface_form).join("") : gacha.nameJa
-                    const pickUp = gacha.pickUp.map(pickUp => charData.value.find(char => char.nameJa == pickUp.name) ?? { nameJa: pickUp.name })
+                    const pickUps = gacha.pickUp.map(pickUp => charData.value.find(char => char.nameJa == pickUp.name) ?? { nameJa: pickUp.name })
                     const imgSrc = new URL(gacha.id + '.webp', BANNER_IMG_DIR)
 
-                    const found = mappedGachaData.find(([key, _]) => {
+                    const found = mappedGachaData.find(({ key }) => {
                         return key.nameEn == nameEn && key.nameJa == nameJa && 
-                            key.pickUp.every(char => pickUp.map(char => char.nameJa).includes(char.nameJa)) &&
-                            pickUp.every(char => key.pickUp.map(char => char.nameJa).includes(char.nameJa)) 
+                            key.pickUps.every(char => pickUps.map(char => char.nameJa).includes(char.nameJa)) &&
+                            pickUps.every(char => key.pickUps.map(char => char.nameJa).includes(char.nameJa)) 
                     })
                     if (found) {
-                        const [key, gachas] = found
+                        const { key, gachas } = found
                         key.imgSrc = imgSrc
                         gachas.push(gacha)
                     }
-                    else mappedGachaData.push([{ nameEn, nameJa, pickUp, imgSrc }, [gacha]])
+                    else mappedGachaData.push({ key: { nameEn, nameJa, pickUps, imgSrc }, gachas: [gacha] })
                     return mappedGachaData
                 }, [])
+
+                mappedGachaData.reverse()
                 return mappedGachaData
             })
 
             const filteredCharData = computed(() => {
-                let filteredCharData = charData.value
+                let filteredCharData = charData.value.toReversed()
 
                 if (searchInput.value) filteredCharData = filteredCharData.filter(char => char.nameJa.toLowerCase().includes(searchInput.value?.toLowerCase()) || char.nameEn.toLowerCase().includes(searchInput.value?.toLowerCase()))
-                if (checkedAvailability.value) {
-                    switch(checkedAvailability.value) {
-                        case "Limited":
-                            filteredCharData = filteredCharData.filter(char => char.limited)
-                            break
-                        case "Standard":
-                            filteredCharData = filteredCharData.filter(char => !char.limited)
-                            break
-                    }
+                switch(checkedAvailability.value) {
+                    case "Limited":
+                        filteredCharData = filteredCharData.filter(char => char.limited)
+                        break
+                    case "Standard":
+                        filteredCharData = filteredCharData.filter(char => !char.limited)
+                        break
                 }
                 return filteredCharData
             })
+            
+            const sortedFilteredCharData = computed(() => {
+                let sortedFilteredCharData
+
+                switch(checkedOrder.value) {
+                    case "Rarity":
+                        sortedFilteredCharData = [...Map.groupBy(filteredCharData.value, ({ rarity }) => rarity)].map(([key, value]) => ({ title: key, charData: value }))
+                        sortedFilteredCharData.sort((a, b) => b.title - a.title)
+                        sortedFilteredCharData.forEach(a => a.title = '☆' + a.title)
+                        break
+                    case "Tier":
+                        const mappedFilteredCharData = filteredCharData.value.map(char => {
+                            const nameEn = char.nameEn.replace(/[^a-zA-Z0-9]/g, "")
+                            const nameMap = nameMapData.value.find(nameMap => {
+                                if (nameMap.char.replace(/[^a-zA-Z0-9]/g, "") == nameEn) return true
+                                if (nameEn.includes(nameMap.name.replace(/[^a-zA-Z0-9]/g, "")) && nameEn.includes(nameMap.title.replace(/[^a-zA-Z0-9]/g, ""))) return true
+                                if (nameMap.override?.replace(/[^a-zA-Z0-9]/g, "") == nameEn) return true
+                            })
+                            if (nameMap) {
+                                const tier = tierData.value.find(({title, chars}) => chars.includes(nameMap.char))
+                                if (tier) {
+                                    return { title: tier.title, char, nameMap }
+                                }
+                            }
+                            return { char }
+                        })
+                        console.log(nameMapData.value.filter(nameMap_ => !mappedFilteredCharData.find(({ nameMap }) => nameMap_ == nameMap)))
+                        sortedFilteredCharData = [...Map.groupBy(mappedFilteredCharData, ({ title }) => title)].map(([key, value]) => ({ title: key, charData: value.map(({ char }) => char) }))
+                        sortedFilteredCharData = [...tierData.value.map(({ title }) => title), null].map(title_ => sortedFilteredCharData.find(({ title }) => title == title_)).filter(tier => tier)
+                        break
+                    default:
+                        sortedFilteredCharData = [{ title:null, charData:filteredCharData.value }]
+                }
+                return sortedFilteredCharData
+            })
+
             const filteredMappedGachaData = computed(() => {
                 let filteredMappedGachaData = mappedGachaData.value
                 
-                if (selectedCharNames.value.size > 0) {
-                    filteredMappedGachaData = filteredMappedGachaData.filter(([key, _]) => key.pickUp.some(char => [...selectedCharNames.value].find(name => char.nameJa == name)))
+                if (selectedCharNames.value.length > 0) {
+                    filteredMappedGachaData = filteredMappedGachaData.filter(({ key }) => key.pickUps.some(char => selectedCharNames.value.includes(char.nameJa)))
                 }
+                
                 return filteredMappedGachaData
             })
 
             function clearSelectedCharNames() {
-                selectedCharNames.value.clear()
+                selectedCharNames.value = []
             }
 
             const isCardView = ref()
-            const listDiv = useTemplateRef('listDiv')
+            const gachasDiv = useTemplateRef('gachas-div')
+            const resizeObserver = new ResizeObserver(entries => {
+                for(const entry of entries) {
+                    const target = entry.target
+                    const tempDiv = document.createElement("div")
+                    tempDiv.style = "position: absolute; width: calc(var(--gacha-image-width) + var(--gacha-period-width) + 4*var(--char-width));"
+                    target.appendChild(tempDiv)
+                    if (gachasDiv.value.offsetWidth < tempDiv.offsetWidth) isCardView.value = true
+                    else isCardView.value = false
+                    tempDiv.remove()
+                }
+            })
             onMounted(() => {
-                (new ResizeObserver(entries => {
-                    for(const entry of entries) {
-                        if (entry.target.scrollWidth > entry.target.offsetWidth) {
-                            isCardView.value = true
-                        }
-                        else  isCardView.value = false
-                    }
-                })).observe(listDiv.value);
+                resizeObserver.observe(gachasDiv.value)
+            })
+            onUnmounted(() => {
+                resizeObserver.disconnect()
             })
 
             return {
-                gachaData, charData, filteredCharData, filteredMappedGachaData, searchInput, availabilites, checkedAvailability, isCardView,
+                sortedFilteredCharData, filteredMappedGachaData, isCardView, searchInput, availabilites, checkedAvailability, orders, checkedOrder,
                 clearSelectedCharNames
             }
         }
@@ -235,21 +380,40 @@
         props: ['char'],
         setup(props) {
             const char = computed(() => props.char)
+            const getCharSelected = inject('getCharSelected')
+            const toggleCharSelected = inject('toggleCharSelected')
 
-            const selectedCharNames = inject('selectedCharNames')
-            const imgSrc = computed(() => new URL(char.value.image, CHAR_IMG_DIR))
-            const backgroundColor = computed(() => char.value.rarity == 6 ? "#fd7e14" : char.value.rarity == 5 ? "#ffc107" : char.value.rarity == 4 ? "#0d6efd" : char.value.rarity == 3 ? "#0dcaf0" : "#adb5bd")
-            const isSelected = computed(() => selectedCharNames.value.size == 0 || selectedCharNames.value.has(char.value.nameJa))
-            function toggleSelectedCharName(event) {
-                if (selectedCharNames.value.has(char.value.nameJa)) selectedCharNames.value.delete(char.value.nameJa)
-                else selectedCharNames.value.add(char.value.nameJa)
+            const charImgSrc = computed(() => new URL(char.value.image, CHAR_IMG_DIR))
+            const classImgSrc = computed(() => new URL(char.value.class + '.png', CLASS_IMG_DIR))
+            const rarityColor = computed(() => char.value.rarity == 6 ? "#fd7e14" : char.value.rarity == 5 ? "#ffc107" : char.value.rarity == 4 ? "#0d6efd" : char.value.rarity == 3 ? "#0dcaf0" : "#adb5bd")
+            const isSelected = computed(() => getCharSelected(char.value))
+            function clickHandler(event) {
+                toggleCharSelected(char.value)
             }
             return {
-                imgSrc, isSelected, backgroundColor,
-                toggleSelectedCharName
+                charImgSrc, rarityColor, classImgSrc, isSelected,
+                clickHandler
             }
         },
         template: document.getElementById("char-icon-template")
+    }).component('GachaPeriods', {
+        props: ['gachas'],
+        setup(props) {
+            const gachas = computed(() => props.gachas)
+            return {
+                gachas
+            }
+        },
+        template: document.getElementById("gacha-periods-template")
+    }).component('GachaPickups', {
+        props: ['pickups'],
+        setup(props) {
+            const pickUps = computed(() => props.pickups)
+            return {
+                pickUps
+            }
+        },
+        template: document.getElementById("gacha-pickUps-template")
     }).mount('#app')
 </script>
 </body>
