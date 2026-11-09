@@ -84,8 +84,8 @@
         <div class="d-flex align-items-center">
             <div class="position-relative" :class="{ 'opacity-50': !isSelected }" style="padding: 5px;" @click="clickHandler" :title="char.nameEn">
                 <img class="object-fit-contain w-100 h-100" :src="charImgSrc" :alt="char.nameEn">
-                <span class="position-absolute top-0 start-0 badge" style="font-size: 8px;" :style="`background-color: ${rarityColor};`">☆{{char.rarity}}</span>
-                <span class="position-absolute top-0 end-0 badge rounded-pill text-bg-secondary" style="font-size: 8px;">
+                <span v-if="rarityColor" class="position-absolute top-0 start-0 badge" style="font-size: 8px;" :style="`background-color: ${rarityColor};`">☆{{char.rarity}}</span>
+                <span v-if="classImgSrc" class="position-absolute top-0 end-0 badge rounded-pill text-bg-secondary" style="font-size: 8px;">
                     <div style="width: 1em; height: 1em;">
                         <img class="position-absolute top-50 start-50 translate-middle object-fit-contain" :src="classImgSrc" style="width: 1.2em; height: 1.2em;">
                     </div>
@@ -109,6 +109,7 @@
         </div>
     </template>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/imagehash-web/dist/imagehash-web.min.js"></script>
 <script type="module">
     import { createApp, ref, shallowRef, useTemplateRef, onMounted, onUnmounted, onUpdated, computed, watch, watchEffect, provide, inject } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
     import * as yaml from 'https://cdn.jsdelivr.net/npm/js-yaml@5/+esm'
@@ -136,7 +137,7 @@
 
     const RARITY_COLORS = new Proxy({}, {
         get(target, property, receiver) {
-            return property == 6 ? "#fd7e14" : property == 5 ? "#ffc107" : property == 4 ? "#0d6efd" : property == 3 ? "#0dcaf0" : "#adb5bd"
+            return property > 0 ? (property == 6 ? "#fd7e14" : property == 5 ? "#ffc107" : property == 4 ? "#0d6efd" : property == 3 ? "#0dcaf0" : "#adb5bd") : null
         }
     })
 
@@ -146,6 +147,7 @@
             const charData = ref([])
 
             const tierData = ref([])
+            const wikiData = ref([])
             const nameMapData = ref([])
 
             const selectedCharNames = ref([])
@@ -160,8 +162,8 @@
 
             const tokenizer = shallowRef()
 
-            fetch(CHAR_URL).then(response => response.text()).then(text => charData.value = yaml.load(text))
-            fetch(GACHA_URL).then(response => response.text()).then(text => gachaData.value = yaml.load(text))
+            const charDataPromise = fetch(CHAR_URL).then(response => response.text()).then(text => charData.value = yaml.load(text))
+            const gachaDataPromise = fetch(GACHA_URL).then(response => response.text()).then(text => gachaData.value = yaml.load(text))
             kuromoji.createTokenizer().then(tokenizer_ => tokenizer.value = tokenizer_)
 
             const db = FirebaseDatabase.getDatabase(FirebaseApp.initializeApp(firebaseConfig))
@@ -218,62 +220,109 @@
                 const parsetree = data?.parse?.parsetree?.["*"]
                 if (parsetree) return { title, doc: parser.parseFromString(parsetree, 'application/xml') }
             }
-
-            const nameMapDataDbRef = FirebaseDatabase.ref(db, "AnaDos/NameMapData")
+            
             const tierDataPromise = getWikiOasisDocPromise("Character Power Tier List").then(({ doc }) => {
                 tierData.value = [...doc.querySelector("root").children].reduce((tierData, item) => {
                     if (item.tagName.toLowerCase() == "h" && item.getAttribute("level") == 2) {
                         const title = item.textContent.replace(/^=+|=+$/g, '').trim()
-                        tierData.push({ title, chars: [] })
+                        tierData.push({ title, fsChars: [] })
                     }
                     else if(item.tagName.toLowerCase() == "template") {
-                        const match = item.textContent.match(/^:(.*?)\/fs$/)
-                        if (match) {
-                            const char = match[1]
-                            const { chars } = tierData[tierData.length - 1]
-                            chars.push(char)
-                        }
+                        const fsChar = item.textContent.trim()
+                        const { fsChars } = tierData[tierData.length - 1]
+                        fsChars.push(fsChar)
                     }
                     return tierData
                 }, [])
             })
-            const nameMapDataPromise = FirebaseDatabase.get(nameMapDataDbRef).then(snapshot => {
+
+            const wikiDataDbRef = FirebaseDatabase.ref(db, "AnaDos/WikiData")
+            const wikiDataPromise = FirebaseDatabase.get(wikiDataDbRef).then(snapshot => {
                 const data = snapshot.val()
                 if (data) {
-                    nameMapData.value = data
+                    wikiData.value = data
                 }
             })
 
-            Promise.all([tierDataPromise, nameMapDataPromise]).then(async () => {
+            Promise.all([charDataPromise, tierDataPromise, wikiDataPromise]).then(async () => {
                 let modified = false
-                for (const tier of tierData.value) {
-                    const { chars } = tier
-                    for (const char of chars) {
-                        if (!nameMapData.value.find(data => data.char == char)) {
+                for (const { fsChars } of tierData.value) {
+                    for (const fsChar of fsChars) {
+                        let wiki = wikiData.value.find(wiki => wiki.fsChar == fsChar)
+                        if (!wiki) {
                             try {
-                                const char_ = await getWikiOasisDocPromise(`${char}/fs`).then(({ doc }) => {
+                                const docChar = await getWikiOasisDocPromise(fsChar).then(({ doc }) => {
                                     const part = [...doc.querySelectorAll('part')].find(part => part.querySelector('name')?.textContent.trim() == 'char')
                                     const char = part?.querySelector('value')?.textContent.trim()
                                     return char
                                 })
-                                const { charName, charTitle } = await getWikiOasisDocPromise(char_).then(({ title,  doc }) => {
+                                const { charName, charTitle } = await getWikiOasisDocPromise(docChar).then(({ title,  doc }) => {
                                     const part = [...doc.querySelectorAll('part')].find(part => part.querySelector('name')?.textContent.trim() == 'character-title')
                                     const charTitle = part?.querySelector('value')?.textContent.trim() ?? ""
                                     const charName = title.split("(")[0].trim()
                                     return { charName, charTitle }
                                 })
-
-                                nameMapData.value.push({ char, name: charName, title: charTitle })
+                                wiki = { fsChar, docChar, charName, charTitle }
+                                wikiData.value.push(wiki)
                                 modified = true
                             }
                             catch(error) {
-                                console.error(char)
+                                console.error(fsChar)
                                 console.error(error)
                             }
                         }
                     }
                 }
-                if (modified) FirebaseDatabase.set(nameMapDataDbRef, [...nameMapData.value])
+                if (modified) FirebaseDatabase.set(wikiDataDbRef, [...wikiData.value])
+
+                let tempCharData = [...charData.value]
+                let tempWikiData = []
+                for (const wiki of wikiData.value) {
+                    const wikiFsChar = wiki.fsChar.replace(/[^\p{L}\p{N}]/gu, "")
+                    const wikiDocChar = wiki.docChar.replace(/[^\p{L}\p{N}]/gu, "")
+                    const wikiCharName = wiki.charName.replace(/[^\p{L}\p{N}]/gu, "")
+                    const wikiCharTitle = wiki.charTitle.replace(/[^\p{L}\p{N}]/gu, "")
+                    const found = tempCharData.find(char => {
+                        const nameEn = char.nameEn.replace(/[^\p{L}\p{N}]/gu, "")
+                        if (wikiFsChar && wikiFsChar == nameEn) return true
+                        if (wikiDocChar && wikiDocChar == nameEn) return true
+                        if (nameEn?.includes(wikiCharName) && nameEn?.includes(wikiCharTitle)) return true
+                    })
+                    if (found) {
+                        nameMapData.value.push({ wiki, char: found })
+                        tempCharData = tempCharData.filter(char => char != found)
+                    }
+                    else tempWikiData.push(wiki)
+                }
+
+                let tempCharHashData = []
+                for (const char of tempCharData) {
+                    const image = new Image()
+                    const hash = await new Promise(resolve => {
+                        image.onload = () => phash(image, 8).then(resolve).catch(e => {})
+                        image.src = new URL(char.image, CHAR_IMG_DIR)
+                    })
+                    tempCharHashData.push({ char, hash })
+                }
+                for (const wiki of tempWikiData) {
+                    const url = await fetch(`https://anothereidos.wikioasis.org/w/api.php?action=query&titles=File:FS_${wiki.docChar.toLowerCase()}.png&prop=imageinfo&iiprop=url&format=json&origin=*`).then(response => response.json()).then(data => {
+                        const url = [...Object.values(data.query.pages ?? {})][0]?.imageinfo?.[0]?.url
+                        return url
+                    })
+                    const image = new Image()
+                    const hash = await new Promise(resolve => {
+                        image.onload = () => phash(image, 8).then(resolve).catch(e => {})
+                        image.src = url
+                    })
+                    const found = tempCharHashData.map(charHash => {
+                        charHash.distance = hash.hammingDistance(charHash.hash)
+                        return charHash
+                    }).filter(charHash => charHash.distance < 8).toSorted((a, b) => a.distance - b.distance)[0]
+                    if (found) {
+                        nameMapData.value.push({ wiki, char: found.char })
+                        tempCharHashData = tempCharHashData.filter(charHash => charHash != found)
+                    }
+                }
             })
 
             const groupedCharData = computed(() => {
@@ -288,25 +337,16 @@
                         break
                     }
                     case "Tier": {
-                        groupedCharData = tierData.value.map(({ title, chars }) => {
-                            const charData = chars.map(char => {
-                                const nameMap = nameMapData.value.find(nameMap => nameMap.char == char)
+                        groupedCharData = tierData.value.map(({ title, fsChars }) => {
+                            const charData = fsChars.map(fsChar => {
+                                const nameMap = nameMapData.value.find(nameMap => nameMap.wiki.fsChar == fsChar)
                                 if (nameMap) {
-                                    const nameMapChar = nameMap.char.replace(/[^a-zA-Z0-9]/g, "")
-                                    const nameMapName = nameMap.name.replace(/[^a-zA-Z0-9]/g, "")
-                                    const nameMapTitle = nameMap.title.replace(/[^a-zA-Z0-9]/g, "")
-                                    const nameMapOverride = nameMap.override?.replace(/[^a-zA-Z0-9]/g, "")
-                                    const found = tempCharData.find(char => {
-                                        const charNameEn = char.nameEn.replace(/[^a-zA-Z0-9]/g, "")
-                                        if (nameMapChar == charNameEn) return true
-                                        if (charNameEn.includes(nameMapName) && charNameEn.includes(nameMapTitle)) return true
-                                        if (nameMapOverride && nameMapOverride == charNameEn) return true
-                                    })
-                                    if (found) {
-                                        tempCharData = tempCharData.filter(char => char != found)
-                                        return found
-                                    }
-                                    return { nameEn: nameMap.title + ' ' + nameMap.name }
+                                    tempCharData = tempCharData.filter(char => char != nameMap.char)
+                                    return nameMap.char
+                                }
+                                else {
+                                    const wiki = wikiData.value.find(wiki => wiki.fsChar == fsChar)
+                                    if (wiki) return { nameEn: wiki.docChar + '\n' + wiki.charName + '\n' + wiki.charTitle }
                                 }
                                 return { nameEn: char }
                             })
@@ -411,9 +451,9 @@
             const getCharSelected = inject('getCharSelected')
             const toggleCharSelected = inject('toggleCharSelected')
 
-            const charImgSrc = computed(() => new URL(char.value.image, CHAR_IMG_DIR))
-            const classImgSrc = computed(() => new URL(char.value.class + '.png', CLASS_IMG_DIR))
-            const rarityColor = computed(() => RARITY_COLORS[char.value.rarity])
+            const charImgSrc = computed(() => char.value.image ? new URL(char.value.image, CHAR_IMG_DIR) : null)
+            const classImgSrc = computed(() => char.value.class ? new URL(char.value.class + '.png', CLASS_IMG_DIR) : null)
+            const rarityColor = computed(() => char.value.rarity ? RARITY_COLORS[char.value.rarity] : null)
             const isSelected = computed(() => getCharSelected(char.value))
             function clickHandler(event) {
                 toggleCharSelected(char.value)
