@@ -28,10 +28,10 @@
             </div>
             <div class="p-2 overflow-x-hidden overflow-y-scroll" style="height: 260px;">
                 <div class="list-group list-group-flush">
-                    <div v-for="{title, charData} in sortedFilteredCharData" class="list-group-item">
-                        <div v-if="title || title == 0"><h6>{{title}}</h6></div>
+                    <div v-for="{key, charData} in filteredGroupedCharData" class="list-group-item">
+                        <div v-if="key"><h6><span :class="{badge: key.color}" :style="{'background-color': key.color}">{{key.title}}</span></h6></div>
                         <div class="d-grid gap-2" style="grid-template-columns: repeat(auto-fill, 75px); place-content: start space-between; place-items: center;">
-                            <div v-for="char in charData">
+                            <div v-for="char in charData" class="overflow-hidden" style="width: 75px; height: 75px;">
                                 <char-icon :char="char"></char-icon>
                             </div>
                         </div>
@@ -42,7 +42,7 @@
         <div class="overflow-x-hidden" id="gachas-div" ref="gachas-div" style="--gacha-image-width: 400px; --gacha-period-width: 20em; --char-width: 100px;">
             <div v-if="isCardView" style="--gacha-card-width: min(100%, max(var(--gacha-image-width), var(--gacha-period-width)));">
                 <div class="d-grid overflow-x-hidden p-2 gap-2" style="grid-template-columns: repeat(auto-fill, minmax(var(--gacha-card-width), 1fr)); place-content: start space-between; place-items: stretch center;">
-                    <div v-for="{key, gachas} in filteredMappedGachaData" class="card" style="width: var(--gacha-card-width);">
+                    <div v-for="{key, gachas} in filteredGroupedGachaData" class="card" style="width: var(--gacha-card-width);">
                         <img class="card-img-top" :src="key.imgSrc" style="max-width: 100%;">
                         <div class="card-body">
                             <div class="d-flex flex-column gap-1">
@@ -58,7 +58,7 @@
             </div>
             <div v-else>
                 <div class="list-group list-group-flush">
-                    <div v-for="{key, gachas} in filteredMappedGachaData" class="list-group-item">
+                    <div v-for="{key, gachas} in filteredGroupedGachaData" class="list-group-item">
                         <div>
                             <div><h5>{{key.nameEn}}</h5></div>
                             <div class="d-flex flex-row gap-1">
@@ -97,7 +97,7 @@
     </template>
     <template id="gacha-pickUps-template">
         <div class="d-flex flex-row align-items-center flex-wrap align-content-center gap-1">
-            <div v-for="char in pickUps" class="flex-shrink-0" style="width: var(--char-width);">
+            <div v-for="char in pickUps" class="flex-shrink-0" style="width: var(--char-width); height: var(--char-width);">
                 <char-icon :char="char"></char-icon>
             </div>
         </div>
@@ -127,6 +127,12 @@
     const BANNER_IMG_DIR = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/public/static/image/banner/en/main/';
     const CHAR_IMG_DIR = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/public/static/image/char/';
     const CLASS_IMG_DIR = 'https://raw.githubusercontent.com/chira2chira/anados-checker/master/public/static/image/class/';
+
+    const RARITY_COLORS = new Proxy({}, {
+        get(target, property, receiver) {
+            return property == 6 ? "#fd7e14" : property == 5 ? "#ffc107" : property == 4 ? "#0d6efd" : property == 3 ? "#0dcaf0" : "#adb5bd"
+        }
+    })
 
     createApp({
         setup() {
@@ -168,11 +174,13 @@
                 return selectedCharNames.value.length == 0 || selectedCharNames.value.includes(char.nameJa)
             }
             function toggleCharSelected(char) {
-                if (selectedCharNames.value.includes(char.nameJa)) selectedCharNames.value = selectedCharNames.value.filter(name => name != char.nameJa)
-                else selectedCharNames.value.push(char.nameJa)
-                FirebaseDatabase.update(userDataDbRef, {
-                    selectedCharNames: [...selectedCharNames.value]
-                })
+                if (char.nameJa) {
+                    if (selectedCharNames.value.includes(char.nameJa)) selectedCharNames.value = selectedCharNames.value.filter(name => name != char.nameJa)
+                    else selectedCharNames.value.push(char.nameJa)
+                    FirebaseDatabase.update(userDataDbRef, {
+                        selectedCharNames: [...selectedCharNames.value]
+                    })
+                }
             }
             provide('getCharSelected', getCharSelected)
             provide('toggleCharSelected', toggleCharSelected)
@@ -226,7 +234,7 @@
             const nameMapDataPromise = FirebaseDatabase.get(nameMapDataDbRef).then(snapshot => {
                 const data = snapshot.val()
                 if (data) {
-                    nameMapData.value = data ?? []
+                    nameMapData.value = data
                 }
             })
 
@@ -261,15 +269,62 @@
                 }
                 if (modified) FirebaseDatabase.set(nameMapDataDbRef, [...nameMapData.value])
             })
-            
-            const mappedGachaData = computed(() => {
-                let mappedGachaData = gachaData.value.reduce((mappedGachaData, gacha) => {
+
+            const groupedCharData = computed(() => {
+                let tempCharData = charData.value.toReversed()
+                let groupedCharData
+
+                switch(checkedOrder.value) {
+                    case "Rarity": {
+                        groupedCharData = [...Map.groupBy(tempCharData, ({ rarity }) => rarity)].map(([rarity, value]) => ({ key: { title: rarity, color: RARITY_COLORS[rarity] }, charData: value }))
+                        groupedCharData.sort((a, b) => b.key.title - a.key.title)
+                        groupedCharData.forEach(a => a.key.title = '☆' + a.key.title)
+                        break
+                    }
+                    case "Tier": {
+                        groupedCharData = tierData.value.map(({ title, chars }) => {
+                            const charData = chars.map(char => {
+                                const nameMap = nameMapData.value.find(nameMap => nameMap.char == char)
+                                if (nameMap) {
+                                    const nameMapChar = nameMap.char.replace(/[^a-zA-Z0-9]/g, "")
+                                    const nameMapName = nameMap.name.replace(/[^a-zA-Z0-9]/g, "")
+                                    const nameMapTitle = nameMap.title.replace(/[^a-zA-Z0-9]/g, "")
+                                    const nameMapOverride = nameMap.override?.replace(/[^a-zA-Z0-9]/g, "")
+                                    const found = tempCharData.find(char => {
+                                        const charNameEn = char.nameEn.replace(/[^a-zA-Z0-9]/g, "")
+                                        if (nameMapChar == charNameEn) return true
+                                        if (charNameEn.includes(nameMapName) && charNameEn.includes(nameMapTitle)) return true
+                                        if (nameMapOverride && nameMapOverride == charNameEn) return true
+                                    })
+                                    if (found) {
+                                        tempCharData = tempCharData.filter(char => char != found)
+                                        return found
+                                    }
+                                    return { nameEn: nameMap.title + ' ' + nameMap.name }
+                                }
+                                return { nameEn: char }
+                            })
+                            return { key: { title }, charData }
+                        })
+                        groupedCharData.push({ key: { title: "Unclassified" }, charData: tempCharData })
+                        break
+                    }
+                    default: {
+                        groupedCharData = [{ charData:tempCharData }]
+                    }
+                }
+                groupedCharData = groupedCharData.filter(({ charData }) => charData.length > 0)
+                return groupedCharData
+            })
+
+            const groupedGachaData = computed(() => {
+                let groupedGachaData = gachaData.value.reduce((groupedGachaData, gacha) => {
                     const { nameEn } = gacha
                     const nameJa = tokenizer.value ? tokenizer.value.tokenize(gacha.nameJa).map(token => token.reading || token.surface_form).join("") : gacha.nameJa
                     const pickUps = gacha.pickUp.map(pickUp => charData.value.find(char => char.nameJa == pickUp.name) ?? { nameJa: pickUp.name })
                     const imgSrc = new URL(gacha.id + '.webp', BANNER_IMG_DIR)
 
-                    const found = mappedGachaData.find(({ key }) => {
+                    const found = groupedGachaData.find(({ key }) => {
                         return key.nameEn == nameEn && key.nameJa == nameJa && 
                             key.pickUps.every(char => pickUps.map(char => char.nameJa).includes(char.nameJa)) &&
                             pickUps.every(char => key.pickUps.map(char => char.nameJa).includes(char.nameJa)) 
@@ -279,72 +334,39 @@
                         key.imgSrc = imgSrc
                         gachas.push(gacha)
                     }
-                    else mappedGachaData.push({ key: { nameEn, nameJa, pickUps, imgSrc }, gachas: [gacha] })
-                    return mappedGachaData
+                    else groupedGachaData.push({ key: { nameEn, nameJa, pickUps, imgSrc }, gachas: [gacha] })
+                    return groupedGachaData
                 }, [])
 
-                mappedGachaData.reverse()
-                return mappedGachaData
+                groupedGachaData.reverse()
+                return groupedGachaData
             })
 
-            const filteredCharData = computed(() => {
-                let filteredCharData = charData.value.toReversed()
-
-                if (searchInput.value) filteredCharData = filteredCharData.filter(char => char.nameJa.toLowerCase().includes(searchInput.value?.toLowerCase()) || char.nameEn.toLowerCase().includes(searchInput.value?.toLowerCase()))
-                switch(checkedAvailability.value) {
-                    case "Limited":
-                        filteredCharData = filteredCharData.filter(char => char.limited)
-                        break
-                    case "Standard":
-                        filteredCharData = filteredCharData.filter(char => !char.limited)
-                        break
-                }
-                return filteredCharData
-            })
-            
-            const sortedFilteredCharData = computed(() => {
-                let sortedFilteredCharData
-
-                switch(checkedOrder.value) {
-                    case "Rarity":
-                        sortedFilteredCharData = [...Map.groupBy(filteredCharData.value, ({ rarity }) => rarity)].map(([key, value]) => ({ title: key, charData: value }))
-                        sortedFilteredCharData.sort((a, b) => b.title - a.title)
-                        sortedFilteredCharData.forEach(a => a.title = '☆' + a.title)
-                        break
-                    case "Tier":
-                        const mappedFilteredCharData = filteredCharData.value.map(char => {
-                            const nameEn = char.nameEn.replace(/[^a-zA-Z0-9]/g, "")
-                            const nameMap = nameMapData.value.find(nameMap => {
-                                if (nameMap.char.replace(/[^a-zA-Z0-9]/g, "") == nameEn) return true
-                                if (nameEn.includes(nameMap.name.replace(/[^a-zA-Z0-9]/g, "")) && nameEn.includes(nameMap.title.replace(/[^a-zA-Z0-9]/g, ""))) return true
-                                if (nameMap.override?.replace(/[^a-zA-Z0-9]/g, "") == nameEn) return true
-                            })
-                            if (nameMap) {
-                                const tier = tierData.value.find(({title, chars}) => chars.includes(nameMap.char))
-                                if (tier) {
-                                    return { title: tier.title, char, nameMap }
-                                }
-                            }
-                            return { char }
-                        })
-                        console.log(nameMapData.value.filter(nameMap_ => !mappedFilteredCharData.find(({ nameMap }) => nameMap_ == nameMap)))
-                        sortedFilteredCharData = [...Map.groupBy(mappedFilteredCharData, ({ title }) => title)].map(([key, value]) => ({ title: key, charData: value.map(({ char }) => char) }))
-                        sortedFilteredCharData = [...tierData.value.map(({ title }) => title), null].map(title_ => sortedFilteredCharData.find(({ title }) => title == title_)).filter(tier => tier)
-                        break
-                    default:
-                        sortedFilteredCharData = [{ title:null, charData:filteredCharData.value }]
-                }
-                return sortedFilteredCharData
+            const filteredGroupedCharData = computed(() => {
+                let filteredGroupedCharData = groupedCharData.value.map(({ key, charData }) => {
+                    if (searchInput.value) charData = charData.filter(char => char.nameJa?.toLowerCase().includes(searchInput.value?.toLowerCase()) || char.nameEn?.toLowerCase().includes(searchInput.value?.toLowerCase()))
+                    switch(checkedAvailability.value) {
+                        case "Limited":
+                            charData = charData.filter(char => char.limited)
+                            break
+                        case "Standard":
+                            charData = charData.filter(char => !char.limited)
+                            break
+                    }
+                    return { key, charData }
+                })
+                filteredGroupedCharData = filteredGroupedCharData.filter(({ charData }) => charData.length > 0)
+                return filteredGroupedCharData
             })
 
-            const filteredMappedGachaData = computed(() => {
-                let filteredMappedGachaData = mappedGachaData.value
+            const filteredGroupedGachaData = computed(() => {
+                let filteredGroupedGachaData = groupedGachaData.value
                 
                 if (selectedCharNames.value.length > 0) {
-                    filteredMappedGachaData = filteredMappedGachaData.filter(({ key }) => key.pickUps.some(char => selectedCharNames.value.includes(char.nameJa)))
+                    filteredGroupedGachaData = filteredGroupedGachaData.filter(({ key }) => key.pickUps.some(char => selectedCharNames.value.includes(char.nameJa)))
                 }
                 
-                return filteredMappedGachaData
+                return filteredGroupedGachaData
             })
 
             function clearSelectedCharNames() {
@@ -372,7 +394,7 @@
             })
 
             return {
-                sortedFilteredCharData, filteredMappedGachaData, isCardView, searchInput, availabilites, checkedAvailability, orders, checkedOrder,
+                filteredGroupedCharData, filteredGroupedGachaData, isCardView, searchInput, availabilites, checkedAvailability, orders, checkedOrder,
                 clearSelectedCharNames
             }
         }
@@ -385,7 +407,7 @@
 
             const charImgSrc = computed(() => new URL(char.value.image, CHAR_IMG_DIR))
             const classImgSrc = computed(() => new URL(char.value.class + '.png', CLASS_IMG_DIR))
-            const rarityColor = computed(() => char.value.rarity == 6 ? "#fd7e14" : char.value.rarity == 5 ? "#ffc107" : char.value.rarity == 4 ? "#0d6efd" : char.value.rarity == 3 ? "#0dcaf0" : "#adb5bd")
+            const rarityColor = computed(() => RARITY_COLORS[char.value.rarity])
             const isSelected = computed(() => getCharSelected(char.value))
             function clickHandler(event) {
                 toggleCharSelected(char.value)
