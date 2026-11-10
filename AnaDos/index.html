@@ -18,12 +18,12 @@
                 <div>
                     <input type="search" class="form-control" style="width: 15em;" v-model="searchInput">
                 </div>
-                <div class="d-flex flex-row gap-1">
+                <div class="btn-group">
                     <label v-for="availability in availabilites" class="btn btn-outline-primary" :class="{ active: checkedAvailability == availability }"> 
                         <input type="checkbox" class="btn-check" :true-value="availability" :false-value="undefined" v-model="checkedAvailability">{{availability}} 
                     </label>
                 </div>
-                <div class="d-flex flex-row gap-1">
+                <div class="btn-group>
                     <label v-for="order in orders" class="btn btn-outline-success" :class="{ active: checkedOrder == order }"> 
                         <input type="checkbox" class="btn-check" :true-value="order" :false-value="undefined" v-model="checkedOrder">{{order}} 
                     </label>
