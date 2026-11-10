@@ -23,7 +23,7 @@
                         <input type="checkbox" class="btn-check" :true-value="availability" :false-value="undefined" v-model="checkedAvailability">{{availability}} 
                     </label>
                 </div>
-                <div class="btn-group>
+                <div class="btn-group">
                     <label v-for="order in orders" class="btn btn-outline-success" :class="{ active: checkedOrder == order }"> 
                         <input type="checkbox" class="btn-check" :true-value="order" :false-value="undefined" v-model="checkedOrder">{{order}} 
                     </label>
