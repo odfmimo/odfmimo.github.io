@@ -14,8 +14,8 @@
 <body>
     <div id="app" class="container">
         <div class="d-flex flex-column gap-1 overflow-x-hidden">
-            <div class="d-flex flex-row flex-wrap gap-3" style="row-gap: 0.25rem !important;">
-                <div>
+            <div class="d-flex flex-row flex-wrap column-gap-3 row-gap-1" ref="upper-div">
+                <div class="d-flex flex-row flex-no-wrap column-gap-3" ref="search-input-div">
                     <input type="search" class="form-control" style="width: 15em;" v-model="searchInput">
                 </div>
                 <div class="btn-group">
@@ -28,7 +28,7 @@
                         <input type="checkbox" class="btn-check" :true-value="order" :false-value="undefined" v-model="checkedOrder">{{order}} 
                     </label>
                 </div>
-                <div class="ms-auto">
+                <div class="ms-auto" ref="clear-button-div">
                     <button class="btn btn-secondary" @click="clearSelectedCharNames">Clear</button>
                 </div>
             </div>
@@ -45,18 +45,16 @@
                 </div>
             </div>
         </div>
-        <div class="overflow-x-hidden" id="gachas-div" ref="gachas-div" style="--gacha-image-width: 400px; --gacha-period-width: 20em; --char-width: 100px;">
+        <div class="overflow-x-hidden" ref="gachas-div" style="--gacha-image-width: 400px; --gacha-period-width: 20em; --char-width: 100px;">
             <div v-if="isCardView" style="--gacha-card-width: min(100%, max(var(--gacha-image-width), var(--gacha-period-width)));">
                 <div class="d-grid overflow-x-hidden p-2 gap-2" style="grid-template-columns: repeat(auto-fill, minmax(var(--gacha-card-width), 1fr)); place-content: start space-between; place-items: stretch center;">
                     <div v-for="{key, gachas} in filteredGroupedGachaData" class="card" style="width: var(--gacha-card-width);">
                         <img class="card-img-top" :src="key.imgSrc" style="max-width: 100%;">
                         <div class="card-body">
-                            <div class="d-flex flex-column gap-1">
-                                <h5 class="card-title">{{key.nameEn}}</h5>
-                                <gacha-periods :gachas="gachas"></gacha-periods>
-                            </div>
+                            <h5 class="card-title">{{key.nameEn}}</h5>
+                            <gacha-periods :gachas="gachas"></gacha-periods>
                         </div>
-                        <div class="card-footer bg-transparent">
+                        <div class="card-body">
                             <gacha-pickUps :pickUps="key.pickUps"></gacha-pickUps>
                         </div>
                     </div>
@@ -70,7 +68,7 @@
                             <div class="d-flex flex-row gap-1">
                                 <img class="object-fit-contain h-100 flex-shrink-0" :src="key.imgSrc" style="width: var(--gacha-image-width);">
                                 <gacha-periods :gachas="gachas" class="flex-shrink-0" style="width: var(--gacha-period-width);"></gacha-periods>
-                                <gacha-pickUps :pickUps="key.pickUps"></gacha-pickUps>
+                                <gacha-pickUps :pickUps="key.pickUps" class="flex-grow-1"></gacha-pickUps>
                             </div>
                         </div>
                     </div>
@@ -82,15 +80,15 @@
 
     <template id="char-icon-template">
         <div class="d-flex align-items-center">
-            <div class="position-relative" :class="{ 'opacity-50': !isSelected }" style="padding: 5px;" @click="clickHandler" :title="char.nameEn">
+            <div class="position-relative p-1" :class="{ 'opacity-50': !isSelected }" @click="clickHandler" :title="char.nameEn">
                 <img class="object-fit-contain w-100 h-100" :src="charImgSrc" :alt="char.nameEn">
-                <span v-if="rarityColor" class="position-absolute top-0 start-0 badge" style="font-size: 8px;" :style="`background-color: ${rarityColor};`">☆{{char.rarity}}</span>
-                <span v-if="classImgSrc" class="position-absolute top-0 end-0 badge rounded-pill text-bg-secondary" style="font-size: 8px;">
+                <span v-if="rarityColor" class="position-absolute top-0 start-0 badge" style="font-size: 0.5rem;" :style="`background-color: ${rarityColor};`">☆{{char.rarity}}</span>
+                <span v-if="classImgSrc" class="position-absolute top-0 end-0 badge rounded-pill text-bg-secondary" style="font-size: 0.5rem;">
                     <div style="width: 1em; height: 1em;">
                         <img class="position-absolute top-50 start-50 translate-middle object-fit-contain" :src="classImgSrc" style="width: 1.2em; height: 1.2em;">
                     </div>
                 </span>
-                <span v-if="char.limited" class="position-absolute bottom-0 end-0 badge text-bg-danger" style="font-size: 8px;">Limited</span>
+                <span v-if="char.limited" class="position-absolute bottom-0 end-0 badge text-bg-danger" style="font-size: 0.5rem;">Limited</span>
             </div>
         </div>
     </template>
@@ -102,8 +100,8 @@
         </div>
     </template>
     <template id="gacha-pickUps-template">
-        <div class="d-flex flex-row align-items-center flex-wrap align-content-center gap-1">
-            <div v-for="char in pickUps" class="flex-shrink-0" style="width: var(--char-width); height: var(--char-width);">
+        <div class="d-grid gap-1" style="grid-template-columns: repeat(auto-fill, var(--char-width)); place-content: start space-between; place-items: center;">
+            <div v-for="char in pickUps" class="flex-shrink-0 overflow-hidden" style="width: var(--char-width); height: var(--char-width);">
                 <char-icon :char="char"></char-icon>
             </div>
         </div>
@@ -137,7 +135,7 @@
 
     const RARITY_COLORS = new Proxy({}, {
         get(target, property, receiver) {
-            return property > 0 ? (property == 6 ? "#fd7e14" : property == 5 ? "#ffc107" : property == 4 ? "#0d6efd" : property == 3 ? "#0dcaf0" : "#adb5bd") : null
+            return property >= 0 ? (property == 6 ? "#fd7e14" : property == 5 ? "#ffc107" : property == 4 ? "#0d6efd" : property == 3 ? "#0dcaf0" : "#adb5bd") : null
         }
     })
 
@@ -189,6 +187,12 @@
                         selectedCharNames: [...selectedCharNames.value]
                     })
                 }
+            }
+            function clearSelectedCharNames() {
+                selectedCharNames.value = []
+                FirebaseDatabase.update(userDataDbRef, {
+                    selectedCharNames: [...selectedCharNames.value]
+                })
             }
             provide('getCharSelected', getCharSelected)
             provide('toggleCharSelected', toggleCharSelected)
@@ -315,11 +319,11 @@
                         image.src = url
                     })
                     const found = tempCharHashData.map(charHash => {
-                        charHash.distance = hash.hammingDistance(charHash.hash)
-                        return charHash
-                    }).filter(charHash => charHash.distance < 8).toSorted((a, b) => a.distance - b.distance)[0]
+                        const distance = hash.hammingDistance(charHash.hash)
+                        return { charHash, distance }
+                    }).filter(({ distance }) => distance < 8).toSorted((a, b) => a.distance - b.distance)[0]
                     if (found) {
-                        nameMapData.value.push({ wiki, char: found.char })
+                        nameMapData.value.push({ wiki, char: found.charHash.char })
                         tempCharHashData = tempCharHashData.filter(charHash => charHash != found)
                     }
                 }
@@ -415,14 +419,10 @@
                 return filteredGroupedGachaData
             })
 
-            function clearSelectedCharNames() {
-                selectedCharNames.value = []
-            }
-
             const isCardView = ref()
             const gachasDiv = useTemplateRef('gachas-div')
-            const resizeObserver = new ResizeObserver(entries => {
-                for(const entry of entries) {
+            const gachasDivResizeObserver = new ResizeObserver(entries => {
+                for (const entry of entries) {
                     const target = entry.target
                     const tempDiv = document.createElement("div")
                     tempDiv.style = "position: absolute; width: calc(var(--gacha-image-width) + var(--gacha-period-width) + 4*var(--char-width));"
@@ -432,11 +432,30 @@
                     tempDiv.remove()
                 }
             })
+            const upperDiv = useTemplateRef('upper-div')
+            const searchInputDiv = useTemplateRef('search-input-div')
+            const clearButtonDiv = useTemplateRef('clear-button-div')
+            const upperDivResizeObserver = new ResizeObserver(entries => {
+                for (const entry of entries) {
+                    const target = entry.target
+                    upperDiv.value.appendChild(clearButtonDiv.value)
+                    searchInputDiv.value.classList.remove("w-100")
+
+                    const children = [...target.children]
+                    const fisrtChildOffsetTop = children[0]?.offsetTop
+                    if (children.some(child => children[0].offsetTop != child.offsetTop)) {
+                        searchInputDiv.value.appendChild(clearButtonDiv.value)
+                        searchInputDiv.value.classList.add("w-100")
+                    }
+                }
+            })
             onMounted(() => {
-                resizeObserver.observe(gachasDiv.value)
+                gachasDivResizeObserver.observe(gachasDiv.value)
+                upperDivResizeObserver.observe(upperDiv.value)
             })
             onUnmounted(() => {
-                resizeObserver.disconnect()
+                gachasDivResizeObserver.disconnect()
+                upperDivResizeObserver.disconnect()
             })
 
             return {
