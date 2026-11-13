@@ -299,32 +299,36 @@
                     else tempWikiData.push(wiki)
                 }
 
-                let tempCharHashData = []
-                for (const char of tempCharData) {
+                async function getHash(url) {
                     const image = new Image()
                     const hash = await new Promise(resolve => {
-                        image.onload = () => phash(image, 8).then(resolve).catch(e => {})
-                        image.src = new URL(char.image, CHAR_IMG_DIR)
+                        image.onload = () => phash(image, 8).then(resolve).catch(e)
+                        image.onerror = () => resolve()
+                        image.src = url
                     })
-                    tempCharHashData.push({ char, hash })
+                    return hash
+                }
+
+                let tempCharHashData = []
+                for (const char of tempCharData) {
+                    const hash = await getHash(new URL(char.image, CHAR_IMG_DIR))
+                    if (hash) tempCharHashData.push({ char, hash })
                 }
                 for (const wiki of tempWikiData) {
                     const url = await fetch(`https://anothereidos.wikioasis.org/w/api.php?action=query&titles=File:FS_${wiki.docChar.toLowerCase()}.png&prop=imageinfo&iiprop=url&format=json&origin=*`).then(response => response.json()).then(data => {
                         const url = [...Object.values(data.query.pages ?? {})][0]?.imageinfo?.[0]?.url
                         return url
                     })
-                    const image = new Image()
-                    const hash = await new Promise(resolve => {
-                        image.onload = () => phash(image, 8).then(resolve).catch(e => {})
-                        image.src = url
-                    })
-                    const found = tempCharHashData.map(charHash => {
-                        const distance = hash.hammingDistance(charHash.hash)
-                        return { charHash, distance }
-                    }).filter(({ distance }) => distance < 8).toSorted((a, b) => a.distance - b.distance)[0]
-                    if (found) {
-                        nameMapData.value.push({ wiki, char: found.charHash.char })
-                        tempCharHashData = tempCharHashData.filter(charHash => charHash != found)
+                    const hash = await getHash(url)
+                    if (hash) {
+                        const found = tempCharHashData.map(charHash => {
+                            const distance = hash.hammingDistance(charHash.hash)
+                            return { charHash, distance }
+                        }).filter(({ distance }) => distance < 8).toSorted((a, b) => a.distance - b.distance)[0]
+                        if (found) {
+                            nameMapData.value.push({ wiki, char: found.charHash.char })
+                            tempCharHashData = tempCharHashData.filter(charHash => charHash != found.charHash)
+                        }
                     }
                 }
             })
