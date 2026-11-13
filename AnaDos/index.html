@@ -300,13 +300,18 @@
                 }
 
                 async function getHash(url) {
-                    const image = new Image()
-                    const hash = await new Promise(resolve => {
-                        image.onload = () => phash(image, 8).then(resolve).catch(e)
-                        image.onerror = () => resolve()
-                        image.src = url
-                    })
-                    return hash
+                    try {
+                        const image = new Image()
+                        image.crossOrigin = true
+                        await new Promise ((resolve, reject) => {
+                            image.onload = resolve
+                            image.onerror = reject
+                            image.src = url
+                        })
+                        const hash = await phash(image, 8)
+                        return hash
+                    }
+                    catch (e) { return }
                 }
 
                 let tempCharHashData = []
